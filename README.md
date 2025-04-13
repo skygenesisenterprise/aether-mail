@@ -1,1 +1,1 @@
-# aether-mail-os
+# Aether Mail Open-Source client
