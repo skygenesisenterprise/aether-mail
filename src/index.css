@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', Arial, Helvetica, sans-serif;
+}
+
+:root {
+  /* Base colors */
+  --background: 240 25% 98%;
+  --foreground: 240 10% 3.9%;
+
+  /* Card colors */
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+
+  /* Popover colors */
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+
+  /* Aether theme colors */
+  --primary: 246 80% 60%; /* Indigo */
+  --primary-foreground: 0 0% 98%;
+  --secondary: 265 83% 64%; /* Purple */
+  --secondary-foreground: 240 5.9% 10%;
+  --accent: 248.4 90% 59%; /* Darker indigo */
+  --accent-foreground: 0 0% 98%;
+
+  /* UI colors */
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 246 80% 60%;
+
+  /* Other UI properties */
+  --radius: 0.5rem;
+
+  /* Chart colors */
+  --chart-1: 246 80% 60%;
+  --chart-2: 265 83% 64%;
+  --chart-3: 248.4 90% 59%;
+  --chart-4: 259 70% 49%;
+  --chart-5: 230 83% 65%;
+}
+
+.dark {
+  /* Base colors */
+  --background: 240 10% 3.9%;
+  --foreground: 240 10% 98%;
+
+  /* Card colors */
+  --card: 240 10% 6%;
+  --card-foreground: 0 0% 98%;
+
+  /* Popover colors */
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+
+  /* Aether theme colors */
+  --primary: 246 80% 60%;
+  --primary-foreground: 240 10% 3.9%;
+  --secondary: 265 83% 64%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 248.4 90% 59%;
+  --accent-foreground: 0 0% 98%;
+
+  /* UI colors */
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+
+  /* Chart colors */
+  --chart-1: 246 80% 60%;
+  --chart-2: 265 83% 64%;
+  --chart-3: 248.4 90% 59%;
+  --chart-4: 259 70% 49%;
+  --chart-5: 230 83% 65%;
+}
+
+@layer utilities {
+  .cosmic-gradient {
+    @apply bg-gradient-to-r from-aether-cosmic-gradient-start to-aether-cosmic-gradient-end;
+  }
+}
