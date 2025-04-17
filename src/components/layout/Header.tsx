@@ -34,22 +34,6 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, toggleTheme, isDarkMode 
           >
             <Bars3Icon className="h-6 w-6" />
           </button>
-
-          {/* Search on larger screens */}
-          <div className="hidden md:block">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search emails..."
-                className="w-80 rounded-md border border-gray-300 bg-gray-50 py-2 pl-4 pr-10 text-gray-900 placeholder-gray-500 focus:border-aether-primary focus:outline-none focus:ring-1 focus:ring-aether-primary dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
-              />
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Right side with user menu */}
@@ -147,7 +131,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, toggleTheme, isDarkMode 
               >
                 <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-700">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">Alex Morgan</p>
-                  <p className="truncate text-xs text-gray-600 dark:text-gray-400">alex.morgan@aethermail.com</p>
+                  <p className="truncate text-xs text-gray-600 dark:text-gray-400">alex.morgan@aethermail.me</p>
                 </div>
 
                 <button className="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">

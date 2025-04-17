@@ -126,21 +126,6 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
             />
           </div>
         </div>
-
-        <div className="mt-auto mb-4 space-y-1">
-          <SidebarItem
-            icon={<Cog6ToothIcon />}
-            label="Settings"
-            to="/settings"
-            active={isRouteActive('/settings')}
-          />
-          <SidebarItem
-            icon={<UserIcon />}
-            label="Profile"
-            to="/profile"
-            active={isRouteActive('/profile')}
-          />
-        </div>
       </nav>
 
       {/* Storage indicator */}
