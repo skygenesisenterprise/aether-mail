@@ -10,7 +10,8 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadURL('http://localhost:3000'); // Assurez-vous que votre application React tourne sur ce port
+  // Charger l'index.html généré dans le dossier build
+  mainWindow.loadFile(path.join(__dirname, '../build/index.html'));
 }
 
 app.whenReady().then(() => {
@@ -24,3 +25,4 @@ app.whenReady().then(() => {
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
 });
+
