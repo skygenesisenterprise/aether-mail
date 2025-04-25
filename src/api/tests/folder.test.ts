@@ -2,6 +2,9 @@ import request from 'supertest';
 import express from 'express';
 import folderRoutes from '../routes/folderRoutes';
 
+// Add Jest type definitions
+import '@types/jest';
+
 // Using a dummy token for tests
 const fakeJwt = 'Bearer faketoken';
 
