@@ -151,3 +151,7 @@ __pycache__/
 
 # Logs from debugging
 debug.log
+
+# Apache file 
+*.log
+.htaccess

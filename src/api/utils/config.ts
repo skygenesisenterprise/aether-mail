@@ -8,27 +8,42 @@ interface Config {
   skygenesisAuthUrl: string;
   smtpHost: string;
   smtpPort: number;
-  smtpUser: string;
-  smtpPass: string;
   imapHost: string;
   imapPort: number;
-  imapUser: string;
-  imapPass: string;
 }
 
+// Récupérer les variables d'environnement pour générer les utilisateurs dynamiques
+const username = process.env.USERNAME || 'default_user';
+const domain = process.env.DOMAIN || 'example.com';
+const password = process.env.PASSWORD || 'default_password';
+
 const config: Config = {
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv: process.env.NODE_ENV || 'production',
   port: Number.parseInt(process.env.PORT || '4000', 10),
   jwtSecret: process.env.JWT_SECRET || 'dev_jwt_secret',
   skygenesisAuthUrl: process.env.SKYG_AUTH_URL || 'https://secure.skygenesisenterprise.com/auth/login',
   smtpHost: process.env.SMTP_HOST || 'radis.o2switch.net',
   smtpPort: Number.parseInt(process.env.SMTP_PORT || '465', 10),
-  smtpUser: process.env.SMTP_USER || '',
-  smtpPass: process.env.SMTP_PASS || '',
   imapHost: process.env.IMAP_HOST || 'radis.o2switch.net',
   imapPort: Number.parseInt(process.env.IMAP_PORT || '993', 10),
-  imapUser: process.env.IMAP_USER || '',
-  imapPass: process.env.IMAP_PASS || '',
 };
+
+// Fonction générique pour générer les identifiants SMTP/IMAP
+export function generateUserCredentials({
+  username,
+  domain,
+  password,
+}: {
+  username: string;
+  domain: string;
+  password: string;
+}) {
+  return {
+    smtpUser: `${username}@${domain}`,
+    smtpPass: password,
+    imapUser: `${username}@${domain}`,
+    imapPass: password,
+  };
+}
 
 export default config;
