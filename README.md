@@ -54,6 +54,64 @@ chmod +x install.sh
 
 ```
 
+## Deployment with Docker
+
+You can deploy Aether Mail using Docker for a containerized and consistent environment.
+
+### Prerequisites
+
+- Docker installed on your system
+- Docker Compose (optional, for multi-container setups)
+
+### Steps
+
+1. **Build the Docker Image**
+
+    Clone the repository if you haven't already:
+
+    ```bash
+    git clone https://github.com/Sky-Genesis-Enterprise/aether-mail.git
+    cd aether-mail
+    ```
+
+    Build the Docker image:
+
+    ```bash
+    docker build -t aether-mail .
+    ```
+
+2. **Run the Docker Container**
+
+    Start the container using the built image:
+
+    ```bash
+    docker run -d -p 3000:3000 --name aether-mail aether-mail
+    ```
+
+    This will run the application and expose it on port `3000`. You can adjust the port mapping as needed.
+
+3. **Using Docker Compose (Optional)**
+
+    If you prefer using Docker Compose, a sample `docker-compose.yml` file is provided in the repository. To start the application, run:
+
+    ```bash
+    docker-compose up -d
+    ```
+
+    This will handle building the image and running the container.
+
+### Configuration with Docker
+
+You can pass custom configuration files or environment variables to the Docker container. For example:
+
+```bash
+docker run -d -p 3000:3000 -v $(pwd)/config:/app/config --name aether-mail aether-mail
+```
+
+This mounts your local `config` directory to the container's `/app/config` directory, allowing you to use custom configuration files.
+
+For more advanced setups, refer to the Docker documentation or the `docker-compose.yml` file in the repository.
+
 ## Configuration
 
 Configuration files are located in the `config` directory. You can customize the settings according to your needs.
