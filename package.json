@@ -1,4 +1,5 @@
 {
+  "displayName": "Aether Mail OS",
   "license": "AGPL-3.0 license",
   "description": "Aether Mail OS is a modern, open-source email client built with React, Vite, and Tailwind CSS. It offers a sleek and intuitive interface for managing your emails efficiently.",
   "author": "Sky Genesis Enterprise",
@@ -26,7 +27,7 @@
     "lint": "bunx biome lint --write && bunx tsc --noEmit",
     "format": "bunx biome format --write",
     "preview": "vite preview",
-    "start:backend": "node ./dist/server.js",
+    "start:backend": "nodemon --watch src --ext ts,json --exec ts-node-esm ./src/api/server.ts",
     "start:frontend": "vite preview",
     "start": "npm run start:backend & npm run start:frontend",
     "electron": "electron ./electron/main.cjs",
