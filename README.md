@@ -73,10 +73,11 @@ We welcome contributions from the community! If you'd like to contribute to Aeth
 
 Please ensure your code adheres to our coding standards and includes appropriate tests.
 
+## Contact
+
+For any questions or support, please contact us at support@skygenesisenterprise.com.
+
 ## License
 
 Aether Mail is licensed under the AGPL-3.0 license. See the [LICENSE](LICENSE) file for more details.
 
-## Contact
-
-For any questions or support, please contact us at support@skygenesisenterprise.com.
