@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+      "target": "ES6",                         // Génère du code compatible avec ES6 (moderne)
+      "module": "commonjs",                     // Utilise le module CommonJS (utilisé par Node.js)
+      "moduleResolution": "node",               // Résolution des modules selon la méthode de Node.js
+      "outDir": "./dist",                       // Le dossier où seront générés les fichiers JavaScript compilés
+      "rootDir": "./src",                       // Le dossier source de ton code TypeScript
+      "esModuleInterop": true,                  // Permet d'importer des modules CommonJS de manière plus flexible
+      "skipLibCheck": true,                     // Ignore les vérifications de types dans les bibliothèques
+      "forceConsistentCasingInFileNames": true, // Assure une cohérence dans la casse des noms de fichiers
+      "declaration": true,                      // Génére des fichiers .d.ts pour les types (optionnel)
+      "strict": true,                           // Active les options strictes de vérification des types
+      "noImplicitAny": true,                    // Empêche l'utilisation de types "any" implicites
+      "noUnusedLocals": true,                   // Génère une erreur si des variables locales sont inutilisées
+      "noUnusedParameters": true                // Génère une erreur si des paramètres de fonction ne sont pas utilisés
+    },
+    "include": [
+      "src/**/*.ts"                             // Inclut tous les fichiers .ts dans le dossier src
+    ],
+    "exclude": [
+      "node_modules",                           // Exclut le dossier node_modules
+      "dist"                                    // Exclut le dossier de sortie dist
+    ]
+}  
