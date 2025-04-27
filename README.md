@@ -22,8 +22,8 @@ Aether Mail is an open-source email client developed by Sky Genesis Enterprise. 
 1. **Clone the Repository**
 
     ```bash
-    git clone https://github.com/Sky-Genesis-Enterprise/aether-mail-os.git
-    cd aether-mail-os
+    git clone https://github.com/Sky-Genesis-Enterprise/aether-mail.git
+    cd aether-mail
     ```
 
 2. **Install Dependencies**
