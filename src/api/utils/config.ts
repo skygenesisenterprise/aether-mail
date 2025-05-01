@@ -12,11 +12,6 @@ interface Config {
   imapPort: number;
 }
 
-// Récupérer les variables d'environnement pour générer les utilisateurs dynamiques
-const username = process.env.USERNAME || 'default_user';
-const domain = process.env.DOMAIN || 'example.com';
-const password = process.env.PASSWORD || 'default_password';
-
 const config: Config = {
   nodeEnv: process.env.NODE_ENV || 'production',
   port: Number.parseInt(process.env.PORT || '4000', 10),
