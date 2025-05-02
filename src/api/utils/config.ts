@@ -1,4 +1,6 @@
 import dotenv from 'dotenv';
+
+// Charger les variables d'environnement depuis le fichier .env
 dotenv.config();
 
 interface Config {
@@ -12,15 +14,16 @@ interface Config {
   imapPort: number;
 }
 
+// Fonction pour charger la configuration à partir des variables d'environnement
 const config: Config = {
-  nodeEnv: process.env.NODE_ENV || 'production',
-  port: Number.parseInt(process.env.PORT || '4000', 10),
-  jwtSecret: process.env.JWT_SECRET || 'dev_jwt_secret',
-  skygenesisAuthUrl: process.env.SKYG_AUTH_URL || 'https://secure.skygenesisenterprise.com/auth/login',
-  smtpHost: process.env.SMTP_HOST || 'radis.o2switch.net',
-  smtpPort: Number.parseInt(process.env.SMTP_PORT || '465', 10),
-  imapHost: process.env.IMAP_HOST || 'radis.o2switch.net',
-  imapPort: Number.parseInt(process.env.IMAP_PORT || '993', 10),
+  nodeEnv: process.env.NODE_ENV || '',  // Défaut à 'production'
+  port: Number.parseInt(process.env.PORT || '', 10),  // Défaut à 4000
+  jwtSecret: process.env.JWT_SECRET || '',  // Aucune valeur par défaut pour JWT secret
+  skygenesisAuthUrl: process.env.SKYG_AUTH_URL || '',  // URL de l'authentification de SkyGenesis
+  smtpHost: process.env.SMTP_HOST || '',  // Serveur SMTP
+  smtpPort: Number.parseInt(process.env.SMTP_PORT || '', 10),  // Port SMTP
+  imapHost: process.env.IMAP_HOST || '',  // Serveur IMAP
+  imapPort: Number.parseInt(process.env.IMAP_PORT || '', 10),  // Port IMAP
 };
 
 // Fonction générique pour générer les identifiants SMTP/IMAP

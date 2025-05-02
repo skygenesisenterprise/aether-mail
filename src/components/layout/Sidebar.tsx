@@ -106,26 +106,6 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
             active={isRouteActive('/trash')}
           />
         </div>
-
-        <div className="mt-6">
-          <h3 className="px-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            Security
-          </h3>
-          <div className="mt-2 space-y-1">
-            <SidebarItem
-              icon={<LockClosedIcon />}
-              label="Encrypted"
-              to="/encrypted"
-              active={isRouteActive('/encrypted')}
-            />
-            <SidebarItem
-              icon={<ShieldCheckIcon />}
-              label="Protected"
-              to="/protected"
-              active={isRouteActive('/protected')}
-            />
-          </div>
-        </div>
       </nav>
 
       {/* Storage indicator */}
