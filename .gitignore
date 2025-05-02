@@ -104,7 +104,7 @@ public
 .tern-port
 
 # VS Code
-.vscode/*
+.vscode
 !.vscode/extensions.json
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -140,7 +140,7 @@ $RECYCLE.BIN/
 *.merge_file*
 
 # Python virtual environment
-venv/
+.venv
 __pycache__/
 
 # JetBrains Rider
