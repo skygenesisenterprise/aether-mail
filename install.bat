@@ -30,7 +30,7 @@ where npm >nul 2>&1 || (
 :: Cloner le dépôt du projet
 echo Clonage du dépôt du projet...
 if not exist "C:\opt\aether-mail" (
-    git clone https://github.com/Sky-Genesis-Enterprise/aether-mail-os.git C:\opt\aether-mail
+    git clone https://github.com/Sky-Genesis-Enterprise/aether-mail.git C:\opt\aether-mail
 ) else (
     echo Le répertoire C:\opt\aether-mail existe déjà. Ignoré.
 )

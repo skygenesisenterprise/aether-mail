@@ -24,7 +24,7 @@ apt-get install -y \
 
 # Cloner le dépôt du projet
 echo "Clonage du dépôt du projet..."
-git clone https://github.com/Sky-Genesis-Enterprise/aether-mail-os.git /opt/aether-mail
+git clone https://github.com/Sky-Genesis-Enterprise/aether-mail.git /opt/aether-mail
 
 # Naviguer vers le répertoire du projet
 cd /opt/aether-mail
