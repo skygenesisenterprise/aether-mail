@@ -9,7 +9,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "pr": "git add . && git commit -m 'WIP: Changes for PR' && git push && gh pr create --base main --head $(git rev-parse --abbrev-ref HEAD) --title 'Your PR title' --body 'Description of your changes'",
+    "pr": "git add . && git checkout -b feature/update && git commit -am 'feat: update' && git push origin feature/update",
     "dev": "vite --host 0.0.0.0",
     "dev:frontend": "vite --host 0.0.0.0",
     "dev:backend": "nodemon",
