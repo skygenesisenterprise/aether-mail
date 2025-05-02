@@ -9,7 +9,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "pr": "git add . && git checkout -b feature/update && git commit -am 'feat: update' && git push origin feature/update",
+    "pr": "node scripts/pr.mjs",
     "dev": "vite --host 0.0.0.0",
     "dev:frontend": "vite --host 0.0.0.0",
     "dev:backend": "nodemon",
@@ -46,6 +46,7 @@
     "dotenv": "^16.5.0",
     "express-validator": "^7.2.1",
     "framer-motion": "^12.6.5",
+    "inquirer": "^8.2.6",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.487.0",
     "react": "^18.3.1",
