@@ -56,3 +56,11 @@ export function formatFileSize(bytes: number): string {
 
   return `${Number.parseFloat((bytes / (k ** i)).toFixed(2))} ${sizes[i]}`;
 }
+
+/**
+ * Check if a string is a valid email address
+ */
+export function isValidEmail(email: string): boolean {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}

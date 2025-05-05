@@ -22,8 +22,6 @@ const App: React.FC = () => {
             <Route path="/trash" element={<div className="flex h-full items-center justify-center p-8 text-gray-500 dark:text-gray-400">Deleted emails would be shown here</div>} />
             <Route path="/settings" element={<div className="flex h-full items-center justify-center p-8 text-gray-500 dark:text-gray-400">Settings would be shown here</div>} />
             <Route path="/profile" element={<div className="flex h-full items-center justify-center p-8 text-gray-500 dark:text-gray-400">User profile would be shown here</div>} />
-            <Route path="/encrypted" element={<div className="flex h-full items-center justify-center p-8 text-gray-500 dark:text-gray-400">Encrypted emails would be shown here</div>} />
-            <Route path="/protected" element={<div className="flex h-full items-center justify-center p-8 text-gray-500 dark:text-gray-400">Protected emails would be shown here</div>} />
 
             {/* Catch-all for not found routes */}
             <Route path="*" element={<div className="flex h-full items-center justify-center p-8 text-gray-500 dark:text-gray-400">Page not found</div>} />
