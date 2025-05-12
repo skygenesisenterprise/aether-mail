@@ -144,11 +144,6 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, toggleTheme, isDarkMode 
                   Settings
                 </button>
 
-                <button className="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
-                  <QuestionMarkCircleIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
-                  Help & Support
-                </button>
-
                 <div className="border-t border-gray-100 dark:border-gray-700">
                   <button className="flex w-full items-center px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700">
                     <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5" />

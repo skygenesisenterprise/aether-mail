@@ -1,4 +1,4 @@
-import type React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -6,10 +6,8 @@ import {
   PaperAirplaneIcon,
   DocumentTextIcon,
   TrashIcon,
-  Cog6ToothIcon,
-  LockClosedIcon,
-  ShieldCheckIcon,
-  UserIcon
+  FolderIcon,
+  ExclamationCircleIcon // Importation de l'icône pour Spam
 } from '@heroicons/react/24/outline';
 import { cn } from '../../lib/utils';
 
@@ -44,15 +42,14 @@ const SidebarItem = ({ icon, label, to, count, active = false }: SidebarItemProp
 };
 
 const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: boolean; onClose?: () => void }) => {
-  // Active route is hardcoded for now, but would typically come from a router hook
-  const activeRoute = '/inbox';
+  const [folders, setFolders] = useState<string[]>([]); // État pour les dossiers dynamiques
 
-  // Function to check if a route is active
+  // Fonction pour vérifier si une route est active
   const isRouteActive = (route: string): boolean => {
-    return activeRoute === route;
+    return window.location.pathname === route;
   };
 
-  // Animation variants for mobile sidebar
+  // Variants pour les animations avec framer-motion
   const sidebarVariants = {
     open: { x: 0 },
     closed: { x: '-100%' },
@@ -68,58 +65,52 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
         </div>
       </div>
 
-      {/* Compose button */}
-      <button className="mx-3 my-4 flex items-center justify-center gap-2 rounded-lg bg-aether-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-aether-accent focus:outline-none focus:ring-2 focus:ring-aether-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-        New Message
-      </button>
+      {/* Navigation items */}
+      <nav className="flex-1 space-y-1 px-2">
+        <SidebarItem
+          icon={<InboxIcon />}
+          label="Inbox"
+          to="/inbox"
+          count={24}
+          active={isRouteActive('/inbox')}
+        />
+        <SidebarItem
+          icon={<PaperAirplaneIcon />}
+          label="Sent"
+          to="/sent"
+          active={isRouteActive('/sent')}
+        />
+        <SidebarItem
+          icon={<DocumentTextIcon />}
+          label="Drafts"
+          to="/drafts"
+          count={3}
+          active={isRouteActive('/drafts')}
+        />
+        <SidebarItem
+          icon={<ExclamationCircleIcon />} // Icône pour Spam
+          label="Spam"
+          to="/spam"
+          active={isRouteActive('/spam')}
+        />
+        <SidebarItem
+          icon={<TrashIcon />}
+          label="Trash"
+          to="/trash"
+          active={isRouteActive('/trash')}
+        />
 
-      {/* Navigation */}
-      <nav className="mt-2 flex flex-1 flex-col px-3">
-        <div className="space-y-1">
+        {/* Dynamic folders */}
+        {folders.map((folder, index) => (
           <SidebarItem
-            icon={<InboxIcon />}
-            label="Inbox"
-            to="/inbox"
-            count={24}
-            active={isRouteActive('/inbox')}
+            key={index}
+            icon={<FolderIcon />}
+            label={folder}
+            to={`/${folder}`}
+            active={isRouteActive(`/${folder}`)}
           />
-          <SidebarItem
-            icon={<PaperAirplaneIcon />}
-            label="Sent"
-            to="/sent"
-            active={isRouteActive('/sent')}
-          />
-          <SidebarItem
-            icon={<DocumentTextIcon />}
-            label="Drafts"
-            to="/drafts"
-            count={3}
-            active={isRouteActive('/drafts')}
-          />
-          <SidebarItem
-            icon={<TrashIcon />}
-            label="Trash"
-            to="/trash"
-            active={isRouteActive('/trash')}
-          />
-        </div>
+        ))}
       </nav>
-
-      {/* Storage indicator */}
-      <div className="border-t border-gray-200 px-4 py-4 dark:border-gray-700">
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span>Storage used</span>
-            <span>42% of 15 GB</span>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-            <div className="h-full w-[42%] rounded-full cosmic-gradient" />
-          </div>
-        </div>
-      </div>
     </div>
   );
 
