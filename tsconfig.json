@@ -12,10 +12,12 @@
     "jsx": "react-jsx",
     "strict": true,
     "noFallthroughCasesInSwitch": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["@types/babel__core"]
   },
   "include": [
     "src",
-    "vite.config.ts"
-, "api"  ]
+    "vite.config.ts",
+    "api"
+  ]
 }
