@@ -1,0 +1,26 @@
+name: Deploy Aether Mail on Release
+
+on:
+  release:
+    types: [published]  # Se déclenche uniquement lors de la publication d'une release
+
+jobs:
+  deploy:
+    name: Deploy Aether Mail to webmail.skygenesisenterprise.com
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Aether Mail repository
+        uses: actions/checkout@v4
+
+      - name: Setup FTP credentials for Aether Mail
+        run: echo "Using FTP credentials for webmail.skygenesisenterprise.com"
+
+      - name: Upload Aether Mail to webmail.skygenesisenterprise.com
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}  # Adresse FTP spécifique au sous-domaine
+          username: ${{ secrets.FTP_USER_WEBMAIL }}  # Nom d'utilisateur FTP spécifique
+          password: ${{ secrets.FTP_PASS_WEBMAIL }}  # Mot de passe FTP spécifique
+          local-dir: ./  # Répertoire local à déployer (racine ici)
+          server-dir: /www/  # Répertoire distant sur le serveur (à adapter selon votre configuration)
