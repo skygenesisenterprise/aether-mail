@@ -4,6 +4,9 @@ on:
   release:
     types: [published]  # Se déclenche uniquement lors de la publication d'une release
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy Aether Mail to webmail.skygenesisenterprise.com and Mobile Platforms
