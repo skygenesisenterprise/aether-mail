@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -43,6 +43,13 @@ const SidebarItem = ({ icon, label, to, count, active = false }: SidebarItemProp
 
 const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: boolean; onClose?: () => void }) => {
   const [folders, setFolders] = useState<string[]>([]); // État pour les dossiers dynamiques
+  const [counts, setCounts] = useState({
+    inbox: 0,
+    sent: 0,
+    drafts: 0,
+    spam: 0,
+    trash: 0,
+  });
 
   // Fonction pour vérifier si une route est active
   const isRouteActive = (route: string): boolean => {
@@ -55,11 +62,31 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
     closed: { x: '-100%' },
   };
 
+  // Récupérer les comptes dynamiques
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const response = await fetch('/api/email-counts'); // Remplacez par votre API réelle
+        const data = await response.json();
+        setCounts({
+          inbox: data.inbox,
+          sent: data.sent,
+          drafts: data.drafts,
+          spam: data.spam,
+          trash: data.trash,
+        });
+      } catch (error) {
+        console.error("Erreur lors de la récupération des comptes :", error);
+      }
+    };
+
+    fetchCounts();
+  }, []);
+
   const sidebarContent = (
     <div className="flex h-full flex-col">
       {/* Logo and branding */}
       <div className="flex items-center space-x-2 px-4 py-6">
-        <div className="cosmic-gradient h-8 w-8 rounded-full" />
         <div className="font-space-grotesk text-xl font-bold text-aether-cosmic dark:text-white">
           Aether Mail
         </div>
@@ -71,32 +98,35 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
           icon={<InboxIcon />}
           label="Inbox"
           to="/inbox"
-          count={24}
+          count={counts.inbox} 
           active={isRouteActive('/inbox')}
         />
         <SidebarItem
           icon={<PaperAirplaneIcon />}
           label="Sent"
           to="/sent"
+          count={counts.sent} 
           active={isRouteActive('/sent')}
         />
         <SidebarItem
           icon={<DocumentTextIcon />}
           label="Drafts"
           to="/drafts"
-          count={3}
+          count={counts.drafts} 
           active={isRouteActive('/drafts')}
         />
         <SidebarItem
-          icon={<ExclamationCircleIcon />} // Icône pour Spam
+          icon={<ExclamationCircleIcon />} 
           label="Spam"
           to="/spam"
+          count={counts.spam}
           active={isRouteActive('/spam')}
         />
         <SidebarItem
           icon={<TrashIcon />}
           label="Trash"
           to="/trash"
+          count={counts.trash} 
           active={isRouteActive('/trash')}
         />
 
