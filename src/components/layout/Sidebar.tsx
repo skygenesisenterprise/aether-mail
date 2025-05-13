@@ -102,18 +102,18 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
           active={isRouteActive('/inbox')}
         />
         <SidebarItem
-          icon={<PaperAirplaneIcon />}
-          label="Sent"
-          to="/sent"
-          count={counts.sent} 
-          active={isRouteActive('/sent')}
-        />
-        <SidebarItem
           icon={<DocumentTextIcon />}
           label="Drafts"
           to="/drafts"
           count={counts.drafts} 
           active={isRouteActive('/drafts')}
+        />
+        <SidebarItem
+          icon={<PaperAirplaneIcon />}
+          label="Sent"
+          to="/sent"
+          count={counts.sent} 
+          active={isRouteActive('/sent')}
         />
         <SidebarItem
           icon={<ExclamationCircleIcon />} 
