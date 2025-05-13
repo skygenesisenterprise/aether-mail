@@ -1,5 +1,5 @@
-import type React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom'; // Importer useNavigate pour la redirection
 import { motion } from 'framer-motion';
 import {
   MoonIcon,
@@ -22,6 +22,13 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ toggleSidebar, toggleTheme, isDarkMode }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const navigate = useNavigate(); // Initialiser useNavigate pour la redirection
+
+  const handleSignOut = () => {
+    // Ajouter ici la logique de déconnexion si nécessaire (ex. suppression du token)
+    console.log('User signed out');
+    navigate('/login'); // Rediriger vers la page de connexion
+  };
 
   return (
     <header className="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
@@ -134,18 +141,30 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, toggleTheme, isDarkMode 
                   <p className="truncate text-xs text-gray-600 dark:text-gray-400">alex.morgan@aethermail.me</p>
                 </div>
 
-                <button className="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                {/* Link to Profile */}
+                <Link
+                  to="/profile"
+                  className="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
                   <UserCircleIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
                   Your profile
-                </button>
+                </Link>
 
-                <button className="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">
+                {/* Link to Settings */}
+                <Link
+                  to="/settings"
+                  className="flex w-full items-center px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
                   <CogIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
                   Settings
-                </button>
+                </Link>
 
                 <div className="border-t border-gray-100 dark:border-gray-700">
-                  <button className="flex w-full items-center px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700">
+                  {/* Button to Sign Out */}
+                  <button
+                    onClick={handleSignOut} // Appeler handleSignOut lors du clic
+                    className="flex w-full items-center px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700"
+                  >
                     <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5" />
                     Sign out
                   </button>

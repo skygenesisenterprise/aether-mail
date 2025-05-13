@@ -1,18 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import EmailList, { type Email } from './EmailList';
 import EmailViewer from './EmailViewer';
 import EmailComposer from './EmailComposer';
 import { generateId } from '../../lib/utils';
 
 const EmailInbox: React.FC = () => {
-  // Initialiser l'état avec un tableau vide
+  const { folder } = useParams<{ folder: string }>(); // Récupérer le dossier actif depuis la route
   const [emails, setEmails] = useState<Email[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
 
-  // Check for mobile view on component mount and window resize
-  React.useEffect(() => {
+  // Charger les emails en fonction du dossier actif
+  useEffect(() => {
+    const fetchEmails = async () => {
+      try {
+        // Simuler une requête API pour récupérer les emails du dossier actif
+        const response = await fetch(`/api/emails?folder=${folder}`);
+        const data = await response.json();
+        setEmails(data);
+      } catch (error) {
+        console.error('Erreur lors du chargement des emails:', error);
+      }
+    };
+
+    fetchEmails();
+  }, [folder]);
+
+  // Vérifier si la vue est mobile
+  useEffect(() => {
     const checkForMobile = () => {
       setIsMobileView(window.innerWidth < 768);
     };
@@ -20,23 +37,23 @@ const EmailInbox: React.FC = () => {
     // Initial check
     checkForMobile();
 
-    // Add event listener for resize
+    // Ajouter un écouteur d'événement pour le redimensionnement
     window.addEventListener('resize', checkForMobile);
 
-    // Clean up
+    // Nettoyer l'écouteur
     return () => window.removeEventListener('resize', checkForMobile);
   }, []);
 
-  // Handle email selection
+  // Gérer la sélection d'un email
   const handleSelectEmail = (emailToSelect: Email) => {
-    // Mark as read when selecting
+    // Marquer comme lu lors de la sélection
     if (!emailToSelect.isRead) {
       const updatedEmails = emails.map(e =>
         e.id === emailToSelect.id ? { ...e, isRead: true } : e
       );
       setEmails(updatedEmails);
 
-      // Create a new object with isRead set to true
+      // Créer un nouvel objet avec isRead défini sur true
       const updatedEmail = { ...emailToSelect, isRead: true };
       setSelectedEmail(updatedEmail);
     } else {
@@ -44,7 +61,7 @@ const EmailInbox: React.FC = () => {
     }
   };
 
-  // Handle starring emails
+  // Gérer l'ajout ou la suppression d'une étoile
   const handleStarEmail = (email: Email) => {
     const updatedEmails = emails.map(e =>
       e.id === email.id ? { ...e, isStarred: !e.isStarred } : e
@@ -56,32 +73,31 @@ const EmailInbox: React.FC = () => {
     }
   };
 
-  // Handle deleting emails
+  // Gérer la suppression d'un email
   const handleDeleteEmail = (email: Email) => {
-    // In a real app, this would send a request to the server
     const updatedEmails = emails.filter(e => e.id !== email.id);
     setEmails(updatedEmails);
     setSelectedEmail(null);
   };
 
-  // Handle replying to emails
+  // Gérer la réponse à un email
   const handleReplyEmail = (email: Email) => {
     setIsComposerOpen(true);
   };
 
-  // Handle forwarding emails
+  // Gérer le transfert d'un email
   const handleForwardEmail = (email: Email) => {
     setIsComposerOpen(true);
   };
 
-  // Close the selected email on mobile
+  // Fermer la vue de l'email sélectionné sur mobile
   const handleCloseEmailView = () => {
     setSelectedEmail(null);
   };
 
   return (
     <div className="flex h-full">
-      {/* Email List - hidden on mobile when an email is selected */}
+      {/* Liste des emails - masquée sur mobile lorsqu'un email est sélectionné */}
       <div
         className={`flex-1 ${isMobileView && selectedEmail ? 'hidden' : 'block'} md:block md:w-96 md:flex-none`}
       >
@@ -92,9 +108,8 @@ const EmailInbox: React.FC = () => {
         />
       </div>
 
-      {/* Email Viewer */}
+      {/* Vue de l'email sélectionné */}
       {isMobileView ? (
-        // Mobile view
         selectedEmail && (
           <EmailViewer
             email={selectedEmail}
@@ -107,7 +122,6 @@ const EmailInbox: React.FC = () => {
           />
         )
       ) : (
-        // Desktop view
         <div className="hidden flex-1 md:block">
           <EmailViewer
             email={selectedEmail}
@@ -119,7 +133,7 @@ const EmailInbox: React.FC = () => {
         </div>
       )}
 
-      {/* Composer Modal */}
+      {/* Modale de composition d'email */}
       <EmailComposer
         isOpen={isComposerOpen}
         onClose={() => setIsComposerOpen(false)}
@@ -128,7 +142,7 @@ const EmailInbox: React.FC = () => {
         replyToEmail={!!selectedEmail}
       />
 
-      {/* Floating Compose Button (Mobile) */}
+      {/* Bouton flottant pour composer un email (Mobile) */}
       <button
         className="fixed bottom-6 right-6 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-aether-primary shadow-lg hover:bg-aether-accent focus:outline-none md:hidden"
         onClick={() => setIsComposerOpen(true)}
