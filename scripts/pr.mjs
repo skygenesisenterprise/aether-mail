@@ -30,7 +30,15 @@ const main = async () => {
 
   // Ajouter une entrée au changelog
   const date = new Date().toISOString().split('T')[0]; // Date au format YYYY-MM-DD
-  const changelogEntry = `## ${date}\n\n- **Branche** : ${answers.branch}\n- **Message** : ${answers.commit}\n\n`;
+  let changelogEntry = `## ${date}\n\n- **Branche** : ${answers.branch}\n- **Message** : ${answers.commit}\n`;
+
+  // Récupérer les informations de l'utilisateur ayant effectué la dernière modification avec Git
+  try {
+    const gitLog = execSync(`git log -1 --pretty=format:"%an <%ae>" -- ${changelogPath}`).toString().trim();
+    changelogEntry += `- **Dernière modification par** : ${gitLog}\n\n`;
+  } catch (error) {
+    changelogEntry += `- **Dernière modification par** : Non disponible\n\n`;
+  }
 
   if (!fs.existsSync(changelogPath)) {
     console.log('📄 Création du fichier changelog.md...');
@@ -38,19 +46,6 @@ const main = async () => {
   } else {
     console.log('✏️ Mise à jour du fichier changelog.md...');
     fs.appendFileSync(changelogPath, changelogEntry);
-
-    // Afficher la date et l'heure de la dernière modification
-    const stats = fs.statSync(changelogPath);
-    const lastModified = new Date(stats.mtime).toLocaleString();
-    console.log(`🕒 Dernière modification du fichier changelog.md : ${lastModified}`);
-
-    // Récupérer les informations de la dernière modification avec Git
-    try {
-      const gitLog = execSync(`git log -1 --pretty=format:"%an <%ae>" -- ${changelogPath}`).toString().trim();
-      console.log(`👤 Dernière modification par : ${gitLog}`);
-    } catch (error) {
-      console.log("⚠️ Impossible de récupérer les informations de la dernière modification avec Git.");
-    }
   }
 
   // Exécuter les commandes Git
