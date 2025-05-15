@@ -1,6 +1,12 @@
 {
-  "watch": ["src"],
-  "ext": "ts,json",
-  "ignore": ["dist"],
-  "exec": "ts-node-esm ./src/api/server.ts"
+  "watch": ["src", "api"], 
+  "ext": "ts,json", 
+  "ignore": ["dist", "node_modules", "logs"], 
+  "exec": "node --loader ts-node/esm --experimental-specifier-resolution=node ./api/server.ts", 
+  "env": {
+    "NODE_ENV": "development",
+    "NODE_NO_WARNINGS": "1" 
+  },
+  "delay": "500", 
+  "verbose": true 
 }
