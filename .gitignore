@@ -86,7 +86,7 @@ dist
 
 # Gatsby files
 .cache/
-private
+private/
 
 # Vuepress build output
 .vuepress/dist
@@ -155,3 +155,14 @@ debug.log
 # Apache file 
 *.log
 .htaccess
+
+# PGP keys file 
+*.gpg
+*.asc
+pgp-private-key.txt
+
+# SSH keys file
+*.pem
+
+# SSH config file
+.ssh/config

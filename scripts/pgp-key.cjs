@@ -21,7 +21,7 @@ const path = require('path');
 
     // Chemins pour enregistrer les clés
     const publicKeyPath = path.join(__dirname, '../public/pgp-key.txt');
-    const privateKeyPath = path.join(__dirname, '../private/pgp-private-key.txt');
+    const privateKeyPath = path.join(__dirname, '../public/pgp-private-key.txt');
 
     // Enregistrer la clé publique dans le répertoire public
     fs.writeFileSync(publicKeyPath, publicKey, 'utf8');

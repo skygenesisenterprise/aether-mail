@@ -1,7 +1,7 @@
 {
-  "displayName": "Aether Mail OS",
+  "displayName": "Aether Mail",
   "license": "AGPL-3.0 license",
-  "description": "Aether Mail OS is a modern, open-source email client built with React, Vite, and Tailwind CSS. It offers a sleek and intuitive interface for managing your emails efficiently.",
+  "description": "Aether Mail is a modern, open-source email client built with React, Vite, and Tailwind CSS. It offers a sleek and intuitive interface for managing your emails efficiently.",
   "author": "Sky Genesis Enterprise",
   "email": "contact@skygenesisenterprise.com",
   "name": "react-vite-tailwind",
@@ -45,7 +45,8 @@
     "docker:clean": "docker system prune -f --volumes",
     "docker:logs": "docker-compose logs -f",
     "docker:exec:backend": "docker exec -it aether-mail-backend sh",
-    "docker:exec:frontend": "docker exec -it aether-mail-frontend sh"
+    "docker:exec:frontend": "docker exec -it aether-mail-frontend sh",
+    "pgp-keygen": "node scripts/pgp-key.cjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
