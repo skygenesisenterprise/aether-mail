@@ -124,12 +124,20 @@ Configuration files are located in the `config` directory. You can customize the
 We welcome contributions from the community! If you'd like to contribute to Aether Mail, please follow these steps:
 
 1. Fork the repository.
+2. Use the command `npm run pr` to create a Pull Request easily:
+   - You will be prompted to enter the name of your branch and your commit message.
+   - The script will handle creating the branch, committing your changes, and pushing the branch to the remote repository.
+3. Once the branch is pushed, create a new Pull Request on GitHub.
+
+Please ensure your code adheres to our coding standards and includes appropriate tests.
+
+For manual contributions, you can follow these steps:
+
+1. Fork the repository.
 2. Create a new branch (`git checkout -b feature/your-feature`).
 3. Make your changes and commit them (`git commit -am 'Add your feature'`).
 4. Push to the branch (`git push origin feature/your-feature`).
 5. Create a new Pull Request.
-
-Please ensure your code adheres to our coding standards and includes appropriate tests.
 
 ## Contact
 
