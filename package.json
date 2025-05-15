@@ -55,6 +55,7 @@
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
+    "electron-is-dev": "^3.0.1",
     "express-validator": "^7.2.1",
     "framer-motion": "^12.6.5",
     "helmet": "^8.1.0",
