@@ -33,10 +33,19 @@
     "start:frontend": "vite preview",
     "start": "npm run start:backend & npm run start:frontend",
     "electron": "electron ./electron/main.cjs",
-    "docker:build": "docker build -t aether-mail-os .",
-    "docker:run": "docker run -p 5000:5000 aether-mail-os",
-    "docker:compose:up": "docker-compose up",
-    "docker:compose:down": "docker-compose down"
+    "docker:build": "docker build -t aether-mail .",
+    "docker:build:dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml build",
+    "docker:build:prod": "docker-compose -f docker-compose.yml -f docker-compose.prod.yml build",
+    "docker:run": "docker run -p 5000:5000 aether-mail",
+    "docker:up": "docker-compose up",
+    "docker:up:dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up",
+    "docker:up:prod": "docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d",
+    "docker:down": "docker-compose down",
+    "docker:restart": "docker-compose down && docker-compose up",
+    "docker:clean": "docker system prune -f --volumes",
+    "docker:logs": "docker-compose logs -f",
+    "docker:exec:backend": "docker exec -it aether-mail-backend sh",
+    "docker:exec:frontend": "docker exec -it aether-mail-frontend sh"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

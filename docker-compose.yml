@@ -5,20 +5,47 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV} # Passer l'environnement comme argument de construction
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000" # Limiter l'accès au backend à localhost
     volumes:
       - .:/app
       - /app/node_modules
-    command: npm run dev:backend
+    environment:
+      - NODE_ENV=${NODE_ENV} # Passer l'environnement au conteneur
+    command: >
+      sh -c "if [ ${NODE_ENV} = 'production' ]; then node ./dist/backend/server.js; else npm run dev:backend; fi"
+    networks:
+      - backend_network
+      - frontend_network
 
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV} # Passer l'environnement comme argument de construction
     ports:
-      - "3000:3000"
+      - "5173:5173"
     volumes:
       - .:/app
       - /app/node_modules
-    command: npm run dev:frontend
+    environment:
+      - NODE_ENV=${NODE_ENV} # Passer l'environnement au conteneur
+    command: >
+      sh -c "if [ ${NODE_ENV} = 'production' ]; then vite preview; else npm run dev:frontend; fi"
+    networks:
+      - frontend_network
+
+networks:
+  frontend_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
+  backend_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.2.0/24
