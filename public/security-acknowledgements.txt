@@ -1,0 +1,32 @@
+# Security Acknowledgements
+
+We would like to thank the following individuals and organizations for their contributions to the security of Aether Mail:
+
+## Researchers
+- Team contact (research@skygenesisenterprise.com)  
+  For identifying and reporting a critical vulnerability in the authentication system.
+
+- Liam Dispa (@liamvnastoria)  
+  For discovering and responsibly disclosing a cross-site scripting (XSS) issue in the email viewer.
+
+## Organizations
+- Sky Genesis Enterprise  
+  For conducting a comprehensive penetration test and providing detailed recommendations.
+
+- Open Source Security Foundation (OpenSSF)  
+  For their guidance and best practices on secure software development.
+
+## Tools and Resources
+- OWASP ZAP  
+  For helping us identify and mitigate vulnerabilities during development.
+
+- OpenPGP.js  
+  For enabling secure communication and encryption in our application.
+
+## Special Thanks
+- The Aether Mail development team  
+  For their dedication to building a secure and reliable email platform.
+
+---
+
+If you have contributed to the security of Aether Mail and would like to be acknowledged, please contact us at security@skygenesisenterprise.com.
