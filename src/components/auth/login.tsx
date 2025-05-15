@@ -1,46 +1,73 @@
 import React, { useState } from 'react';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Simuler une validation simple
-    if (!email || !password) {
+    if (!username || !password) {
       setError('Please fill in all fields.');
+      setSuccess('');
       return;
     }
 
-    // Simuler une requête d'authentification
-    console.log('Logging in with:', { email, password });
-    setError(''); // Réinitialiser les erreurs
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setSuccess('Login successful!');
+        // Ici tu peux rediriger ou stocker le token si besoin
+      } else {
+        setError(data.error || 'Invalid credentials.');
+      }
+    } catch (err) {
+      setError('Error connecting to server.');
+    }
   };
 
   return (
-    <div className="flex h-full items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md dark:bg-gray-800">
-        <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-white">Login to Webmail</h1>
-        <form onSubmit={handleSubmit} className="mt-6">
-          {error && <div className="mb-4 text-sm text-red-500">{error}</div>}
+    <div className="min-h-screen flex items-center justify-center bg-cover bg-center" style={{
+      backgroundImage: "url('https://c.wallhere.com/photos/da/70/digital_art_landscape_illustration_skyline-2285476.jpg!d')"
+    }}>
+      <div className="relative w-full max-w-md p-8 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-md text-white">
+        <div className="absolute bottom-2 right-4 text-xs text-white/80 font-sans">
+          Powered by Sky Genesis Enterprise
+        </div>
+        <h1 className="text-3xl font-bold text-center mb-6">Login</h1>
+        <form onSubmit={handleSubmit}>
+          {error && (
+            <div className="mb-4 text-sm text-red-400 text-center">{error}</div>
+          )}
+          {success && (
+            <div className="mb-4 text-sm text-green-400 text-center">{success}</div>
+          )}
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Email
+            <label htmlFor="username" className="block text-sm font-medium mb-1">
+              Username
             </label>
             <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-aether-primary focus:ring-aether-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-              placeholder="you@example.com"
+              type="text"
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full rounded-md border border-white/30 bg-transparent px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white"
+              placeholder="Your username"
               required
             />
           </div>
           <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="password" className="block text-sm font-medium mb-1">
               Password
             </label>
             <input
@@ -48,22 +75,31 @@ const Login: React.FC = () => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-aether-primary focus:ring-aether-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              className="w-full rounded-md border border-white/30 bg-transparent px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white"
               placeholder="••••••••"
               required
             />
           </div>
+          <div className="flex items-center justify-between text-sm mb-6">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" className="accent-white" />
+              Remember me
+            </label>
+            <a href="/recover" className="text-white hover:underline">
+              Forgot password?
+            </a>
+          </div>
           <button
             type="submit"
-            className="w-full rounded-md bg-aether-primary px-4 py-2 text-white hover:bg-aether-accent focus:outline-none focus:ring-2 focus:ring-aether-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+            className="w-full bg-white text-gray-900 font-semibold py-2 rounded-md hover:bg-gray-200 transition"
           >
             Login
           </button>
         </form>
-        <div className="mt-4 text-sm text-center text-gray-600 dark:text-gray-400">
-          Forgot your password?{' '}
-          <a href="/recover" className="text-aether-primary hover:underline">
-            Recover it here
+        <div className="mt-6 text-sm text-center text-white/80">
+          Don't have an account?{' '}
+          <a href="/register" className="font-semibold text-white hover:underline">
+            Register here!
           </a>
         </div>
       </div>

@@ -16,3 +16,9 @@
 - **Message** : Mise à jour de l'integration electron 
 - **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
 
+## 2025-05-15
+
+- **Branche** : feature/interface
+- **Message** : Mise à jour des pages login, recover et register 
+- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+
