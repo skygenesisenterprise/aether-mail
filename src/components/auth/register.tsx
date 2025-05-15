@@ -1,52 +1,97 @@
 import React, { useState } from 'react';
 
+const DOMAIN = '@aethermail.me';
+
 const Register: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const email = username ? `${username}${DOMAIN}` : '';
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation simple
-    if (!email || !password || !confirmPassword) {
+    if (!username || !password || !confirmPassword) {
       setError('Please fill in all fields.');
+      setSuccess('');
       return;
     }
-
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
+      setSuccess('');
       return;
     }
 
-    // Simuler une requête d'inscription
-    console.log('Registering with:', { email, password });
-    setError(''); // Réinitialiser les erreurs
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setSuccess('Account created! You can now log in.');
+      } else {
+        setError(data.error || 'Failed to create account.');
+      }
+    } catch (err) {
+      setError('Error connecting to server.');
+    }
   };
 
   return (
-    <div className="flex h-full items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md dark:bg-gray-800">
-        <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-white">Create an Account</h1>
-        <form onSubmit={handleSubmit} className="mt-6">
-          {error && <div className="mb-4 text-sm text-red-500">{error}</div>}
+    <div className="min-h-screen flex items-center justify-center bg-cover bg-center" style={{
+      backgroundImage: "url('https://c.wallhere.com/photos/da/70/digital_art_landscape_illustration_skyline-2285476.jpg!d')"
+    }}>
+      <div className="relative w-full max-w-md p-8 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-md text-white">
+        <div className="absolute bottom-2 right-4 text-xs text-white/80 font-sans">
+          Powered by Sky Genesis Enterprise
+        </div>
+        <h1 className="text-3xl font-bold text-center mb-6">Register</h1>
+        <form onSubmit={handleSubmit}>
+          {error && (
+            <div className="mb-4 text-sm text-red-400 text-center">{error}</div>
+          )}
+          {success && (
+            <div className="mb-4 text-sm text-green-400 text-center">{success}</div>
+          )}
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Email
+            <label htmlFor="username" className="block text-sm font-medium mb-1">
+              Username
             </label>
             <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-aether-primary focus:ring-aether-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-              placeholder="you@example.com"
+              type="text"
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.replace(/\s/g, '').toLowerCase())}
+              className="w-full rounded-md border border-white/30 bg-transparent px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white"
+              placeholder="user.name"
               required
+              autoComplete="username"
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="email" className="block text-sm font-medium mb-1">
+              Email (suggested)
+            </label>
+            <input
+              type="text"
+              id="email"
+              value={email}
+              className="w-full rounded-md border border-white/30 bg-gray-700/30 px-4 py-2 text-white placeholder-white/70 focus:outline-none"
+              placeholder={`user.name${DOMAIN}`}
+              disabled
+              readOnly
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="password" className="block text-sm font-medium mb-1">
               Password
             </label>
             <input
@@ -54,13 +99,14 @@ const Register: React.FC = () => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-aether-primary focus:ring-aether-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              className="w-full rounded-md border border-white/30 bg-transparent px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white"
               placeholder="••••••••"
               required
+              autoComplete="new-password"
             />
           </div>
           <div className="mb-6">
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1">
               Confirm Password
             </label>
             <input
@@ -68,22 +114,23 @@ const Register: React.FC = () => {
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-aether-primary focus:ring-aether-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              className="w-full rounded-md border border-white/30 bg-transparent px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white"
               placeholder="••••••••"
               required
+              autoComplete="new-password"
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-md bg-aether-primary px-4 py-2 text-white hover:bg-aether-accent focus:outline-none focus:ring-2 focus:ring-aether-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+            className="w-full bg-white text-gray-900 font-semibold py-2 rounded-md hover:bg-gray-200 transition"
           >
             Register
           </button>
         </form>
-        <div className="mt-4 text-sm text-center text-gray-600 dark:text-gray-400">
+        <div className="mt-6 text-sm text-center text-white/80">
           Already have an account?{' '}
-          <a href="/login" className="text-aether-primary hover:underline">
-            Login here
+          <a href="/login" className="font-semibold text-white hover:underline">
+            Login here!
           </a>
         </div>
       </div>
