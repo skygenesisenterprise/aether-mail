@@ -38,6 +38,19 @@ const main = async () => {
   } else {
     console.log('✏️ Mise à jour du fichier changelog.md...');
     fs.appendFileSync(changelogPath, changelogEntry);
+
+    // Afficher la date et l'heure de la dernière modification
+    const stats = fs.statSync(changelogPath);
+    const lastModified = new Date(stats.mtime).toLocaleString();
+    console.log(`🕒 Dernière modification du fichier changelog.md : ${lastModified}`);
+
+    // Récupérer les informations de la dernière modification avec Git
+    try {
+      const gitLog = execSync(`git log -1 --pretty=format:"%an <%ae>" -- ${changelogPath}`).toString().trim();
+      console.log(`👤 Dernière modification par : ${gitLog}`);
+    } catch (error) {
+      console.log("⚠️ Impossible de récupérer les informations de la dernière modification avec Git.");
+    }
   }
 
   // Exécuter les commandes Git
