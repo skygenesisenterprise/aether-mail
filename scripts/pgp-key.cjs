@@ -21,16 +21,10 @@ const path = require('path');
 
     // Chemins pour enregistrer les clés
     const publicKeyPath = path.join(__dirname, '../public/pgp-key.txt');
-    const privateKeyPath = path.join(__dirname, '../public/pgp-private-key.txt');
 
     // Enregistrer la clé publique dans le répertoire public
     fs.writeFileSync(publicKeyPath, publicKey, 'utf8');
     console.log(`Clé publique enregistrée dans : ${publicKeyPath}`);
-
-    // Enregistrer la clé privée dans un répertoire sécurisé
-    fs.mkdirSync(path.join(__dirname, '../private'), { recursive: true });
-    fs.writeFileSync(privateKeyPath, privateKey, 'utf8');
-    console.log(`Clé privée enregistrée dans : ${privateKeyPath}`);
 
     console.log('Clés PGP générées avec succès.');
   } catch (error) {

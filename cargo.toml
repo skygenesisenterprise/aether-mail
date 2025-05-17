@@ -1,0 +1,23 @@
+[package]
+name = "mail_crypto"
+version = "0.1.0"
+edition = "2021"
+authors = "Sky Genesis Enterprise <contact@skygenesisenterprise.com>"
+description = "Crypto Rust WASM for Aether Mail"
+license = "AGPL 3.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+
+# Ajoute ici d'autres crates utiles pour la crypto, par exemple :
+# aes = "0.8"
+# rand = "0.8"
+# base64 = "0.21"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
