@@ -22,3 +22,9 @@
 - **Message** : Mise à jour des pages login, recover et register 
 - **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
 
+## 2025-05-17
+
+- **Branche** : feature/backend
+- **Message** : Mise à jour de la partie backend
+- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+
