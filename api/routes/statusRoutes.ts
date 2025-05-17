@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { markRead, markUnread } from '../controllers/statusController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import authMiddleware from '../middlewares/authMiddleware';
 
 const router = Router();
 router.use(authMiddleware);

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { sendMail, getInbox, deleteMail } from '../controllers/mailController';
-import { authMiddleware } from '../middlewares/authMiddleware';
-// import { validateSendMail } from '../middlewares/validateMiddleware';
+import authMiddleware from '../middlewares/authMiddleware';
+import { validateSendMail } from '../middlewares/validateMiddleware';
 
 const router = Router();
 router.use(authMiddleware);
