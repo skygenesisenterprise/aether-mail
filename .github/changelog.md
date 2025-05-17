@@ -34,3 +34,15 @@
 - **Message** : Mise en place de Rust et Update backend 
 - **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
 
+## 2025-05-17
+
+- **Branche** : feature/backend
+- **Message** : Correction des bugs de démarrage backend
+- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+
+## 2025-05-17
+
+- **Branche** : feature/api
+- **Message** : Correction de bugs backend 
+- **Dernière modification par** : liamvnastoria <liam.dispa@skygenesisenterprise.com>
+

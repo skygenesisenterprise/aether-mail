@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { listFolders, createFolder, deleteFolder } from '../controllers/folderController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import authMiddleware from '../middlewares/authMiddleware';
 // import { validateCreateFolder } from '../middlewares/validateMiddleware';
 
 const router = Router();
