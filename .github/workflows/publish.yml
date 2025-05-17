@@ -19,7 +19,7 @@ jobs:
 
       # Étape 2 : Déployer sur le serveur webmail.skygenesisenterprise.com via FTP
       - name: Upload Aether Mail to webmail.skygenesisenterprise.com
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER_WEBMAIL }}
