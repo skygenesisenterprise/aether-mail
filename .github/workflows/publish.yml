@@ -53,7 +53,7 @@ jobs:
 
       # Étape 6 : Publier sur l'App Store via Fastlane
       - name: Deploy to Apple App Store
-        uses: maierj/fastlane-action@v3.0.0
+        uses: maierj/fastlane-action@v3.1.0
         with:
           lane: "appstore"  # Nom de la lane Fastlane pour publier
         env:
