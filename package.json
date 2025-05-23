@@ -103,7 +103,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.2",
-    "electron": "^35.2.0",
+    "electron": "^36.3.1",
     "eletron": "^0.0.1-security",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
