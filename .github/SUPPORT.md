@@ -19,7 +19,7 @@ Please use one of the following channels:
 
 - 💬 [GitHub Discussions](https://github.com/Sky-Genesis-Enterprise/aether-mail/discussions)
 - 🐞 [GitHub Issues](https://github.com/Sky-Genesis-Enterprise/aether-mail/issues) – for bug reports only
-- 📚 [Documentation](https://docs.skygenesisenterprise.com)
+- 📚 [Documentation](https://wiki.skygenesisenterprise.com)
 
 Our community and contributors will do their best to assist.
 
@@ -47,7 +47,7 @@ If you discover a security vulnerability, please **do not open a public issue**.
 
 Instead, report it responsibly to our security team:
 
-🔒 [security@skygenesis.io](mailto:security@skygenesis.io)
+🔒 [security@skygenesisenterprise.com](mailto:security@skygenesisenterprise.com)
 
 ---
 

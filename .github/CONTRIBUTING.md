@@ -33,7 +33,7 @@ Please make sure you read and respect it before contributing.
 Use the GitHub UI to create a fork, then clone it locally:
 
 ```bash
-git clone https://github.com/your-username/aether-mail.git
+git clone https://github.com/Sky-Genesis-Enterprise/aether-mail.git
 cd aether-mail
 ````
 

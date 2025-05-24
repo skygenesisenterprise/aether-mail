@@ -7,6 +7,8 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  release:
+    types: [published]
 
 jobs:
   build:
@@ -26,4 +28,3 @@ jobs:
 
     - name: Compile TypeScript
       run: npm run build
-        

@@ -160,3 +160,7 @@ pgp-private-key.txt
 
 # Node.js lock file
 package-lock.json
+
+#Python Environment
+.venv
+*storybook.log
