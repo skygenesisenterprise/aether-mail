@@ -46,3 +46,15 @@
 - **Message** : Correction de bugs backend 
 - **Dernière modification par** : liamvnastoria <liam.dispa@skygenesisenterprise.com>
 
+## 2025-05-24
+
+- **Branche** : fix/backend
+- **Message** : Correction backend 
+- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+
+## 2025-05-24
+
+- **Branche** : fix/api
+- **Message** : Correction du backend API
+- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+

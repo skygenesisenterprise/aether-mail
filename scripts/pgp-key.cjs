@@ -19,12 +19,18 @@ const path = require('path');
       passphrase: user.passphrase, // Passphrase pour protéger la clé privée
     });
 
-    // Chemins pour enregistrer les clés
-    const publicKeyPath = path.join(__dirname, '../public/pgp-key.txt');
+    // Chemin pour enregistrer la clé publique dans dist/frontend
+    const distFrontendDir = path.join(__dirname, '..', 'dist', 'frontend');
+    if (!fs.existsSync(distFrontendDir)) fs.mkdirSync(distFrontendDir, { recursive: true });
 
-    // Enregistrer la clé publique dans le répertoire public
+    const publicKeyPath = path.join(distFrontendDir, 'public.pgp');
     fs.writeFileSync(publicKeyPath, publicKey, 'utf8');
     console.log(`Clé publique enregistrée dans : ${publicKeyPath}`);
+
+    // (Optionnel) Tu peux aussi stocker la clé privée si besoin
+    const privateKeyPath = path.join(distFrontendDir, 'private.pgp');
+    fs.writeFileSync(privateKeyPath, privateKey, 'utf8');
+    console.log(`Clé Privé enregistrée dans : ${publicKeyPath}`);
 
     console.log('Clés PGP générées avec succès.');
   } catch (error) {

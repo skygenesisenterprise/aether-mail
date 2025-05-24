@@ -66,7 +66,7 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const response = await fetch('/api/email-counts'); // Remplacez par votre API réelle
+        const response = await fetch('/api/v1/email-counts');
         const data = await response.json();
         setCounts({
           inbox: data.inbox,
@@ -76,7 +76,7 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
           trash: data.trash,
         });
       } catch (error) {
-        console.error("Erreur lors de la récupération des comptes :", error);
+        console.error("Erreur lors de la récupération du compte :", error);
       }
     };
 

@@ -18,7 +18,7 @@ const Recover: React.FC = () => {
     setSuccess('');
 
     try {
-      const response = await fetch('/api/recover', {
+      const response = await fetch('/api/v1/recover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier }),
