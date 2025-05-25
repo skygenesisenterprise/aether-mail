@@ -58,3 +58,9 @@
 - **Message** : Correction du backend API
 - **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
 
+## 2025-05-25
+
+- **Branche** : feature/docs
+- **Message** : Mise en place de la base de la docs technique 
+- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+

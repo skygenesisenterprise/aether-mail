@@ -44,9 +44,7 @@ const app: Application = express();
 
 // CORS dynamique selon l'environnement
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://webmail.skygenesisenterprise.com'] // Domaine de production (A changer selon le besoin)
-    : ['http://localhost:5173'],                   // Domaine de développement (Environment local par défaut)
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Type', 'Authorization'],
