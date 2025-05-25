@@ -64,3 +64,9 @@
 - **Message** : Mise en place de la base de la docs technique 
 - **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
 
+## 2025-05-25
+
+- **Branche** : fix/api
+- **Message** : Correction du crash de backend 
+- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+
