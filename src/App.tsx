@@ -23,7 +23,7 @@ const App: React.FC = () => {
             element={
               <Layout>
                 <Routes>
-                  {/* Redirect root to inbox */}
+                  {/* Redirect root to login */}
                   <Route path="/" element={<Navigate to="/login" replace />} />
 
                   {/* Route dynamique pour les dossiers */}
