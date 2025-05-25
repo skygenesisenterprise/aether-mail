@@ -1,4 +1,6 @@
-// Importation des modules nécessaires
+// =====================
+// Imports
+// =====================
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -6,6 +8,13 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
+import multer from 'multer';
+import pino from 'pino';
+import swaggerUi from 'swagger-ui-express';
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
+import { body, validationResult } from 'express-validator';
+import compression from 'compression';
 
 // Routes
 import authRoutes from './routes/authRoutes';
@@ -14,6 +23,9 @@ import mailRoutes from './routes/mailRoutes';
 import statusRoutes from './routes/statusRoutes';
 import imapRoutes from './routes/imapRoutes';
 // import settingRoutes from './routes/settingRoutes';
+
+// Documentation
+import swaggerDocument from '../docs/swagger.json' assert { type: 'json' };
 
 // Middlewares
 import { errorMiddleware } from './middlewares/errorMiddleware';
@@ -32,25 +44,23 @@ const validateEnv = () => {
 validateEnv();
 
 // =====================
-// Création de l'app
+// Initialisation
 // =====================
 const app: Application = express();
+const logger = pino();
+const upload = multer({ dest: 'uploads/' });
 
 // =====================
-// Sécurité & middlewares globaux
+// Middlewares globaux (sécurité, parsing, logs)
 // =====================
-
-// Sécurité HTTP
 app.use(helmet());
 app.use(helmet.frameguard({ action: 'deny' })); // Protection clickjacking
-
-// Logs
 app.use(morgan('dev'));
-
-// Protection contre les attaques courantes
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(mongoSanitize());
+app.use(cookieParser());
+app.use(compression());
 
 // Activation conditionnelle de xss-clean et csurf selon l'environnement
 if (process.env.NODE_ENV === 'production') {
@@ -129,9 +139,13 @@ const authLimiter = rateLimit({
 app.use('/api/v1/login', authLimiter);
 
 // =====================
+// Session
+// =====================
+app.use(session({ secret: process.env.SESSION_SECRET || 'secret', resave: false, saveUninitialized: true }));
+
+// =====================
 // Routing API
 // =====================
-
 const apiRouter = express.Router();
 apiRouter.use(authRoutes);
 apiRouter.use(folderRoutes);
@@ -143,24 +157,25 @@ apiRouter.use(imapRoutes);
 app.use('/api/v1', apiRouter);
 
 // =====================
+// Documentation API
+// =====================
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// =====================
 // Gestion des erreurs & 404
 // =====================
-
 app.use((req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
-
 app.use(errorMiddleware);
 
 // =====================
 // Gestion des exceptions non catchées
 // =====================
-
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
   process.exit(1);
 });
-
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
@@ -168,7 +183,6 @@ process.on('unhandledRejection', (reason, promise) => {
 // =====================
 // Démarrage du serveur
 // =====================
-
 const PORT = Number(process.env.PORT) || 3000;
 
 try {
