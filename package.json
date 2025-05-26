@@ -70,7 +70,7 @@
     "express-validator": "^7.2.1",
     "framer-motion": "^12.6.5",
     "helmet": "^8.1.0",
-    "inquirer": "^8.2.6",
+    "inquirer": "^12.6.3",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.487.0",
     "mailparser": "^3.7.2",
