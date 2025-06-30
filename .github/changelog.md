@@ -76,3 +76,9 @@
 - **Message** : Ajout de nouvelle feature backend 
 - **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
 
+## 2025-06-30
+
+- **Branche** : feature/login
+- **Message** : Mise à jour de la page de login
+- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+
