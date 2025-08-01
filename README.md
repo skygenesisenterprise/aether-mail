@@ -22,7 +22,7 @@ Aether Mail is an open-source email client developed by [Sky Genesis Enterprise]
 1. **Clone the Repository**
 
     ```bash
-    git clone https://github.com/Sky-Genesis-Enterprise/aether-mail.git
+    git clone https://github.com/skygenesisenterprise/aether-mail.git
     cd aether-mail
     ```
 
@@ -70,7 +70,7 @@ You can deploy Aether Mail using Docker for a containerized and consistent envir
     Clone the repository if you haven't already:
 
     ```bash
-    git clone https://github.com/Sky-Genesis-Enterprise/aether-mail.git
+    git clone https://github.com/skygenesisenterprise/aether-mail.git
     cd aether-mail
     ```
 
