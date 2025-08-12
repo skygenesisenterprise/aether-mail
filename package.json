@@ -51,7 +51,9 @@
     "py:venv": "source .venv/bin/activate",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "build:storybook": "storybook build",
+    "build:tor": "bash scripts/build-tor.sh"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
