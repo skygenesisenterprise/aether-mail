@@ -15,7 +15,7 @@ jobs:
     steps:
       # Étape 1 : Cloner le dépôt
       - name: Checkout Aether Mail repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Étape 2 : Déployer sur le serveur webmail.skygenesisenterprise.com via FTP
       - name: Upload Aether Mail to webmail.skygenesisenterprise.com
