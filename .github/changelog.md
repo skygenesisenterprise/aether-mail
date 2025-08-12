@@ -88,3 +88,9 @@
 - **Message** : Ajout de script bash pour déploiement d'un serveur tor
 - **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
 
+## 2025-08-12
+
+- **Branche** : feature/config
+- **Message** : Mise en place de la config du déploiment du serveur web publique
+- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+

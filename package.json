@@ -53,7 +53,9 @@
     "build-storybook": "storybook build",
     "prepare": "husky install",
     "build:storybook": "storybook build",
-    "build:tor": "bash scripts/build-tor.sh"
+    "build:tor": "bash scripts/build-tor.sh",
+    "build:electron": "electron-builder --config electron-builder.json",
+    "build:web-server": "bash scripts/web-deploy.sh"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
