@@ -82,3 +82,9 @@
 - **Message** : Mise à jour de la page de login
 - **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
 
+## 2025-08-12
+
+- **Branche** : feature/tor
+- **Message** : Ajout de script bash pour déploiement d'un serveur tor
+- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+
