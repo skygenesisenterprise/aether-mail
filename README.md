@@ -1,5 +1,9 @@
 # Aether Mail Open-Source client
 
+<p align="center">
+  <img src="./assets/assets.png" alt="Aether Mail Screenshot" width="300">
+</p>
+
 Aether Mail is an open-source email client developed by [Sky Genesis Enterprise](https://skygenesisenterprise.com). It aims to provide a secure, efficient, and user-friendly email experience. This repository contains the source code for Aether Mail, allowing developers to contribute, customize, and deploy their own instances.
 
 ## Features
