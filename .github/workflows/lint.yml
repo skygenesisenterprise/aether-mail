@@ -1,19 +1,29 @@
-permissions:
-  contents: read
 name: Lint & Format Check
 
 on:
-  pull_request:
-    branches: [ main, dev ]
+  pull_request:    # S'exécute sur toutes les PRs, toutes branches
+
+permissions:
+  contents: read   # Permet de lire le code source du repo
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npm run lint || true      # Exemple: ESLint
-      - run: npm run format:check || true # Exemple: Prettier
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint || true   # Ne bloque pas la PR en cas d'erreur
+
+      - name: Check Prettier formatting
+        run: npm run format:check || true   # Ne bloque pas la PR en cas d'erreur
+

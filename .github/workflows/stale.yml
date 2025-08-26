@@ -1,18 +1,20 @@
 name: Mark stale issues and PRs
-permissions:
-  contents: read
-  issues: write
-  pull-requests: write
 
 on:
   schedule:
     - cron: '0 0 * * *' # Every day at midnight UTC
 
+permissions:
+  contents: read        # Pour accéder au code et au repo
+  issues: write          # Pour marquer/fermer les issues
+  pull-requests: write   # Pour marquer/fermer les PRs
+
 jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v9
+      - name: Mark stale issues and PRs
+        uses: actions/stale@v9
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-issue-message: >

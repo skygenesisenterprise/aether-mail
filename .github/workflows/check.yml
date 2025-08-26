@@ -1,17 +1,26 @@
-permissions:
-  contents: read
 name: TypeScript Check
 
 on:
   pull_request:
 
+permissions:
+  contents: read    # Permet de lire le code source du repo
+
 jobs:
   ts-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npx tsc --noEmit || true
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit || true   # Continue on error without blocking PR
+
