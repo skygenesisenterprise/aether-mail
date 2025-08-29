@@ -141,7 +141,14 @@ app.use('/api/v1/login', authLimiter);
 // =====================
 // Session
 // =====================
-app.use(session({ secret: process.env.SESSION_SECRET || 'secret', resave: false, saveUninitialized: true }));
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'secret',
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production'
+  }
+}));
 
 // =====================
 // Routing API
