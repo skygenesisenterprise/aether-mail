@@ -13,6 +13,6 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npm test -- --coverage || true
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           fail_ci_if_error: false
