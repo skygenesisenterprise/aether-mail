@@ -13,7 +13,7 @@ router.post('/inbox', async (req: Request, res: Response) => {
 
   try {
     const mails = await fetchInboxMails({
-      username: `${username}@${config.cpanelDomain}`,
+      username: `${username}@${config.mailDomain}`,
       password,
       host: config.imapHost,
       port: config.imapPort,

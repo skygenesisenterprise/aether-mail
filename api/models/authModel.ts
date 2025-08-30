@@ -17,3 +17,12 @@ export interface User {
   imap?: ImapConfig;
   smtp?: SmtpConfig;
 }
+
+export interface ExternalAuthResponse {
+  token: string;
+  username: string;
+  email: string;
+  password?: string;
+  imap?: ImapConfig;
+  smtp?: SmtpConfig;
+}

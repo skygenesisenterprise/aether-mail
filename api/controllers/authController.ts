@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { createCpanelAccount, validateCpanelLogin } from '../services/authService';
+import { createMailAccount, validateMailLogin } from '../services/authService';
 import { loginWithExternalAuth } from '../services/authService';
 
 export async function register(req: Request, res: Response) {
@@ -9,7 +9,7 @@ export async function register(req: Request, res: Response) {
     return;
   }
 
-  const result = await createCpanelAccount({ username, email: `${username}@${process.env.CPANEL_DOMAIN}`, password });
+  const result = await createMailAccount({ username, email: `${username}@${process.env.MAIL_DOMAIN}`, password });
   if (result.success) {
     res.json({ success: true });
   } else {
@@ -22,7 +22,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ success: false, error: 'Missing fields.' });
 
-    const isValid = await validateCpanelLogin({ username, email: `${username}@${process.env.CPANEL_DOMAIN}`, password });
+    const isValid = await validateMailLogin({ username, email: `${username}@${process.env.MAIL_DOMAIN}`, password });
     if (isValid) {
       // Ici tu pourrais générer un JWT ou une session
       return res.json({ success: true });
