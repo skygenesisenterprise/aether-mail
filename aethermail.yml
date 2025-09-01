@@ -1,0 +1,134 @@
+---
+# aethermail.yml
+# Ansible playbook to provision the Aether Mail systemd service
+
+- name: Provision Aether Mail systemd service
+  hosts: all
+  become: true
+  vars:
+    aethermail_user: "aethermail"
+    aethermail_group: "aethermail"
+    aethermail_home: "/opt/aethermail"
+    aethermail_data_dir: "/var/lib/aethermail"
+    aethermail_log_dir: "/var/log/aethermail"
+    aethermail_env_file: "/etc/aethermail/aethermail.env"
+    aethermail_bin: "/opt/aethermail/bin/aethermail"     # <- chemin du binaire
+    aethermail_args: "serve --config /etc/aethermail/config.yml"
+    aethermail_workdir: "/opt/aethermail"
+    aethermail_listen_port: "8080"                        # exemple
+    # Journal/systemd tune
+    restart_policy: "on-failure"
+    restart_sec: "5s"
+
+  tasks:
+    - name: Ensure group exists
+    - ansible.builtin.group:
+        name: "{{ aethermail_group }}"
+        system: true
+
+    - name: Ensure user exists (nologin)
+    - ansible.builtin.user:
+        name: "{{ aethermail_user }}"
+        group: "{{ aethermail_group }}"
+        home: "{{ aethermail_home }}"
+        shell: /usr/sbin/nologin
+        system: true
+        create_home: false
+
+    - name: Create directories (home, data, log, etc dir)
+    - ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ aethermail_user }}"
+        group: "{{ aethermail_group }}"
+        mode: "0750"
+      loop:
+        - "{{ aethermail_home }}"
+        - "{{ aethermail_data_dir }}"
+        - "{{ aethermail_log_dir }}"
+        - "{{ aethermail_env_file | dirname }}"
+        - "/etc/aethermail"
+
+    - name: Place default env file (edit as needed)
+    - ansible.builtin.copy:
+        dest: "{{ aethermail_env_file }}"
+        owner: root
+        group: root
+        mode: "0640"
+        content: |
+          # Aether Mail environment
+          AETHERMAIL_ENV=production
+          AETHERMAIL_DATA_DIR={{ aethermail_data_dir }}
+          AETHERMAIL_LOG_DIR={{ aethermail_log_dir }}
+          AETHERMAIL_PORT={{ aethermail_listen_port }}
+          # Example secrets/DB (replace!)
+          # AETHERMAIL_DB_URL=postgres://user:pass@localhost:5432/aethermail
+
+    - name: Ensure binary path exists (if you deploy binaries here)
+    - ansible.builtin.file:
+        path: "{{ aethermail_bin | dirname }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    # (Optionnel) Déposez votre binaire ici si vous l’avez déjà compilé/packagé
+    # - name: Upload aethermail binary
+    #   ansible.builtin.copy:
+    #     src: ./aethermail
+    #     dest: "{{ aethermail_bin }}"
+    #     owner: root
+    #     group: root
+    #     mode: "0755"
+
+    - name: Install systemd unit
+    - ansible.builtin.copy:
+        dest: /etc/systemd/system/aethermail.service
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Aether Mail Service
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=notify
+          EnvironmentFile={{ aethermail_env_file }}
+          User={{ aethermail_user }}
+          Group={{ aethermail_group }}
+          WorkingDirectory={{ aethermail_workdir }}
+          ExecStart={{ aethermail_bin }} {{ aethermail_args }}
+          Restart={{ restart_policy }}
+          RestartSec={{ restart_sec }}
+          # Journald
+          StandardOutput=journal
+          StandardError=journal
+          SyslogIdentifier=aethermail
+
+          # Security hardening
+          NoNewPrivileges=true
+          PrivateTmp=true
+          ProtectSystem=full
+          ProtectHome=true
+          ProtectKernelTunables=true
+          ProtectKernelModules=true
+          ProtectControlGroups=true
+          ReadWriteDirectories={{ aethermail_data_dir }} {{ aethermail_log_dir }}
+          AmbientCapabilities=CAP_NET_BIND_SERVICE
+          CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+          LimitNOFILE=65536
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: systemd daemon-reload
+    - ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable & start service
+    - ansible.builtin.systemd:
+        name: aethermail.service
+        enabled: true
+        state: started
