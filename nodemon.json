@@ -1,5 +1,5 @@
 {
-  "watch": ["src", "api"], 
+  "watch": ["app", "api"],
   "ext": "ts,json", 
   "ignore": ["dist", "node_modules", "logs"], 
   "exec": "node --loader ts-node/esm --experimental-specifier-resolution=node ./api/server.ts", 

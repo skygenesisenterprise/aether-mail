@@ -8,7 +8,7 @@
   "files": {
     "ignoreUnknown": false,
     "ignore": ["dist", ".next", "node_modules", "build"],
-    "include": ["src/**/*.ts", "src/**/*.tsx"]
+    "include": ["app/**/*.ts", "app/**/*.tsx"]
   },
   "formatter": {
     "enabled": true,
