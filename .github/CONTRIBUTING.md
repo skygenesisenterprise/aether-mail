@@ -1,6 +1,5 @@
 ### 📄 `CONTRIBUTING.md`
 
-````markdown
 # Contributing to Aether Mail
 
 Thank you for your interest in contributing to **Aether Mail**!  
@@ -21,7 +20,7 @@ We value collaboration and are happy to accept pull requests, bug reports, and f
 
 ## 🧭 Code of Conduct
 
-We follow a [Code of Conduct](https://github.com/Sky-Genesis-Enterprise/aether-mail/CODE_OF_CONDUCT.md) to ensure a safe, respectful, and inclusive environment.  
+We follow a [Code of Conduct](https://github.com/skygenesisenterprise/aether-mail/CODE_OF_CONDUCT.md) to ensure a safe, respectful, and inclusive environment.  
 Please make sure you read and respect it before contributing.
 
 ---
@@ -33,7 +32,7 @@ Please make sure you read and respect it before contributing.
 Use the GitHub UI to create a fork, then clone it locally:
 
 ```bash
-git clone https://github.com/Sky-Genesis-Enterprise/aether-mail.git
+git clone https://github.com/skygenesisenterprise/aether-mail.git
 cd aether-mail
 ````
 
@@ -109,7 +108,7 @@ Please note that **final decisions regarding project direction, architecture, an
 
 ## 📩 Questions or Suggestions?
 
-Open a [GitHub Discussion](https://github.com/Sky-Genesis-Enterprise/aether-mail/discussions)
+Open a [GitHub Discussion](https://github.com/skygenesisenterprise/aether-mail/discussions)
 Or reach out to us at [contact@skygenesisenterprise.com](mailto:contact@skygenesisenterprise.com)
 
 Thank you for helping improve Aether Mail 💌
