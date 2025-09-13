@@ -8,15 +8,17 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
-import multer from 'multer';
-import pino from 'pino';
-import swaggerUi from 'swagger-ui-express';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import { body, validationResult } from 'express-validator';
 import compression from 'compression';
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from '../docs/swagger.json';
+// import swaggerDocument from '../docs/swagger.json' assert { type: 'json' };
 
-// Routes
+// ====================
+// Routes API
+// =====================
 import authRoutes from './routes/authRoutes';
 import folderRoutes from './routes/folderRoutes';
 import mailRoutes from './routes/mailRoutes';
@@ -25,7 +27,7 @@ import imapRoutes from './routes/imapRoutes';
 // import settingRoutes from './routes/settingRoutes';
 
 // Documentation
-import swaggerDocument from '../docs/swagger.json' assert { type: 'json' };
+// import swaggerDocument from '../docs/swagger.json' assert { type: 'json' };
 
 // Middlewares
 import { errorMiddleware } from './middlewares/errorMiddleware';
@@ -37,8 +39,8 @@ dotenv.config();
 
 const validateEnv = () => {
   if (!process.env.PORT) process.env.PORT = '3000';
-  if (!process.env.CPANEL_USER || !process.env.CPANEL_TOKEN || !process.env.CPANEL_DOMAIN || !process.env.CPANEL_HOST) {
-    console.warn('Attention : certaines variables cPanel ne sont pas définies dans .env');
+  if (!process.env.MAIL_USER || !process.env.MAIL_TOKEN || !process.env.MAIL_DOMAIN || !process.env.MAIL_HOST) {
+    console.warn('Attention : certaines variables Mail ne sont pas définies dans .env');
   }
 };
 validateEnv();
@@ -46,9 +48,7 @@ validateEnv();
 // =====================
 // Initialisation
 // =====================
-const app: Application = express();
-const logger = pino();
-const upload = multer({ dest: 'uploads/' });
+const app = express();
 
 // =====================
 // Middlewares globaux (sécurité, parsing, logs)
@@ -174,6 +174,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use((req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
+
 app.use(errorMiddleware);
 
 // =====================
