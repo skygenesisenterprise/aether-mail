@@ -1,0 +1,28 @@
+INFOS:
+Install the "Todo+" VSCode extension to write and manage the TODOs project.
+For more information, see the `README.todo` file.
+
+TODO List
+Tasks:
+    Code Quality
+    ☐ Refactor codebase to improve maintainability
+    ☐ Add comprehensive test suite for the application
+    ☐ Update dependencies to their latest versions
+    ☐ Ensure accessibility compliance across the application
+
+    Performance
+    ☐ Optimize performance
+    ☐ Improve the structure of the project for better scalability
+
+    Documentation
+    ☐ Update README with latest features and usage instructions
+    ☐ Add example documentation for the features
+
+    UI/UX
+    ☐ Enhance UI/UX
+
+Notes:
+    - Remember to follow coding standards and best practices
+    - Keep commit messages clear and descriptive
+    - Use the `README.todo` file for reference on how to use the TODO list effectively
+    - Regularly review and update the TODO list as tasks are completed or new ones arise
