@@ -66,7 +66,7 @@ const EmailList: React.FC<EmailListProps> = ({ emails, onSelectEmail, selectedEm
 
       {/* Filter options */}
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-2 dark:border-gray-700">
-        <div className="text-sm font-medium">
+        <div className="text-sm font-medium dark:text-gray-300">
           {filteredEmails.length} {filteredEmails.length === 1 ? 'message' : 'messages'}
         </div>
         <div className="flex gap-2">
@@ -79,46 +79,47 @@ const EmailList: React.FC<EmailListProps> = ({ emails, onSelectEmail, selectedEm
           <button className="rounded p-1 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
             <ArrowsUpDownIcon className="h-5 w-5" />
           </button>
+          
+          {/* Filter dropdown */}
+          {filterMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute translate-x-1/2 translate-y-1/2 top-44 z-10 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:text-gray-300"
+            >
+              <div className="px-4 py-2 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                Filter by
+              </div>
+              <div className="px-4 py-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="rounded border-gray-300 text-aether-primary focus:ring-aether-primary" />
+                  Unread
+                </label>
+              </div>
+              <div className="px-4 py-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="rounded border-gray-300 text-aether-primary focus:ring-aether-primary" />
+                  Starred
+                </label>
+              </div>
+              <div className="px-4 py-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="rounded border-gray-300 text-aether-primary focus:ring-aether-primary" />
+                  Encrypted
+                </label>
+              </div>
+              <div className="px-4 py-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="rounded border-gray-300 text-aether-primary focus:ring-aether-primary" />
+                  With attachments
+                </label>
+              </div>
+            </motion.div>
+          )}
         </div>
-
-        {/* Filter dropdown */}
-        {filterMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute right-4 top-28 z-10 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800"
-          >
-            <div className="px-4 py-2 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-              Filter by
-            </div>
-            <div className="px-4 py-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="rounded border-gray-300 text-aether-primary focus:ring-aether-primary" />
-                Unread
-              </label>
-            </div>
-            <div className="px-4 py-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="rounded border-gray-300 text-aether-primary focus:ring-aether-primary" />
-                Starred
-              </label>
-            </div>
-            <div className="px-4 py-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="rounded border-gray-300 text-aether-primary focus:ring-aether-primary" />
-                Encrypted
-              </label>
-            </div>
-            <div className="px-4 py-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="rounded border-gray-300 text-aether-primary focus:ring-aether-primary" />
-                With attachments
-              </label>
-            </div>
-          </motion.div>
-        )}
       </div>
+
 
       {/* Email list */}
       <div className="flex-1 overflow-auto">
