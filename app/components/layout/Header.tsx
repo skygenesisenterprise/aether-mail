@@ -81,8 +81,8 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, toggleTheme, isDarkMode 
                 </div>
                 <div className="border-t border-gray-100 dark:border-gray-700">
                   <div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <div className="flex">
-                      <div className="rounded-full bg-aether-subtle p-2 dark:bg-aether-cosmic">
+                    <div className="flex items-start">
+                      <div className="rounded-full border-gray-700 bg-aether-subtle p-2 dark:bg-aether-cosmic">
                         <LockIcon className="h-5 w-5 text-aether-cosmic dark:text-white" />
                       </div>
                       <div className="ml-3">
@@ -93,7 +93,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, toggleTheme, isDarkMode 
                     </div>
                   </div>
                   <div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <div className="flex">
+                    <div className="flex items-start">
                       <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900">
                         <EnvelopeIcon className="h-5 w-5 text-blue-700 dark:text-blue-300" />
                       </div>
