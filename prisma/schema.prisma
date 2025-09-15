@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  username String   @unique
+  email    String   @unique
+  password String?
+  imap     ImapConfig?
+  smtp     SmtpConfig?
+  folders  Folder[]
+  emails   Email[]
+}
+
+model ImapConfig {
+  id     Int    @id @default(autoincrement())
+  host   String
+  port   Int
+  tls    Boolean
+  userId Int    @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model SmtpConfig {
+  id     Int    @id @default(autoincrement())
+  host   String
+  port   Int
+  secure Boolean
+  userId Int    @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Folder {
+  id     Int    @id @default(autoincrement())
+  name   String
+  userId Int
+  user   User   @relation(fields: [userId], references: [id])
+  emails Email[]
+}
+
+model Email {
+  id        Int      @id @default(autoincrement())
+  subject   String
+  body      String
+  from      String
+  to        String
+  cc        String?
+  bcc       String?
+  sentAt    DateTime @default(now())
+  folderId  Int
+  folder    Folder   @relation(fields: [folderId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  attachments Attachment[]
+}
+
+model Attachment {
+  id       Int    @id @default(autoincrement())
+  filename String
+  filetype String
+  filesize Int
+  emailId  Int
+  email    Email  @relation(fields: [emailId], references: [id])
+}
+
