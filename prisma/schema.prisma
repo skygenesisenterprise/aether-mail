@@ -23,6 +23,8 @@ model User {
   smtp     SmtpConfig?
   folders  Folder[]
   emails   Email[]
+  @@index([username], map: "username_index")
+  @@index([email], map: "email_index")
 }
 
 model ImapConfig {
@@ -65,6 +67,7 @@ model Email {
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   attachments Attachment[]
+  @@index([sentAt], map: "sentAt_index")
 }
 
 model Attachment {
