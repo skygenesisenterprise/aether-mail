@@ -319,3 +319,4 @@ const EmailComposer: React.FC<EmailComposerProps> = ({
 };
 
 export default EmailComposer;
+

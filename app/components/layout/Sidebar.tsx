@@ -7,9 +7,11 @@ import {
   DocumentTextIcon,
   TrashIcon,
   FolderIcon,
-  ExclamationCircleIcon // Importation de l'icône pour Spam
+  ExclamationCircleIcon, // Importation de l'icône pour Spam
+  PencilIcon // Importation de l'icône pour le bouton Composer
 } from '@heroicons/react/24/outline';
 import { cn } from '../../lib/utils';
+import EmailComposer from '../email/EmailComposer'; // Importation du composant EmailComposer
 
 type SidebarItemProps = {
   icon: React.ReactNode;
@@ -50,6 +52,7 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
     spam: 0,
     trash: 0,
   });
+  const [isComposerOpen, setIsComposerOpen] = useState(false); // État pour gérer l'ouverture du composant EmailComposer
 
   // Fonction pour vérifier si une route est active
   const isRouteActive = (route: string): boolean => {
@@ -91,6 +94,15 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
           Aether Mail
         </div>
       </div>
+
+      {/* Composer Button */}
+      <button
+        onClick={() => setIsComposerOpen(true)}
+        className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all text-white bg-aether-primary hover:bg-aether-primary-dark mb-4 mx-2"
+      >
+        <PencilIcon className="w-5 h-5" />
+        <span>Composer</span>
+      </button>
 
       {/* Navigation items */}
       <nav className="flex-1 space-y-1 px-2">
@@ -177,6 +189,7 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
   return (
     <div className="hidden w-64 flex-shrink-0 border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 md:block">
       {sidebarContent}
+      <EmailComposer isOpen={isComposerOpen} onClose={() => setIsComposerOpen(false)} />
     </div>
   );
 };

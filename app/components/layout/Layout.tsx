@@ -1,4 +1,4 @@
-import type React from 'react';
+import React from 'react';
 import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import Sidebar from './Sidebar';

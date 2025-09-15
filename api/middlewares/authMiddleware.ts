@@ -1,9 +1,12 @@
-import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { config } from '../config/config';
+import { Request, Response, NextFunction } from 'express';
 
-const JWT_SECRET = process.env.JWT_SECRET || '';
+interface AuthenticatedRequest extends Request {
+  user?: any;
+}
 
-const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).json({ success: false, error: 'No authorization header' });
@@ -16,7 +19,7 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
   try {
     // Vérifie le token JWT
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, config.jwtSecret);
 
     // Logique spécifique pour statusRoutes
     if (req.baseUrl.includes('/status')) {
@@ -28,7 +31,7 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     }
 
     // Ajoute les infos utilisateur à la requête si besoin
-    (req as any).user = decoded;
+    req.user = decoded;
     next();
   } catch (err) {
     return res.status(401).json({ success: false, error: 'Invalid token' });

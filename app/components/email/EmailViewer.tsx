@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useState } from 'react'; // Importation de useState
 import { motion } from 'framer-motion';
 import {
   ArrowPathRoundedSquareIcon,
@@ -15,6 +16,7 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { formatDate, formatFileSize } from '../../lib/utils';
 import type { Email } from './EmailList';
+import EmailComposer from './EmailComposer'; // Importation du composant EmailComposer
 
 interface EmailViewerProps {
   email: Email | null;
@@ -35,6 +37,8 @@ const EmailViewer: React.FC<EmailViewerProps> = ({
   onDelete,
   isMobile = false
 }) => {
+  const [isComposerOpen, setIsComposerOpen] = useState(false); // État pour gérer l'ouverture du composant EmailComposer
+
   if (!email) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8 text-center text-gray-500 dark:text-gray-400">
@@ -168,7 +172,10 @@ const EmailViewer: React.FC<EmailViewerProps> = ({
       <div className="border-t border-gray-200 p-4 dark:border-gray-700">
         <div className="flex space-x-2">
           <button
-            onClick={() => onReply?.(email)}
+            onClick={() => {
+              setIsComposerOpen(true);
+              onReply?.(email);
+            }}
             className="inline-flex items-center rounded-md bg-aether-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-aether-accent focus:outline-none focus:ring-2 focus:ring-aether-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="mr-1.5 h-4 w-4">
@@ -177,7 +184,10 @@ const EmailViewer: React.FC<EmailViewerProps> = ({
             Reply
           </button>
           <button
-            onClick={() => onForward?.(email)}
+            onClick={() => {
+              setIsComposerOpen(true);
+              onForward?.(email);
+            }}
             className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-aether-primary focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-offset-gray-900"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="mr-1.5 h-4 w-4">
@@ -216,13 +226,31 @@ const EmailViewer: React.FC<EmailViewerProps> = ({
         transition={{ type: "spring", bounce: 0, duration: 0.4 }}
       >
         {content}
+        <EmailComposer
+          isOpen={isComposerOpen}
+          onClose={() => setIsComposerOpen(false)}
+          initialTo={email?.from.email}
+          initialSubject={`Re: ${email?.subject}`}
+          initialBody={`\n\nOn ${formatDate(email?.timestamp)}, ${email?.from.name} wrote:\n${email?.body}`}
+          replyToEmail={true}
+        />
       </motion.div>
     );
   }
 
   // Desktop view
   return (
-    <div className="flex-1">{content}</div>
+    <div className="flex-1">
+      {content}
+      <EmailComposer
+        isOpen={isComposerOpen}
+        onClose={() => setIsComposerOpen(false)}
+        initialTo={email?.from.email}
+        initialSubject={`Re: ${email?.subject}`}
+        initialBody={`\n\nOn ${formatDate(email?.timestamp)}, ${email?.from.name} wrote:\n${email?.body}`}
+        replyToEmail={true}
+      />
+    </div>
   );
 };
 
