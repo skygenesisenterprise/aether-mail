@@ -9,6 +9,7 @@ Tasks:
     ☐ Add comprehensive test suite for the application
     ☐ Update dependencies to their latest versions
     ☐ Ensure accessibility compliance across the application
+    ✔ Implement and init prisma database + schema @done(25-09-15 20:28)
 
     Performance
     ☐ Optimize performance
