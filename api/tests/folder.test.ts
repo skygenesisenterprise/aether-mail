@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import folderRoutes from '../routes/folderRoutes';
+import folderRoutes from '../routes/folder.Routes';
 
 // Add Jest type definitions
 import '@types/jest';

@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import authRoutes from '../routes/authRoutes';
+import authRoutes from '../routes/auth.Routes';
 
 describe('Auth API', () => {
   const app = express();

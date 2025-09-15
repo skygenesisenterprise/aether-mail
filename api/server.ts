@@ -19,11 +19,11 @@ import swaggerDocument from '../docs/swagger.json';
 // ====================
 // Routes API
 // =====================
-import authRoutes from './routes/authRoutes';
-import folderRoutes from './routes/folderRoutes';
-import mailRoutes from './routes/mailRoutes';
-import statusRoutes from './routes/statusRoutes';
-import imapRoutes from './routes/imapRoutes';
+import authRoutes from './routes/auth.Routes';
+import folderRoutes from './routes/folder.Routes';
+import mailRoutes from './routes/mail.Routes';
+import statusRoutes from './routes/status.Routes';
+import imapRoutes from './routes/imap.Routes';
 // import settingRoutes from './routes/settingRoutes';
 
 // Documentation
