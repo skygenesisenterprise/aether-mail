@@ -41,8 +41,6 @@ const EmailContainer: React.FC<EmailContainerProps> = ({
     <div className="flex-1">
       {isComposerOpen ? (
         <EmailComposer
-          isOpen={isComposerOpen}
-          onClose={() => setIsComposerOpen(false)}
           initialTo={email?.from.email}
           initialSubject={composerMode === 'reply' ? `Re: ${email?.subject}` : `Fwd: ${email?.subject}`}
           initialBody={`\n\nOn ${formatDate(email?.timestamp)}, ${email?.from.name} wrote:\n${email?.body}`}

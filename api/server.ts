@@ -24,6 +24,7 @@ import folderRoutes from './routes/folder.Routes';
 import mailRoutes from './routes/mail.Routes';
 import statusRoutes from './routes/status.Routes';
 import imapRoutes from './routes/imap.Routes';
+import emailRoutes from './routes/email.Routes';
 // import settingRoutes from './routes/settingRoutes';
 
 // Documentation
@@ -159,6 +160,7 @@ apiRouter.use(folderRoutes);
 apiRouter.use(mailRoutes);
 apiRouter.use(statusRoutes);
 apiRouter.use(imapRoutes);
+apiRouter.use(emailRoutes)
 // apiRouter.use(settingRoutes);
 
 app.use('/api/v1', apiRouter);

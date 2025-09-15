@@ -17,8 +17,9 @@ const EmailInbox: React.FC = () => {
     const fetchEmails = async () => {
       try {
         // Simuler une requête API pour récupérer les emails du dossier actif
-        const response = await fetch(`/api/emails?folder=${folder}`);
+        const response = await fetch(`/api/v1/emails?folder=${folder}`);
         const data = await response.json();
+        console.log('Fetched emails:', data);
         setEmails(data);
       } catch (error) {
         console.error('Erreur lors du chargement des emails:', error);
@@ -122,9 +123,25 @@ const EmailInbox: React.FC = () => {
           />
         )
       ) : (
+     
         <div className="hidden flex-1 md:block">
           <EmailViewer
-            email={selectedEmail}
+            email={
+              selectedEmail 
+              // TODO: Remove the fallback when backend is ready
+              // || {
+              //   id: generateId(),
+              //   from: { name: '', email: '' },
+              //   subject: 'No email selected',
+              //   body: '',
+              //   timestamp: new Date(),
+              //   isRead: true,
+              //   isStarred: false,
+              //   isEncrypted: false,
+              //   hasAttachments: false,
+              //   labels: [],
+              // }
+            }
             onStar={handleStarEmail}
             onDelete={handleDeleteEmail}
             onReply={handleReplyEmail}
@@ -135,8 +152,6 @@ const EmailInbox: React.FC = () => {
 
       {/* Modale de composition d'email */}
       <EmailComposer
-        isOpen={isComposerOpen}
-        onClose={() => setIsComposerOpen(false)}
         initialTo={selectedEmail ? selectedEmail.from.email : ''}
         initialSubject={selectedEmail ? `Re: ${selectedEmail.subject}` : ''}
         replyToEmail={!!selectedEmail}
