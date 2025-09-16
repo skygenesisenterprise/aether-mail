@@ -129,18 +129,18 @@ const EmailInbox: React.FC = () => {
             email={
               selectedEmail 
               // TODO: Remove the fallback when backend is ready
-              // || {
-              //   id: generateId(),
-              //   from: { name: '', email: '' },
-              //   subject: 'No email selected',
-              //   body: '',
-              //   timestamp: new Date(),
-              //   isRead: true,
-              //   isStarred: false,
-              //   isEncrypted: false,
-              //   hasAttachments: false,
-              //   labels: [],
-              // }
+              || {
+                id: generateId(),
+                from: { name: '', email: '' },
+                subject: 'No email selected',
+                body: '',
+                timestamp: new Date(),
+                isRead: true,
+                isStarred: false,
+                isEncrypted: false,
+                hasAttachments: false,
+                labels: [],
+              }
             }
             onStar={handleStarEmail}
             onDelete={handleDeleteEmail}
