@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@prisma/client": "6.16.1",
+    "@prisma/client": "6.16.2",
     "@tailwindcss/forms": "^0.5.10",
     "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
