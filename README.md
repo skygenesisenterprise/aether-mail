@@ -145,5 +145,5 @@ For any questions or support, please contact us at support@skygenesisenterprise.
 
 ## License
 
-Aether Mail is licensed under the AGPL-3.0 license. See the [LICENSE](LICENSE) file for more details.
+Aether Mail is licensed under the SGE-PL-1.0 licence. See the [LICENCE](licence) file for more details.
 
