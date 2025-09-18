@@ -75,7 +75,7 @@
     "express-rate-limit": "^8.1.0",
     "express-session": "^1.18.2",
     "express-validator": "^7.2.1",
-    "framer-motion": "^12.23.12",
+    "framer-motion": "^12.23.15",
     "helmet": "^8.1.0",
     "inquirer": "^12.9.6",
     "joi": "^18.0.1",
