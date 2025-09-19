@@ -145,7 +145,7 @@
     "concurrently": "^9.2.1",
     "electron": "^35.7.5",
     "eletron": "^0.0.1-security",
-    "eslint": "^9.35.0",
+    "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^3.10.1",
     "eslint-plugin-import": "^2.32.0",
