@@ -246,3 +246,244 @@ SELECT m.id AS mailbox_id,
 FROM mailboxes m
 LEFT JOIN messages msg ON msg.mailbox_id = m.id
 GROUP BY m.id, m.address;
+
+-- ================
+-- Table: login_attempts
+-- ================
+CREATE TABLE login_attempts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  ip_address inet NOT NULL,
+  device text,
+  is_success boolean NOT NULL,
+  attempt_time timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX login_attempts_user_idx ON login_attempts(user_id);
+
+-- ================
+-- Table: password_resets
+-- ================
+CREATE TABLE password_resets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  token text NOT NULL,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX password_resets_user_idx ON password_resets(user_id);
+
+-- ================
+-- Table: sessions
+-- ================
+CREATE TABLE sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  session_token text NOT NULL,
+  ip_address inet,
+  device text,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz
+);
+CREATE INDEX sessions_user_idx ON sessions(user_id);
+
+-- ================
+-- Table: api_keys
+-- ================
+CREATE TABLE api_keys (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  key text NOT NULL,
+  name text,
+  permissions jsonb DEFAULT '{}'::jsonb,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz
+);
+CREATE INDEX api_keys_user_idx ON api_keys(user_id);
+
+-- ================
+-- Table: tags
+-- ================
+CREATE TABLE tags (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  color text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX tags_user_idx ON tags(user_id);
+
+-- ================
+-- Table: email_threads
+-- ================
+CREATE TABLE email_threads (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id uuid REFERENCES conversations(id) ON DELETE CASCADE,
+  thread_index integer NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX email_threads_conversation_idx ON email_threads(conversation_id);
+
+-- ================
+-- Table: forwarding_rules
+-- ================
+CREATE TABLE forwarding_rules (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  mailbox_id uuid REFERENCES mailboxes(id) ON DELETE CASCADE,
+  destination_address citext NOT NULL,
+  condition jsonb DEFAULT '{}'::jsonb,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX forwarding_rules_mailbox_idx ON forwarding_rules(mailbox_id);
+
+-- ================
+-- Table: blocked_senders
+-- ================
+CREATE TABLE blocked_senders (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  address citext NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX blocked_senders_user_idx ON blocked_senders(user_id);
+
+-- ================
+-- Table: whitelist_senders
+-- ================
+CREATE TABLE whitelist_senders (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  address citext NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX whitelist_senders_user_idx ON whitelist_senders(user_id);
+
+-- ================
+-- Table: server_logs
+-- ================
+CREATE TABLE server_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  server_name text NOT NULL,
+  log_level text NOT NULL,
+  message text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX server_logs_level_idx ON server_logs(log_level);
+
+-- ================
+-- Table: job_queue
+-- ================
+CREATE TABLE job_queue (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_type text NOT NULL,
+  payload jsonb NOT NULL,
+  status text NOT NULL DEFAULT 'pending',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX job_queue_status_idx ON job_queue(status);
+
+-- ================
+-- Table: email_statistics
+-- ================
+CREATE TABLE email_statistics (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  mailbox_id uuid REFERENCES mailboxes(id) ON DELETE CASCADE,
+  sent_count integer DEFAULT 0,
+  received_count integer DEFAULT 0,
+  total_size_bytes bigint DEFAULT 0,
+  last_updated timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX email_statistics_mailbox_idx ON email_statistics(mailbox_id);
+
+-- ================
+-- Table: shared_folders
+-- ================
+CREATE TABLE shared_folders (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  folder_id uuid REFERENCES folders(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  permission_level text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX shared_folders_folder_idx ON shared_folders(folder_id);
+
+-- ================
+-- Table: delegations_history
+-- ================
+CREATE TABLE delegations_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  mailbox_id uuid REFERENCES mailboxes(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  action text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX delegations_history_mailbox_idx ON delegations_history(mailbox_id);
+
+-- ================
+-- Table: comments
+-- ================
+CREATE TABLE comments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  message_id uuid REFERENCES messages(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  comment text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX comments_message_idx ON comments(message_id);
+
+-- ================
+-- Table: attachments_versions
+-- ================
+CREATE TABLE attachments_versions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  attachment_id uuid REFERENCES attachments(id) ON DELETE CASCADE,
+  version_number integer NOT NULL,
+  filename text,
+  mime_type text,
+  size_bytes bigint,
+  sha256 bytea,
+  storage_backend text,
+  storage_path text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX attachments_versions_attachment_idx ON attachments_versions(attachment_id);
+
+-- ================
+-- Table: encryption_keys
+-- ================
+CREATE TABLE encryption_keys (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  public_key text NOT NULL,
+  private_key text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX encryption_keys_user_idx ON encryption_keys(user_id);
+
+-- ================
+-- Table: templates
+-- ================
+CREATE TABLE templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  subject text,
+  body text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX templates_user_idx ON templates(user_id);
+
+-- ================
+-- Table: scheduled_messages
+-- ================
+CREATE TABLE scheduled_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  message_id uuid REFERENCES messages(id) ON DELETE CASCADE,
+  scheduled_time timestamptz NOT NULL,
+  status text NOT NULL DEFAULT 'pending',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX scheduled_messages_status_idx ON scheduled_messages(status);
