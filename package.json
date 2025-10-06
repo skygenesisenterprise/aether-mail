@@ -63,7 +63,7 @@
     "@tailwindcss/forms": "^0.5.10",
     "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
-    "bun": "^1.2.22",
+    "bun": "^1.2.23",
     "clsx": "^2.1.1",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
