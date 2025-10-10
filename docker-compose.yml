@@ -1,51 +1,75 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  backend:
+  aethermail:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        NODE_ENV: ${NODE_ENV} # Passer l'environnement comme argument de construction
+        NODE_ENV: production
+    container_name: aethermail-prod
+    restart: unless-stopped
     ports:
-      - "127.0.0.1:5000:5000" # Limiter l'accès au backend à localhost
-    volumes:
-      - .:/app
-      - /app/node_modules
+      - "4000:4000"
     environment:
-      - NODE_ENV=${NODE_ENV} # Passer l'environnement au conteneur
-    command: >
-      sh -c "if [ ${NODE_ENV} = 'production' ]; then node ./dist/backend/server.js; else npm run dev:backend; fi"
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - API_BASE_URL=${API_BASE_URL}
+      - API_TOKEN=${API_TOKEN}
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
     networks:
-      - backend_network
-      - frontend_network
+      - aethermail-network
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/v1/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        NODE_ENV: ${NODE_ENV} # Passer l'environnement comme argument de construction
-    ports:
-      - "5173:5173"
-    volumes:
-      - .:/app
-      - /app/node_modules
+  postgres:
+    image: postgres:15-alpine
+    container_name: aethermail-postgres
+    restart: unless-stopped
     environment:
-      - NODE_ENV=${NODE_ENV} # Passer l'environnement au conteneur
-    command: >
-      sh -c "if [ ${NODE_ENV} = 'production' ]; then vite preview; else npm run dev:frontend; fi"
+      POSTGRES_DB: aethermail_prod
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data/schema-pgsql.sql:/docker-entrypoint-initdb.d/01-schema.sql
     networks:
-      - frontend_network
+      - aethermail-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d aethermail_prod"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: aethermail-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - aethermail-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
 
 networks:
-  frontend_network:
+  aethermail-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 192.168.1.0/24
-  backend_network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 192.168.2.0/24
