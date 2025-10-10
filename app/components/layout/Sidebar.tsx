@@ -2,15 +2,11 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useEmailStore } from "../../store/emailStore";
 import {
   InboxIcon,
   PaperAirplaneIcon,
-  DocumentTextIcon,
   TrashIcon,
-  FolderIcon,
-  ExclamationCircleIcon, // Importation de l'icône pour Spam
-  PencilIcon, // Importation de l'icône pour le bouton Composer
+  ExclamationCircleIcon, // Importation de l'icône pour Junk
 } from "@heroicons/react/24/outline";
 import { cn } from "../../lib/utils";
 
@@ -59,14 +55,12 @@ const Sidebar = ({
   isOpen?: boolean;
   onClose?: () => void;
 }) => {
-  const { folders } = useEmailStore();
   const { folder } = useParams<{ folder: string }>();
   const [counts, setCounts] = useState({
     inbox: 0,
     sent: 0,
-    drafts: 0,
-    spam: 0,
-    trash: 0,
+    junk: 0,
+    deleted: 0,
   });
 
   // Fonction pour vérifier si une route est active
@@ -80,18 +74,17 @@ const Sidebar = ({
     closed: { x: "-100%" },
   };
 
-  // Récupérer les comptes dynamiques
+  // Récupérer les comptes
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const response = await fetch("/api/v1/email-counts");
+        const response = await fetch("/api/v1/emails/stats");
         const data = await response.json();
         setCounts({
-          inbox: data.inbox,
-          sent: data.sent,
-          drafts: data.drafts,
-          spam: data.spam,
-          trash: data.trash,
+          inbox: data.folders?.inbox?.unread || 0,
+          sent: data.folders?.sent?.unread || 0,
+          junk: data.folders?.trash?.unread || 0, // Using trash as junk for now
+          deleted: data.folders?.trash?.unread || 0,
         });
       } catch (error) {
         console.error("Erreur lors de la récupération du compte :", error);
@@ -128,13 +121,6 @@ const Sidebar = ({
           </h3>
           <nav className="space-y-1">
             <SidebarItem
-              icon={<DocumentTextIcon />}
-              label="Drafts"
-              to="/drafts"
-              count={counts.drafts}
-              active={isRouteActive("/drafts")}
-            />
-            <SidebarItem
               icon={<PaperAirplaneIcon />}
               label="Sent"
               to="/sent"
@@ -143,29 +129,18 @@ const Sidebar = ({
             />
             <SidebarItem
               icon={<ExclamationCircleIcon />}
-              label="Junk Email"
-              to="/spam"
-              count={counts.spam}
-              active={isRouteActive("/spam")}
+              label="Junk"
+              to="/junk"
+              count={counts.junk}
+              active={isRouteActive("/junk")}
             />
             <SidebarItem
               icon={<TrashIcon />}
-              label="Deleted Items"
-              to="/trash"
-              count={counts.trash}
-              active={isRouteActive("/trash")}
+              label="Deleted Item"
+              to="/deleted"
+              count={counts.deleted}
+              active={isRouteActive("/deleted")}
             />
-
-            {/* Dynamic folders */}
-            {folders.map((folder, index) => (
-              <SidebarItem
-                key={index}
-                icon={<FolderIcon />}
-                label={folder}
-                to={`/${folder}`}
-                active={isRouteActive(`/${folder}`)}
-              />
-            ))}
           </nav>
         </div>
       </div>
