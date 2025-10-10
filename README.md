@@ -21,28 +21,57 @@ Aether Mail is an open-source email client developed by [Sky Genesis Enterprise]
 
 1. **Clone the Repository**
 
-    ```bash
-    git clone https://github.com/skygenesisenterprise/aether-mail.git
-    cd aether-mail
-    ```
+   ```bash
+   git clone https://github.com/skygenesisenterprise/aether-mail.git
+   cd aether-mail
+   ```
 
 2. **Install Dependencies**
 
-    ```bash
-    npm install
-    ```
+   ```bash
+   npm install
+   ```
 
 3. **Build the Project**
 
-    ```bash
-    npm run build
-    ```
+   ```bash
+   npm run build
+   ```
 
-4. **Run the Application**
+4. **Configure Environment**
 
-    ```bash
-    npm start
-    ```
+   ```bash
+   # For development (with mock data)
+   npm run dev
+
+   # For production (with real API)
+   npm run prod
+   ```
+
+### Environment Setup
+
+Aether Mail supports multiple environments:
+
+- **Development**: Mock data, local database, full debugging
+- **Production**: Real API integration, production database, optimized performance
+
+See [README.environments.md](./README.environments.md) for detailed configuration.
+
+### Quick Start Commands
+
+```bash
+# Check environment configuration
+npm run env:check
+
+# Setup environment automatically
+npm run env:setup
+
+# Development with Docker
+npm run docker:dev
+
+# Production with Docker
+npm run docker:prod
+```
 
 ### Using the Installation Script
 
@@ -67,38 +96,38 @@ You can deploy Aether Mail using Docker for a containerized and consistent envir
 
 1. **Build the Docker Image**
 
-    Clone the repository if you haven't already:
+   Clone the repository if you haven't already:
 
-    ```bash
-    git clone https://github.com/skygenesisenterprise/aether-mail.git
-    cd aether-mail
-    ```
+   ```bash
+   git clone https://github.com/skygenesisenterprise/aether-mail.git
+   cd aether-mail
+   ```
 
-    Build the Docker image:
+   Build the Docker image:
 
-    ```bash
-    docker build -t aether-mail .
-    ```
+   ```bash
+   docker build -t aether-mail .
+   ```
 
 2. **Run the Docker Container**
 
-    Start the container using the built image:
+   Start the container using the built image:
 
-    ```bash
-    docker run -d -p 3000:3000 --name aether-mail aether-mail
-    ```
+   ```bash
+   docker run -d -p 3000:3000 --name aether-mail aether-mail
+   ```
 
-    This will run the application and expose it on port `3000`. You can adjust the port mapping as needed.
+   This will run the application and expose it on port `3000`. You can adjust the port mapping as needed.
 
 3. **Using Docker Compose (Optional)**
 
-    If you prefer using Docker Compose, a sample `docker-compose.yml` file is provided in the repository. To start the application, run:
+   If you prefer using Docker Compose, a sample `docker-compose.yml` file is provided in the repository. To start the application, run:
 
-    ```bash
-    docker-compose up -d
-    ```
+   ```bash
+   docker-compose up -d
+   ```
 
-    This will handle building the image and running the container.
+   This will handle building the image and running the container.
 
 ### Configuration with Docker
 
@@ -146,4 +175,3 @@ For any questions or support, please contact us at support@skygenesisenterprise.
 ## License
 
 Aether Mail is licensed under the SGE-PL-1.0 licence. See the [LICENCE](licence) file for more details.
-

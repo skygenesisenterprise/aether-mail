@@ -1,0 +1,30 @@
+# Dockerfile pour le développement
+FROM node:20-alpine
+
+# Installer les dépendances système
+RUN apk add --no-cache \
+    git \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Créer le répertoire de l'application
+WORKDIR /app
+
+# Copier les fichiers de configuration
+COPY package*.json ./
+COPY bun.lock ./
+
+# Installer les dépendances
+RUN npm ci
+
+# Copier le code source
+COPY . .
+
+# Créer les répertoires nécessaires
+RUN mkdir -p dist logs
+
+# Exposer les ports
+EXPOSE 5173 4000
+
+# Commande par défaut
+CMD ["npm", "run", "dev"]
