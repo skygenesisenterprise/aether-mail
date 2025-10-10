@@ -43,7 +43,7 @@ jobs:
             type=raw,value=${{ github.event.inputs.tag || 'latest' }}
 
       - name: Build and push production Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
