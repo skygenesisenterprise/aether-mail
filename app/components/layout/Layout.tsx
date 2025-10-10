@@ -1,8 +1,8 @@
-import React from 'react';
-import { useState } from 'react';
-import { useTheme } from '../../context/ThemeContext';
-import Sidebar from './Sidebar';
-import Header from './Header';
+import type React from "react";
+import { useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
+import Sidebar from "./Sidebar";
+import Header from "./Header";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -21,7 +21,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-proton-dark">
       {/* Sidebar - mobile and desktop versions */}
       <Sidebar isMobile={true} isOpen={sidebarOpen} onClose={closeSidebar} />
       <Sidebar />
@@ -31,10 +31,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Header
           toggleSidebar={toggleSidebar}
           toggleTheme={toggleTheme}
-          isDarkMode={theme === 'dark'}
+          isDarkMode={theme === "dark"}
         />
 
-        <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+        <main className="flex-1 overflow-hidden bg-proton-dark-secondary">
           {children}
         </main>
       </div>

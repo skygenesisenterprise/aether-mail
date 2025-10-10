@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import EmailViewer from './EmailViewer';
-import EmailComposer from './EmailComposer';
-import type { Email } from './EmailList';
+import type React from "react";
+import { useState } from "react";
+import EmailViewer from "./EmailViewer";
+import EmailComposer from "./EmailComposer";
+import type { Email } from "./EmailList";
+import { formatDate } from "../../lib/utils";
 
 interface EmailContainerProps {
   email: Email | null;
@@ -20,20 +22,22 @@ const EmailContainer: React.FC<EmailContainerProps> = ({
   onForward,
   onStar,
   onDelete,
-  isMobile = false
+  isMobile = false,
 }) => {
   const [isComposerOpen, setIsComposerOpen] = useState(false);
-  const [composerMode, setComposerMode] = useState<'reply' | 'forward' | 'new'>('new');
+  const [composerMode, setComposerMode] = useState<"reply" | "forward" | "new">(
+    "new",
+  );
 
   const handleReply = (email: Email) => {
     setIsComposerOpen(true);
-    setComposerMode('reply');
+    setComposerMode("reply");
     onReply?.(email);
   };
 
   const handleForward = (email: Email) => {
     setIsComposerOpen(true);
-    setComposerMode('forward');
+    setComposerMode("forward");
     onForward?.(email);
   };
 
@@ -42,9 +46,13 @@ const EmailContainer: React.FC<EmailContainerProps> = ({
       {isComposerOpen ? (
         <EmailComposer
           initialTo={email?.from.email}
-          initialSubject={composerMode === 'reply' ? `Re: ${email?.subject}` : `Fwd: ${email?.subject}`}
-          initialBody={`\n\nOn ${formatDate(email?.timestamp)}, ${email?.from.name} wrote:\n${email?.body}`}
-          replyToEmail={composerMode === 'reply'}
+          initialSubject={
+            composerMode === "reply"
+              ? `Re: ${email?.subject}`
+              : `Fwd: ${email?.subject}`
+          }
+          initialBody={`\n\nOn ${email?.timestamp ? formatDate(email.timestamp) : "unknown date"}, ${email?.from.name} wrote:\n${email?.body}`}
+          replyToEmail={composerMode === "reply"}
         />
       ) : (
         <EmailViewer

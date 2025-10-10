@@ -10,16 +10,25 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       colors: {
-        // Aether Mail theme colors
-        aether: {
-          primary: "#6366f1", // Indigo
-          secondary: "#8b5cf6", // Purple
-          accent: "#4f46e5", // Darker indigo
-          cosmic: "#3730a3", // Deep cosmic blue
-          "cosmic-dark": "#1e1b4b", // Darker cosmic blue
-          subtle: "#c7d2fe", // Light indigo
-          "cosmic-gradient-start": "#a5b4fc",
-          "cosmic-gradient-end": "#818cf8",
+        // Proton Mail inspired theme
+        proton: {
+          primary: "#657EE4", // Proton blue
+          secondary: "#8B5CF6", // Purple accent
+          dark: "#1E1E1E", // Very dark background
+          "dark-secondary": "#2A2A2A", // Secondary dark
+          "dark-tertiary": "#3A3A3A", // Tertiary dark
+          light: "#F8F9FA", // Very light background
+          "light-secondary": "#E9ECEF", // Secondary light
+          border: "#404040", // Dark border
+          "border-light": "#555555", // Light border
+          text: "#FFFFFF", // White text
+          "text-secondary": "#CCCCCC", // Light gray text
+          "text-muted": "#999999", // Muted text
+          accent: "#657EE4", // Blue accent
+          "accent-hover": "#5A6FD8", // Darker blue hover
+          success: "#10B981", // Green for success
+          warning: "#F59E0B", // Amber for warnings
+          error: "#EF4444", // Red for errors
         },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

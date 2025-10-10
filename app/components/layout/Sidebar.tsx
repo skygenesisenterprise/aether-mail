@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import type React from "react";
+import { useState, useEffect } from "react";
+import { Link, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useEmailStore } from "../../store/emailStore";
 import {
   InboxIcon,
   PaperAirplaneIcon,
@@ -8,9 +10,9 @@ import {
   TrashIcon,
   FolderIcon,
   ExclamationCircleIcon, // Importation de l'icône pour Spam
-  PencilIcon // Importation de l'icône pour le bouton Composer
-} from '@heroicons/react/24/outline';
-import { cn } from '../../lib/utils';
+  PencilIcon, // Importation de l'icône pour le bouton Composer
+} from "@heroicons/react/24/outline";
+import { cn } from "../../lib/utils";
 
 type SidebarItemProps = {
   icon: React.ReactNode;
@@ -20,21 +22,27 @@ type SidebarItemProps = {
   active?: boolean;
 };
 
-const SidebarItem = ({ icon, label, to, count, active = false }: SidebarItemProps) => {
+const SidebarItem = ({
+  icon,
+  label,
+  to,
+  count,
+  active = false,
+}: SidebarItemProps) => {
   return (
     <Link
       to={to}
       className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all",
+        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all hover:bg-proton-dark-tertiary",
         active
-          ? "bg-aether-subtle text-aether-cosmic"
-          : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+          ? "bg-proton-primary/10 text-proton-primary font-medium border-r-2 border-proton-primary"
+          : "text-proton-text-secondary hover:text-proton-text",
       )}
     >
-      <div className="w-5 h-5">{icon}</div>
-      <span>{label}</span>
-      {count !== undefined && (
-        <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-aether-primary px-1.5 text-xs font-medium text-white">
+      <div className="w-5 h-5 flex-shrink-0 text-proton-text-muted">{icon}</div>
+      <span className="truncate">{label}</span>
+      {count !== undefined && count > 0 && (
+        <div className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-proton-primary px-1.5 text-xs font-medium text-white">
           {count}
         </div>
       )}
@@ -42,8 +50,17 @@ const SidebarItem = ({ icon, label, to, count, active = false }: SidebarItemProp
   );
 };
 
-const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: boolean; onClose?: () => void }) => {
-  const [folders, setFolders] = useState<string[]>([]); // État pour les dossiers dynamiques
+const Sidebar = ({
+  isMobile,
+  isOpen,
+  onClose,
+}: {
+  isMobile?: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
+}) => {
+  const { folders } = useEmailStore();
+  const { folder } = useParams<{ folder: string }>();
   const [counts, setCounts] = useState({
     inbox: 0,
     sent: 0,
@@ -54,20 +71,20 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
 
   // Fonction pour vérifier si une route est active
   const isRouteActive = (route: string): boolean => {
-    return window.location.pathname === route;
+    return `/${folder}` === route;
   };
 
   // Variants pour les animations avec framer-motion
   const sidebarVariants = {
     open: { x: 0 },
-    closed: { x: '-100%' },
+    closed: { x: "-100%" },
   };
 
   // Récupérer les comptes dynamiques
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const response = await fetch('/api/v1/email-counts');
+        const response = await fetch("/api/v1/email-counts");
         const data = await response.json();
         setCounts({
           inbox: data.inbox,
@@ -85,71 +102,73 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
   }, []);
 
   const sidebarContent = (
-    <div className="flex h-full flex-col">
-      {/* Logo and branding */}
-      <div className="flex items-center space-x-2 px-4 py-6">
-        <div className="font-space-grotesk text-xl font-bold text-aether-cosmic dark:text-white">
-          Aether Mail
+    <div className="flex h-full flex-col bg-proton-dark border-r border-proton-border shadow-sm">
+      {/* Navigation sections */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {/* Favorites section */}
+        <div className="mb-6">
+          <h3 className="text-xs font-semibold text-proton-text-muted uppercase tracking-wider mb-3 px-1">
+            Favorites
+          </h3>
+          <nav className="space-y-1">
+            <SidebarItem
+              icon={<InboxIcon />}
+              label="Inbox"
+              to="/inbox"
+              count={counts.inbox}
+              active={isRouteActive("/inbox")}
+            />
+          </nav>
+        </div>
+
+        {/* All folders section */}
+        <div className="mb-6">
+          <h3 className="text-xs font-semibold text-proton-text-muted uppercase tracking-wider mb-3 px-1">
+            Folders
+          </h3>
+          <nav className="space-y-1">
+            <SidebarItem
+              icon={<DocumentTextIcon />}
+              label="Drafts"
+              to="/drafts"
+              count={counts.drafts}
+              active={isRouteActive("/drafts")}
+            />
+            <SidebarItem
+              icon={<PaperAirplaneIcon />}
+              label="Sent"
+              to="/sent"
+              count={counts.sent}
+              active={isRouteActive("/sent")}
+            />
+            <SidebarItem
+              icon={<ExclamationCircleIcon />}
+              label="Junk Email"
+              to="/spam"
+              count={counts.spam}
+              active={isRouteActive("/spam")}
+            />
+            <SidebarItem
+              icon={<TrashIcon />}
+              label="Deleted Items"
+              to="/trash"
+              count={counts.trash}
+              active={isRouteActive("/trash")}
+            />
+
+            {/* Dynamic folders */}
+            {folders.map((folder, index) => (
+              <SidebarItem
+                key={index}
+                icon={<FolderIcon />}
+                label={folder}
+                to={`/${folder}`}
+                active={isRouteActive(`/${folder}`)}
+              />
+            ))}
+          </nav>
         </div>
       </div>
-
-      {/* Composer Button */}
-      <button
-        className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all text-white bg-aether-primary hover:bg-aether-primary-dark mb-4 mx-2"
-      >
-        <PencilIcon className="w-5 h-5" />
-        <span>Composer</span>
-      </button>
-
-      {/* Navigation items */}
-      <nav className="flex-1 space-y-1 px-2">
-        <SidebarItem
-          icon={<InboxIcon />}
-          label="Inbox"
-          to="/inbox"
-          count={counts.inbox} 
-          active={isRouteActive('/inbox')}
-        />
-        <SidebarItem
-          icon={<DocumentTextIcon />}
-          label="Drafts"
-          to="/drafts"
-          count={counts.drafts} 
-          active={isRouteActive('/drafts')}
-        />
-        <SidebarItem
-          icon={<PaperAirplaneIcon />}
-          label="Sent"
-          to="/sent"
-          count={counts.sent} 
-          active={isRouteActive('/sent')}
-        />
-        <SidebarItem
-          icon={<ExclamationCircleIcon />} 
-          label="Spam"
-          to="/spam"
-          count={counts.spam}
-          active={isRouteActive('/spam')}
-        />
-        <SidebarItem
-          icon={<TrashIcon />}
-          label="Trash"
-          to="/trash"
-          count={counts.trash} 
-          active={isRouteActive('/trash')}
-        />
-
-        {/* Dynamic folders */}
-        {folders.map((folder, index) => (
-          <SidebarItem
-            key={index}
-            icon={<FolderIcon />}
-            label={folder}
-            to={`/${folder}`}
-            active={isRouteActive(`/${folder}`)}
-          />
-        ))}
-      </nav>
     </div>
   );
 
@@ -174,7 +193,7 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
           animate={isOpen ? "open" : "closed"}
           variants={sidebarVariants}
           transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-          className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg dark:bg-gray-900"
+          className="fixed inset-y-0 left-0 z-50 w-64 bg-proton-dark shadow-xl border-r border-proton-border"
         >
           {sidebarContent}
         </motion.div>
@@ -184,7 +203,7 @@ const Sidebar = ({ isMobile, isOpen, onClose }: { isMobile?: boolean; isOpen?: b
 
   // Desktop view
   return (
-    <div className="hidden w-64 flex-shrink-0 border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 md:block">
+    <div className="hidden w-64 flex-shrink-0 bg-white md:block">
       {sidebarContent}
     </div>
   );

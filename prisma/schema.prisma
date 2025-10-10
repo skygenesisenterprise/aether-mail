@@ -15,41 +15,80 @@ datasource db {
 }
 
 model User {
-  id       Int      @id @default(autoincrement())
-  username String   @unique
-  email    String   @unique
-  password String?
-  imap     ImapConfig?
-  smtp     SmtpConfig?
-  folders  Folder[]
-  emails   Email[]
+  id            String    @id @default(cuid())
+  username      String    @unique
+  email         String    @unique
+  password      String?
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  imap          ImapConfig?
+  smtp          SmtpConfig?
+  folders       Folder[]
+  emails        Email[]
+  // Better Auth fields
+  accounts      Account[]
+  sessions      Session[]
   @@index([username], map: "username_index")
   @@index([email], map: "email_index")
 }
 
+model Account {
+  id                String  @id @default(cuid())
+  accountId         String
+  providerId        String
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken       String?
+  refreshToken      String?
+  idToken           String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope             String?
+  password          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  @@unique([providerId, accountId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([token])
+}
+
 model ImapConfig {
-  id     Int    @id @default(autoincrement())
+  id     Int     @id @default(autoincrement())
   host   String
   port   Int
   tls    Boolean
-  userId Int    @unique
-  user   User   @relation(fields: [userId], references: [id])
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id])
 }
 
 model SmtpConfig {
-  id     Int    @id @default(autoincrement())
+  id     Int     @id @default(autoincrement())
   host   String
   port   Int
   secure Boolean
-  userId Int    @unique
-  user   User   @relation(fields: [userId], references: [id])
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id])
 }
 
 model Folder {
-  id     Int    @id @default(autoincrement())
+  id     Int     @id @default(autoincrement())
   name   String
-  userId Int
-  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  user   User    @relation(fields: [userId], references: [id])
   emails Email[]
 }
 
@@ -64,7 +103,7 @@ model Email {
   sentAt    DateTime @default(now())
   folderId  Int
   folder    Folder   @relation(fields: [folderId], references: [id])
-  userId    Int
+  userId    String
   user      User     @relation(fields: [userId], references: [id])
   attachments Attachment[]
   @@index([sentAt], map: "sentAt_index")

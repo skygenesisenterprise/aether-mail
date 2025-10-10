@@ -1,20 +1,26 @@
-import jwt from 'jsonwebtoken';
-import { config } from '../config/config';
-import { Request, Response, NextFunction } from 'express';
+import jwt from "jsonwebtoken";
+import config from "../utils/config";
+import { Request, Response, NextFunction } from "express";
 
 interface AuthenticatedRequest extends Request {
   user?: any;
 }
 
-const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+const authMiddleware = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return res.status(401).json({ success: false, error: 'No authorization header' });
+    return res
+      .status(401)
+      .json({ success: false, error: "No authorization header" });
   }
 
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(" ")[1];
   if (!token) {
-    return res.status(401).json({ success: false, error: 'No token provided' });
+    return res.status(401).json({ success: false, error: "No token provided" });
   }
 
   try {
@@ -22,7 +28,7 @@ const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunc
     const decoded = jwt.verify(token, config.jwtSecret);
 
     // Logique spécifique pour statusRoutes
-    if (req.baseUrl.includes('/status')) {
+    if (req.baseUrl.includes("/status")) {
       // Exemple : restreindre à un rôle précis
       // if (!decoded || decoded.role !== 'user') {
       //   return res.status(403).json({ success: false, error: 'Forbidden for status routes' });
@@ -34,7 +40,7 @@ const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunc
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(401).json({ success: false, error: 'Invalid token' });
+    return res.status(401).json({ success: false, error: "Invalid token" });
   }
 };
 
