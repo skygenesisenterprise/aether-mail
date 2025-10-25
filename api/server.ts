@@ -27,7 +27,6 @@ import passport from "./passport";
 // Routes API
 // =====================
 import authRoutes from "./routes/auth.Routes";
-import betterAuthRoutes from "./routes/auth";
 import folderRoutes from "./routes/folder.Routes";
 import mailRoutes from "./routes/mail.Routes";
 import statusRoutes from "./routes/status.Routes";
@@ -185,7 +184,7 @@ app.get("*", (req, res) => {
 // Routing API
 // =====================
 const apiRouter = express.Router();
-apiRouter.use(betterAuthRoutes);
+// apiRouter.use(betterAuthRoutes);
 apiRouter.use(authRoutes);
 apiRouter.use(folderRoutes);
 apiRouter.use(mailRoutes);
