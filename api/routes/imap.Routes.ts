@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { fetchInboxMails } from "../services/mailService";
 import config from "../utils/config";
+import authMiddleware from "../middlewares/authMiddleware";
 
 // Cette route suppose que l'utilisateur est authentifié et que ses identifiants IMAP sont disponibles dans req.body ou req.user
 const router = Router();

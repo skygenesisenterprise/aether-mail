@@ -20,11 +20,10 @@ const EmailInbox: React.FC = () => {
     setCurrentFolder(folder || "inbox");
     const fetchEmails = async () => {
       try {
-        const authStorage = localStorage.getItem("auth-storage");
-        const token = authStorage ? JSON.parse(authStorage).state.token : null;
         const isDev = process.env.NODE_ENV !== "production";
 
-        if (token || isDev) {
+        if (isDev || true) {
+          // Always try to fetch since login checks IMAP
           const serverConfig = localStorage.getItem("serverConfig");
           const servers = serverConfig ? JSON.parse(serverConfig) : null;
 
@@ -41,23 +40,35 @@ const EmailInbox: React.FC = () => {
                 }
               : null;
 
-          const response = await fetch(`/api/emails?folder=${folder}`, {
-            method: fullConfig ? "POST" : "GET",
+          const response = await fetch(`/api/inbox`, {
+            method: "POST",
             headers: {
               "Content-Type": "application/json",
-              ...(token
-                ? {
-                    Authorization: `Bearer ${token}`,
-                  }
-                : {}),
             },
-            body: fullConfig
-              ? JSON.stringify({ imapConfig: fullConfig })
-              : undefined,
+            body: JSON.stringify({ imapConfig: fullConfig }),
           });
           const data = await response.json();
           console.log("Fetched emails:", data);
-          setEmails(data);
+          if (data.success && data.mails) {
+            const mappedEmails = data.mails.map((mail: any, index: number) => ({
+              id: `mail-${index}`,
+              from: {
+                name: mail.from || "Unknown",
+                email: mail.from || "",
+              },
+              subject: mail.subject || "No subject",
+              body: mail.html || mail.text || "",
+              timestamp: new Date(mail.date || Date.now()),
+              isRead: false,
+              isStarred: false,
+              isEncrypted: false,
+              hasAttachments: false,
+              attachments: [],
+            }));
+            setEmails(mappedEmails);
+          } else {
+            setEmails([]);
+          }
         } else {
           // Données mockées pour navigation libre en dev
           setEmails([

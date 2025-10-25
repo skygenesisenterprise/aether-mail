@@ -153,7 +153,7 @@ const authLimiter = rateLimit({
   max: 5, // 5 tentatives par 15 min
   message: "Trop de tentatives, réessayez plus tard.",
 });
-app.use("/api/v1/login", authLimiter);
+app.use("/api/login", authLimiter);
 
 // =====================
 // Session
@@ -194,7 +194,7 @@ apiRouter.use(imapRoutes);
 apiRouter.use(emailRoutes);
 // apiRouter.use(settingRoutes);
 
-app.use("/api/v1", apiRouter);
+app.use("/api", apiRouter);
 
 // =====================
 // Passport initialization

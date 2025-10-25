@@ -45,6 +45,15 @@ export default function ServerConfig() {
         smtpPort: 587,
         smtpSecure: false,
       });
+    } else if (preset === "o2switch") {
+      setConfig({
+        imapHost: "mail.o2switch.net",
+        imapPort: 993,
+        imapTls: true,
+        smtpHost: "mail.o2switch.net",
+        smtpPort: 465,
+        smtpSecure: true,
+      });
     }
   };
   const [error, setError] = useState("");
@@ -89,7 +98,7 @@ export default function ServerConfig() {
           <p className="mt-1 text-xs text-gray-400">
             Vous saisirez vos identifiants lors de la connexion
           </p>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex gap-2 flex-wrap">
             <button
               type="button"
               onClick={() => loadPreset("gmail")}
@@ -103,6 +112,13 @@ export default function ServerConfig() {
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
             >
               Outlook
+            </button>
+            <button
+              type="button"
+              onClick={() => loadPreset("o2switch")}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+            >
+              O2Switch
             </button>
           </div>
         </div>

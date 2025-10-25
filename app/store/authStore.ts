@@ -49,24 +49,39 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string, serverConfig?: any) => {
         try {
           set({ isLoading: true });
-          const response = await fetch("/api/auth/sign-in/email", {
+          const response = await fetch("/api/test-imap-login", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ email, password, serverConfig }),
-            credentials: "include",
           });
 
           const data = await response.json();
 
-          if (response.ok && data.user) {
+          if (response.ok && data.success) {
+            // Create a mock user and session for IMAP login
+            const mockUser = {
+              id: "imap-user",
+              username: email,
+              email,
+              emailVerified: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            const mockSession = {
+              id: "imap-session",
+              expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour
+              token: "imap-token",
+              ipAddress: "",
+              userAgent: "",
+            };
             const session: SessionData = {
-              user: data.user,
-              session: data.session,
+              user: mockUser,
+              session: mockSession,
             };
             set({
-              user: data.user,
+              user: mockUser,
               session,
               isAuthenticated: true,
               isLoading: false,
@@ -74,7 +89,7 @@ export const useAuthStore = create<AuthState>()(
             return { success: true };
           } else {
             set({ isLoading: false });
-            return { success: false, error: data.message || "Login failed" };
+            return { success: false, error: data.error || "Login failed" };
           }
         } catch (error) {
           console.error("Login error:", error);

@@ -32,10 +32,8 @@ WORKDIR /app
 # ---------------------------
 # Étape 4 : Installation des dépendances avec PNPM
 # ---------------------------
-# On copie d'abord les fichiers de dépendances
-COPY pnpm-lock.yaml package.json ./
-
-# Utilisation du cache PNPM (optimise les builds Docker)
+COPY package.json ./
+COPY pnpm-lock.yaml* ./
 RUN pnpm fetch
 
 # ---------------------------
@@ -43,13 +41,8 @@ RUN pnpm fetch
 # ---------------------------
 COPY . .
 
-# Modifier Prisma pour PostgreSQL
-RUN sed -i 's|url = "file:./data/aethermail.db"|url = "postgresql://aethermail:aethermail_password@localhost:5432/aethermail"|g' prisma/schema.prisma
-
-# Installer les dépendances (basé sur le cache précédemment créé)
-RUN pnpm install --offline
-
-# Générer Prisma client et build du projet
+# Installer les dépendances et build
+RUN pnpm install
 RUN npx prisma generate && pnpm run build
 
 # ---------------------------
@@ -63,8 +56,6 @@ COPY supervisord.conf /etc/supervisord.conf
 # ---------------------------
 RUN addgroup --system aethermail && adduser --system --ingroup aethermail aethermail
 RUN chown -R aethermail:aethermail /app /var/lib/nginx /var/log/nginx /run/nginx
-
-USER aethermail
 
 # ---------------------------
 # Étape 8 : Exposition & Démarrage

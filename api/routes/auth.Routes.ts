@@ -4,6 +4,7 @@ import {
   login,
   logout,
   saveServerConfig,
+  testImapLogin,
 } from "../controllers/authController";
 import { validateLogin } from "../middlewares/validateMiddleware";
 
@@ -21,5 +22,6 @@ router.post(
 );
 router.post("/logout", logout);
 router.post("/save-server-config", saveServerConfig);
+router.post("/test-imap-login", testImapLogin);
 
 export default router;

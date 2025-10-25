@@ -78,3 +78,44 @@ export const saveServerConfig = async (req: Request, res: Response) => {
   // For now, just return success
   res.json({ success: true, message: "Configuration sauvegardée" });
 };
+
+export const testImapLogin = async (req: Request, res: Response) => {
+  const { email, password, serverConfig } = req.body;
+  if (!email || !password || !serverConfig) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Missing credentials or config" });
+  }
+
+  try {
+    // Test IMAP connection
+    const Imap = (await import("imap")).default;
+    const imap = new Imap({
+      user: email,
+      password,
+      host: serverConfig.imapHost,
+      port: serverConfig.imapPort,
+      tls: serverConfig.imapTls,
+    });
+
+    return new Promise((resolve) => {
+      imap.once("ready", () => {
+        imap.end();
+        resolve(res.json({ success: true, message: "Login successful" }));
+      });
+      imap.once("error", (err: any) => {
+        resolve(
+          res
+            .status(401)
+            .json({
+              success: false,
+              error: err.message || "IMAP login failed",
+            }),
+        );
+      });
+      imap.connect();
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
