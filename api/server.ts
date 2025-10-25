@@ -2,6 +2,7 @@
 // Imports
 // =====================
 import express, { Application, Request, Response } from "express";
+import path from "path";
 import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
@@ -159,6 +160,18 @@ app.use(
     },
   }),
 );
+
+// =====================
+// Servir les fichiers statiques du frontend
+// =====================
+app.use(express.static(path.join(__dirname, "../frontend")));
+
+// Fallback pour SPA - servir index.html pour toutes les routes non-API
+app.get("*", (req, res) => {
+  if (!req.path.startsWith("/api")) {
+    res.sendFile(path.join(__dirname, "../index.html"));
+  }
+});
 
 // =====================
 // Routing API

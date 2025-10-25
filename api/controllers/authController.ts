@@ -51,12 +51,10 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
       }
 
       if (!user) {
-        return res
-          .status(401)
-          .json({
-            success: false,
-            error: info.message || "Invalid credentials",
-          });
+        return res.status(401).json({
+          success: false,
+          error: info.message || "Invalid credentials",
+        });
       }
 
       // Générer un JWT
@@ -73,4 +71,10 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
 
 export const logout = async (req: Request, res: Response) => {
   res.json({ success: true });
+};
+
+export const saveServerConfig = async (req: Request, res: Response) => {
+  // TODO: Implement saving server config to database
+  // For now, just return success
+  res.json({ success: true, message: "Configuration sauvegardée" });
 };

@@ -1,3 +1,5 @@
+import { motion } from "framer-motion";
+import { formatDate, truncateText } from "../../lib/utils";
 import type React from "react";
 import { useState } from "react";
 import {
@@ -8,8 +10,6 @@ import {
   ArrowsUpDownIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
-import { motion } from "framer-motion";
-import { formatDate, truncateText } from "../../lib/utils";
 
 // Email interface
 export interface Email {
@@ -41,6 +41,29 @@ interface EmailListProps {
   selectedEmailId: string | null;
   onStar?: (email: Email) => void;
   onDelete?: (email: Email) => void;
+}
+
+export interface Email {
+  id: string;
+  from: {
+    name: string;
+    email: string;
+    verified?: boolean;
+  };
+  subject: string;
+  body: string;
+  timestamp: Date;
+  isRead: boolean;
+  isStarred: boolean;
+  isEncrypted: boolean;
+  hasAttachments: boolean;
+  labels?: string[];
+  cc?: string;
+  bcc?: string;
+  attachments?: Array<{
+    filename: string;
+    filesize: number;
+  }>;
 }
 
 const EmailList: React.FC<EmailListProps> = ({

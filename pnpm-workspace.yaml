@@ -1,6 +1,0 @@
-ignoredBuiltDependencies:
-  - '@biomejs/biome'
-  - dtrace-provider
-  - electron
-  - esbuild
-  - unrs-resolver

@@ -12,6 +12,7 @@ import EmailInbox from "./components/email/EmailInbox";
 import Login from "./components/auth/login"; // Importer le composant Login
 import Register from "./components/auth/register"; // Importer le composant Register
 import Recover from "./components/auth/recover"; // Importer le composant Recover
+import ServerConfig from "./components/auth/serverConfig"; // Importer le composant ServerConfig
 
 const AppContent: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
@@ -21,6 +22,7 @@ const AppContent: React.FC = () => {
     <Router>
       <Routes>
         {/* Routes publiques (sans Layout) */}
+        <Route path="/config-servers" element={<ServerConfig />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/recover" element={<Recover />} />

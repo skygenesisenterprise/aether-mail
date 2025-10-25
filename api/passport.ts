@@ -10,8 +10,9 @@ passport.use(
     {
       usernameField: "username",
       passwordField: "password",
+      passReqToCallback: true,
     },
-    async (username, password, done) => {
+    async (req: any, username: string, password: string, done) => {
       try {
         // Vérifier si c'est l'utilisateur admin en dev
         const isDev = process.env.NODE_ENV !== "production";
@@ -40,7 +41,12 @@ passport.use(
           }
         } else {
           // Si pas de mot de passe stocké, essayer IMAP
-          const isValid = await validateImapLogin(username, password);
+          const serverConfig = req.body.serverConfig;
+          const isValid = await validateImapLogin(
+            username,
+            password,
+            serverConfig,
+          );
           if (!isValid) {
             return done(null, false, { message: "Authentification échouée" });
           }
@@ -126,12 +132,63 @@ passport.deserializeUser(async (id: string, done) => {
 async function validateImapLogin(
   username: string,
   password: string,
+  serverConfig?: any,
 ): Promise<boolean> {
-  // Implémentation IMAP existante
-  return new Promise((resolve) => {
-    // Pour l'instant, retourner true en dev
-    const isDev = process.env.NODE_ENV !== "production";
-    resolve(isDev);
+  return new Promise(async (resolve) => {
+    try {
+      // Trouver l'utilisateur par username
+      const user = await prisma.user.findUnique({
+        where: { username },
+        include: { imap: true },
+      });
+
+      let imapConfig: any;
+
+      if (serverConfig) {
+        // Utiliser les configs du test
+        imapConfig = {
+          user: serverConfig.imapUser,
+          password: serverConfig.imapPass,
+          host: serverConfig.imapHost,
+          port: serverConfig.imapPort,
+          tls: serverConfig.imapTls,
+        };
+      } else if (user && user.imap) {
+        // Utiliser les configs de la DB
+        imapConfig = {
+          user: user.imap.imapUser,
+          password: user.imap.imapPass,
+          host: user.imap.host,
+          port: user.imap.port,
+          tls: user.imap.tls,
+        };
+      } else {
+        // Configs par défaut
+        const config = require("../utils/config").default;
+        imapConfig = {
+          user: `${username}@${config.mailDomain}`,
+          password,
+          host: config.imapHost,
+          port: config.imapPort,
+          tls: config.imapTls,
+        };
+      }
+
+      const imap = new (require("imap"))(imapConfig);
+
+      imap.once("ready", () => {
+        imap.end();
+        resolve(true);
+      });
+
+      imap.once("error", () => {
+        resolve(false);
+      });
+
+      imap.connect();
+    } catch (error) {
+      resolve(false);
+    }
   });
 }
 

@@ -13,7 +13,13 @@ export default function GenericSSOLogin() {
   useEffect(() => {
     // Vérifier la session au montage du composant
     checkSession();
-  }, [checkSession]);
+
+    // Vérifier si les serveurs sont configurés
+    const serverConfig = localStorage.getItem("serverConfig");
+    if (!serverConfig) {
+      navigate("/config-servers");
+    }
+  }, [checkSession, navigate]);
 
   useEffect(() => {
     // Rediriger si déjà authentifié
@@ -28,9 +34,29 @@ export default function GenericSSOLogin() {
     setLoading(true);
 
     try {
-      const result = await login(email, password);
+      // Récupérer les configs serveur du localStorage
+      const serverConfig = localStorage.getItem("serverConfig");
+      const servers = serverConfig ? JSON.parse(serverConfig) : null;
+
+      // Combiner avec les identifiants
+      const fullConfig = servers
+        ? {
+            ...servers,
+            imapUser: email,
+            imapPass: password,
+            smtpUser: email,
+            smtpPass: password,
+          }
+        : null;
+
+      const result = await login(email, password, fullConfig);
 
       if (result.success) {
+        // Sauvegarder les identifiants pour les futures requêtes
+        localStorage.setItem(
+          "userCredentials",
+          JSON.stringify({ email, password }),
+        );
         navigate("/inbox");
       } else {
         setError(result.error || "Erreur lors de la connexion");

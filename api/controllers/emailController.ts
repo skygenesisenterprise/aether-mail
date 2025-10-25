@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { prisma } from "../../app/lib/prisma";
 import { sendMail } from "../services/smtpService";
 import { emailApiService, EmailApiResponse } from "../services/emailApiService";
+import { fetchInboxMails } from "../services/mailService";
 import Joi from "joi";
 
 const sendEmailSchema = Joi.object({
@@ -25,6 +26,7 @@ const sendEmailSchema = Joi.object({
 
 export const getEmails = async (req: Request, res: Response) => {
   const { folder, limit, offset, search, sortBy, sortOrder } = req.query;
+  const { imapConfig } = req.body;
 
   // Validate and convert the folder variable
   if (typeof folder !== "string") {
@@ -36,8 +38,29 @@ export const getEmails = async (req: Request, res: Response) => {
   try {
     let emails: any[];
 
-    // En production, utiliser l'API officielle
-    if (
+    // Si des configs IMAP sont fournies, utiliser IMAP directement
+    if (imapConfig) {
+      const mails = await fetchInboxMails({
+        username: imapConfig.imapUser,
+        password: imapConfig.imapPass,
+        host: imapConfig.imapHost,
+        port: imapConfig.imapPort,
+        tls: imapConfig.imapTls,
+      });
+      emails = mails.map((mail: any) => ({
+        id: Math.random().toString(36).substr(2, 9), // Generate temp ID
+        subject: mail.subject || "No subject",
+        body: mail.html || mail.text || "",
+        from: { name: "", email: mail.from || "" },
+        to: "",
+        timestamp: mail.date || new Date(),
+        isRead: false,
+        isStarred: false,
+        isEncrypted: false,
+        hasAttachments: false,
+        attachments: [],
+      }));
+    } else if (
       process.env.NODE_ENV === "production" &&
       emailApiService.isAvailable()
     ) {

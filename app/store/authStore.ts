@@ -30,6 +30,7 @@ interface AuthState {
   login: (
     email: string,
     password: string,
+    serverConfig?: any,
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   checkSession: () => Promise<void>;
@@ -45,7 +46,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: true,
 
-      login: async (email: string, password: string) => {
+      login: async (email: string, password: string, serverConfig?: any) => {
         try {
           set({ isLoading: true });
           const response = await fetch("/api/auth/sign-in/email", {
@@ -53,7 +54,7 @@ export const useAuthStore = create<AuthState>()(
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, serverConfig }),
             credentials: "include",
           });
 
@@ -76,8 +77,12 @@ export const useAuthStore = create<AuthState>()(
             return { success: false, error: data.message || "Login failed" };
           }
         } catch (error) {
+          console.error("Login error:", error);
           set({ isLoading: false });
-          return { success: false, error: "Network error" };
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Network error",
+          };
         }
       },
 

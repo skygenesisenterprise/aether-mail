@@ -77,6 +77,11 @@ jspm_packages/
 # Optional REPL history
 .node_repl_history
 
+# Lock files (keep only package-lock.json for Docker)
+yarn.lock
+pnpm-lock.yaml
+bun.lock
+
 # Output of 'npm pack'
 *.tgz
 

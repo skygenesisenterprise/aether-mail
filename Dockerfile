@@ -1,71 +1,73 @@
-# Étape 1 : Construire l'application complète
-FROM node:20-alpine AS builder
+# Base Debian 13 slim
+FROM debian:13-slim
 
-# Installer les dépendances système nécessaires
-RUN apk add --no-cache \
-    git \
+# ---------------------------
+# Étape 1 : Installation système
+# ---------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    && rm -rf /var/cache/apk/*
+    ca-certificates \
+    gnupg \
+    build-essential \
+    git \
+    postgresql-client \
+    nginx \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
 
-# Définir le répertoire de travail
+# ---------------------------
+# Étape 2 : Installation Node.js 20 et PNPM
+# ---------------------------
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g pnpm@latest \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---------------------------
+# Étape 3 : Préparation du répertoire de travail
+# ---------------------------
+RUN mkdir -p /app /var/log/supervisor /var/lib/nginx /run/nginx
 WORKDIR /app
 
-# Copier les fichiers de configuration
-COPY package*.json ./
-COPY bun.lock ./
-COPY vite.config.ts ./
-COPY tsconfig.json ./
-COPY tsconfig.server.json ./
+# ---------------------------
+# Étape 4 : Installation des dépendances avec PNPM
+# ---------------------------
+# On copie d'abord les fichiers de dépendances
+COPY pnpm-lock.yaml package.json ./
 
-# Installer les dépendances
-RUN npm ci --only=production=false
+# Utilisation du cache PNPM (optimise les builds Docker)
+RUN pnpm fetch
 
-# Copier le code source
+# ---------------------------
+# Étape 5 : Copier le code et builder
+# ---------------------------
 COPY . .
 
-# Ajouter un argument pour l'environnement
-ARG NODE_ENV=production
-ENV NODE_ENV=$NODE_ENV
+# Modifier Prisma pour PostgreSQL
+RUN sed -i 's|url = "file:./data/aethermail.db"|url = "postgresql://aethermail:aethermail_password@localhost:5432/aethermail"|g' prisma/schema.prisma
 
-# Construire l'application
-RUN if [ "$NODE_ENV" = "production" ]; then npm run build; fi
+# Installer les dépendances (basé sur le cache précédemment créé)
+RUN pnpm install --offline
 
-# Étape 2 : Image de production optimisée
-FROM node:20-alpine AS production
+# Générer Prisma client et build du projet
+RUN npx prisma generate && pnpm run build
 
-# Installer les dépendances système pour la production
-RUN apk add --no-cache \
-    dumb-init \
-    && rm -rf /var/cache/apk/*
+# ---------------------------
+# Étape 6 : Config Nginx & Supervisor
+# ---------------------------
+COPY nginx.conf /etc/nginx/sites-enabled/default
+COPY supervisord.conf /etc/supervisord.conf
 
-# Créer un utilisateur non-root
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S aethermail -u 1001
+# ---------------------------
+# Étape 7 : Sécurité et utilisateur non-root
+# ---------------------------
+RUN addgroup --system aethermail && adduser --system --ingroup aethermail aethermail
+RUN chown -R aethermail:aethermail /app /var/lib/nginx /var/log/nginx /run/nginx
 
-# Définir le répertoire de travail
-WORKDIR /app
-
-# Copier les fichiers de configuration
-COPY package*.json ./
-
-# Installer uniquement les dépendances de production
-RUN npm ci --only=production && npm cache clean --force
-
-# Copier les fichiers compilés depuis l'étape de build
-COPY --from=builder --chown=aethermail:nodejs /app/dist ./dist
-
-# Créer les répertoires nécessaires avec les bonnes permissions
-RUN mkdir -p logs && \
-    chown -R aethermail:nodejs /app
-
-# Passer à l'utilisateur non-root
 USER aethermail
 
-# Exposer le port du backend
+# ---------------------------
+# Étape 8 : Exposition & Démarrage
+# ---------------------------
 EXPOSE 4000
-
-# Utiliser dumb-init pour gérer les signaux correctement
-ENTRYPOINT ["dumb-init", "--"]
-
-# Commande pour démarrer l'application
-CMD ["node", "./dist/backend/server.js"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

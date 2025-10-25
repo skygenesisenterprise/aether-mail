@@ -25,12 +25,35 @@ const EmailInbox: React.FC = () => {
         const isDev = process.env.NODE_ENV !== "production";
 
         if (token || isDev) {
-          const response = await fetch(`/api/emails?folder=${folder}`, {
-            headers: token
+          const serverConfig = localStorage.getItem("serverConfig");
+          const servers = serverConfig ? JSON.parse(serverConfig) : null;
+
+          // Récupérer les identifiants depuis localStorage
+          const credentials = localStorage.getItem("userCredentials");
+          const creds = credentials ? JSON.parse(credentials) : null;
+
+          const fullConfig =
+            servers && creds
               ? {
-                  Authorization: `Bearer ${token}`,
+                  ...servers,
+                  imapUser: creds.email,
+                  imapPass: creds.password,
                 }
-              : {},
+              : null;
+
+          const response = await fetch(`/api/emails?folder=${folder}`, {
+            method: fullConfig ? "POST" : "GET",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token
+                ? {
+                    Authorization: `Bearer ${token}`,
+                  }
+                : {}),
+            },
+            body: fullConfig
+              ? JSON.stringify({ imapConfig: fullConfig })
+              : undefined,
           });
           const data = await response.json();
           console.log("Fetched emails:", data);
