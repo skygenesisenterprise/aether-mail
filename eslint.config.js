@@ -18,7 +18,8 @@ export default [
       // Tes règles personnalisées
       "no-unused-vars": "warn",
       "semi": ["error", "always"],
-      "quotes": ["error", "double"]
+      "quotes": ["error", "double"],
+      "@typescript-eslint/no-var-requires": "error"
     },
   },
 ];

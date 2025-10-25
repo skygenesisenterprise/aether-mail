@@ -14,7 +14,13 @@ import cookieParser from "cookie-parser";
 import { body, validationResult } from "express-validator";
 import compression from "compression";
 import swaggerUi from "swagger-ui-express";
-import swaggerDocument from "../docs/swagger.json" assert { type: "json" };
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const swaggerPath = path.join(__dirname, "docs/swagger.json");
+const swaggerDocument = JSON.parse(readFileSync(swaggerPath, "utf8"));
 import passport from "./passport";
 
 // ====================
@@ -88,7 +94,9 @@ app.disable("x-powered-by");
 // =====================
 const allowedOrigins =
   process.env.NODE_ENV === "production"
-    ? process.env.CORS_ORIGIN?.split(",") || [""]
+    ? process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(",")
+      : [""]
     : ["http://localhost:5173"];
 
 app.use(
@@ -202,9 +210,9 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // =====================
 // Gestion des erreurs & 404
 // =====================
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: "Route not found" });
-});
+// app.use((_req: Request, res: Response) => {
+//   res.status(404).json({ error: "Route not found" });
+// });
 
 app.use(errorMiddleware);
 
