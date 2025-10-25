@@ -34,7 +34,7 @@ Use the GitHub UI to create a fork, then clone it locally:
 ```bash
 git clone https://github.com/skygenesisenterprise/aether-mail.git
 cd aether-mail
-````
+```
 
 ### 2. Set Up Locally
 
