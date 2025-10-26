@@ -13,7 +13,7 @@ const AuthPage: React.FC = () => {
     e.preventDefault();
 
     // Simule une connexion locale pour dev
-    if (email === "user@sge.local" && password === "password") {
+    if (email === "user@skygenesisenterprie.local" && password === "password") {
       setError("");
       // Redirige vers /dashboard après connexion
       navigate("/inbox");
