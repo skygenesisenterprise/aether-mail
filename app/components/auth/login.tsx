@@ -15,34 +15,22 @@ const AuthPage: React.FC = () => {
     setLoading(true);
 
     try {
-      if (process.env.NODE_ENV === "development") {
-        // --- LOGIN LOCAL DEV ---
-        if (email === "user@skygenesisenterprise.local" && password === "password") {
-          localStorage.setItem("sge_token", "dev-token");
-          navigate("/inbox");
-        } else {
-          setError("Email ou mot de passe invalide (dev).");
-        }
-      } else {
-        // --- LOGIN PRODUCTION via API ---
-        const response = await fetch(
-          "https://api.skygenesisenterprise.com/api/auth/login",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-            credentials: "include",
-          }
-        );
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+      const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      });
 
-        if (!response.ok) {
-          const data = await response.json();
-          setError(data.message || "Email ou mot de passe invalide.");
-        } else {
-          const data = await response.json();
-          localStorage.setItem("sge_token", data.token);
-          navigate("/inbox");
-        }
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.message || "Email ou mot de passe invalide.");
+      } else {
+        const data = await response.json();
+        localStorage.setItem("sge_token", data.token);
+        navigate("/inbox");
       }
     } catch (err) {
       console.error(err);
@@ -56,16 +44,24 @@ const AuthPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-10 bg-white rounded-xl shadow-lg">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Sky Genesis Enterprise</h1>
-          <p className="mt-2 text-sm text-gray-600">Connectez-vous à votre compte Entreprise</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Sky Genesis Enterprise
+          </h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Connectez-vous à votre compte Entreprise
+          </p>
         </div>
 
-        {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+        {error && (
+          <div className="text-red-500 text-sm text-center">{error}</div>
+        )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="email" className="sr-only">Email</label>
+              <label htmlFor="email" className="sr-only">
+                Email
+              </label>
               <input
                 id="email"
                 name="email"
@@ -78,7 +74,9 @@ const AuthPage: React.FC = () => {
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">Mot de passe</label>
+              <label htmlFor="password" className="sr-only">
+                Mot de passe
+              </label>
               <input
                 id="password"
                 name="password"

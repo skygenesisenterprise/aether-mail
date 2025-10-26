@@ -31,14 +31,13 @@ const EmailInbox: React.FC = () => {
           const credentials = localStorage.getItem("userCredentials");
           const creds = credentials ? JSON.parse(credentials) : null;
 
-          const fullConfig =
-            servers && creds
-              ? {
-                  ...servers,
-                  imapUser: creds.email,
-                  imapPass: creds.password,
-                }
-              : null;
+          // Si pas de config serveur personnalisée, laisser l'API détecter automatiquement
+          const fullConfig = creds
+            ? {
+                imapUser: creds.email,
+                imapPass: creds.password,
+              }
+            : null;
 
           const response = await fetch(`/api/inbox`, {
             method: "POST",
@@ -50,22 +49,13 @@ const EmailInbox: React.FC = () => {
           const data = await response.json();
           console.log("Fetched emails:", data);
           if (data.success && data.mails) {
-            const mappedEmails = data.mails.map((mail: any, index: number) => ({
-              id: `mail-${index}`,
-              from: {
-                name: mail.from || "Unknown",
-                email: mail.from || "",
-              },
-              subject: mail.subject || "No subject",
-              body: mail.html || mail.text || "",
-              timestamp: new Date(mail.date || Date.now()),
-              isRead: false,
-              isStarred: false,
-              isEncrypted: false,
-              hasAttachments: false,
-              attachments: [],
-            }));
-            setEmails(mappedEmails);
+            // Le backend retourne maintenant le bon format directement
+            setEmails(
+              data.mails.map((mail: any) => ({
+                ...mail,
+                timestamp: new Date(mail.timestamp),
+              })),
+            );
           } else {
             setEmails([]);
           }
