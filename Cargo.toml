@@ -1,9 +1,9 @@
 [package]
-name = "skygenesisenterprise-api"
+name = "skygenesisenterprise-aethermail"
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
-repository = "https://github.com/skygenesisenterprise/api-service"
+repository = "https://github.com/skygenesisenterprise/aether-mail"
 
 [workspace]
 members = ["api"]
