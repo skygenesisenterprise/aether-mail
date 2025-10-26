@@ -165,3 +165,8 @@ package-lock.json
 *storybook.log
 
 /app/generated/prisma
+
+
+# Added by cargo
+
+/target
