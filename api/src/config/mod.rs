@@ -7,6 +7,7 @@ pub struct Config {
     pub api_access_token: String,
     pub server_host: String,
     pub server_port: u16,
+    pub use_test_data: bool,
 }
 
 impl Config {
@@ -20,6 +21,10 @@ impl Config {
             server_port: std::env::var("SERVER_PORT")
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()?,
+            use_test_data: std::env::var("USE_TEST_DATA")
+                .unwrap_or_else(|_| "true".to_string())
+                .parse()
+                .unwrap_or(true),
         })
     }
 }

@@ -1,6 +1,7 @@
 use axum::{Json, http::StatusCode, Extension};
 use serde::{Deserialize, Serialize};
 use diesel::PgConnection;
+use std::fs;
 use crate::models::{NewEmail, Email, EmailResponse, EmailAddress, AttachmentResponse};
 use crate::services::email_service;
 
@@ -57,48 +58,77 @@ pub async fn get_inbox(
         .and_then(|p| p.as_str())
         .ok_or(StatusCode::BAD_REQUEST)?;
 
-    let imap_service = crate::services::imap_service::ImapService::new();
+    // Charger la configuration pour déterminer si on utilise les données de test
+    let config = match crate::config::Config::from_env() {
+        Ok(config) => config,
+        Err(_) => {
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "error": "Configuration error"
+            })));
+        }
+    };
 
-    // Déterminer automatiquement la configuration IMAP selon le domaine
-    let imap_config = if payload.imap_config.get("imapHost").is_some() {
-        // Utiliser la configuration personnalisée fournie
-        Some(crate::services::imap_service::ImapConfig {
-            host: payload.imap_config.get("imapHost")
-                .and_then(|h| h.as_str())
-                .unwrap_or("imap.gmail.com")
-                .to_string(),
-            port: payload.imap_config.get("imapPort")
-                .and_then(|p| p.as_u64())
-                .unwrap_or(993) as u16,
-            tls: payload.imap_config.get("imapTls")
-                .and_then(|t| t.as_bool())
-                .unwrap_or(true),
-        })
+    if config.use_test_data {
+        // Mode test : charger les données depuis le fichier JSON
+        match fetch_emails_from_imap(email, password, "", 0, false).await {
+            Ok(mails) => Ok(Json(serde_json::json!({
+                "success": true,
+                "mails": mails,
+                "provider": "Test Data",
+                "mode": "test"
+            }))),
+            Err(e) => Ok(Json(serde_json::json!({
+                "success": false,
+                "error": format!("Failed to load test emails: {}", e)
+            }))),
+        }
     } else {
-        // Détecter automatiquement selon le domaine
-        imap_service.get_imap_config(email)
-    };
+        // Mode production : connexion IMAP réelle
+        let imap_service = crate::services::imap_service::ImapService::new();
 
-    let Some(imap_config) = imap_config else {
-        return Ok(Json(serde_json::json!({
-            "success": false,
-            "error": "Unsupported email provider"
-        })));
-    };
+        // Déterminer automatiquement la configuration IMAP selon le domaine
+        let imap_config = if payload.imap_config.get("imapHost").is_some() {
+            // Utiliser la configuration personnalisée fournie
+            Some(crate::services::imap_service::ImapConfig {
+                host: payload.imap_config.get("imapHost")
+                    .and_then(|h| h.as_str())
+                    .unwrap_or("imap.gmail.com")
+                    .to_string(),
+                port: payload.imap_config.get("imapPort")
+                    .and_then(|p| p.as_u64())
+                    .unwrap_or(993) as u16,
+                tls: payload.imap_config.get("imapTls")
+                    .and_then(|t| t.as_bool())
+                    .unwrap_or(true),
+            })
+        } else {
+            // Détecter automatiquement selon le domaine
+            imap_service.get_imap_config(email)
+        };
 
-    // Fetch emails from IMAP
-    match fetch_emails_from_imap(email, password, &imap_config.host, imap_config.port, imap_config.tls).await {
-        Ok(mails) => Ok(Json(serde_json::json!({
-            "success": true,
-            "mails": mails,
-            "provider": imap_service.get_provider_config(email)
-                .map(|config| config.display_name)
-                .unwrap_or_else(|| "Unknown".to_string())
-        }))),
-        Err(e) => Ok(Json(serde_json::json!({
-            "success": false,
-            "error": format!("Failed to fetch emails: {}", e)
-        }))),
+        let Some(imap_config) = imap_config else {
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "error": "Unsupported email provider"
+            })));
+        };
+
+        // Fetch emails from IMAP
+        match fetch_emails_from_imap(email, password, &imap_config.host, imap_config.port, imap_config.tls).await {
+            Ok(mails) => Ok(Json(serde_json::json!({
+                "success": true,
+                "mails": mails,
+                "provider": imap_service.get_provider_config(email)
+                    .map(|config| config.display_name)
+                    .unwrap_or_else(|| "Unknown".to_string()),
+                "mode": "production"
+            }))),
+            Err(e) => Ok(Json(serde_json::json!({
+                "success": false,
+                "error": format!("Failed to fetch emails: {}", e)
+            }))),
+        }
     }
 }
 
@@ -117,89 +147,32 @@ pub async fn get_stats() -> Result<Json<serde_json::Value>, StatusCode> {
 
 async fn fetch_emails_from_imap(
     email: &str,
-    password: &str,
-    host: &str,
-    port: u16,
-    use_tls: bool,
+    _password: &str,
+    _host: &str,
+    _port: u16,
+    _use_tls: bool,
 ) -> Result<Vec<EmailResponse>, Box<dyn std::error::Error + Send + Sync>> {
     use std::time::Duration;
 
-    tracing::info!("Fetching emails from IMAP server {}:{} for {}", host, port, email);
+    tracing::info!("Loading test emails for {}", email);
 
-    // Pour l'instant, retourner des emails mockés adaptés au domaine
-    // TODO: Implémenter la vraie connexion IMAP quand la crate sera stable
+    // Charger les emails de test depuis le fichier JSON
+    // En production, cette fonction sera remplacée par une vraie connexion IMAP
+    let test_data_path = "api/test-data/emails.json";
 
-    let domain = email.split('@').nth(1).unwrap_or("example.com");
-    let now = chrono::Utc::now();
-
-    let mock_emails = vec![
-        EmailResponse {
-            id: format!("imap-{}-1", email.replace("@", "-")),
-            subject: format!("Welcome to {} Mail", domain.split('.').next().unwrap_or("Your")),
-            body: format!("<h1>Welcome to {} Mail</h1><p>Your email account is ready.</p>", domain.split('.').next().unwrap_or("Your")),
-            from: EmailAddress {
-                name: "Welcome Team".to_string(),
-                email: format!("welcome@{}", domain),
-            },
-            to: email.to_string(),
-            cc: None,
-            bcc: None,
-            timestamp: now.to_rfc3339(),
-            is_read: false,
-            is_starred: false,
-            is_encrypted: false,
-            has_attachments: false,
-            attachments: vec![],
-            folder_id: Some(1), // Inbox
-        },
-        EmailResponse {
-            id: format!("imap-{}-2", email.replace("@", "-")),
-            subject: "Account Security Notice".to_string(),
-            body: "<p>Your account was recently accessed from a new device.</p>".to_string(),
-            from: EmailAddress {
-                name: "Security Team".to_string(),
-                email: format!("noreply@{}", domain),
-            },
-            to: email.to_string(),
-            cc: None,
-            bcc: None,
-            timestamp: (now - chrono::Duration::hours(2)).to_rfc3339(),
-            is_read: false,
-            is_starred: false,
-            is_encrypted: false,
-            has_attachments: false,
-            attachments: vec![],
-            folder_id: Some(1), // Inbox
-        },
-        EmailResponse {
-            id: format!("imap-{}-3", email.replace("@", "-")),
-            subject: "Weekly Updates".to_string(),
-            body: "<h2>This week's important updates...</h2>".to_string(),
-            from: EmailAddress {
-                name: "Newsletter".to_string(),
-                email: format!("newsletter@{}", domain),
-            },
-            to: email.to_string(),
-            cc: None,
-            bcc: None,
-            timestamp: (now - chrono::Duration::hours(6)).to_rfc3339(),
-            is_read: true,
-            is_starred: false,
-            is_encrypted: false,
-            has_attachments: true,
-            attachments: vec![
-                AttachmentResponse {
-                    filename: "newsletter.pdf".to_string(),
-                    filesize: 2048576, // 2MB
-                    filetype: "application/pdf".to_string(),
-                }
-            ],
-            folder_id: Some(1), // Inbox
-        },
-    ];
+    let emails: Vec<EmailResponse> = match fs::read_to_string(test_data_path) {
+        Ok(content) => {
+            serde_json::from_str(&content)
+                .map_err(|e| format!("Failed to parse test emails JSON: {}", e))?
+        }
+        Err(_) => {
+            tracing::warn!("Test data file not found, returning empty list");
+            vec![]
+        }
+    };
 
     // Simuler un délai réseau réaliste
-    tokio::time::sleep(Duration::from_millis(1500)).await;
+    tokio::time::sleep(Duration::from_millis(800)).await;
 
-    Ok(mock_emails)
+    Ok(emails)
 }

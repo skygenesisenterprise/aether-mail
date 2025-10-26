@@ -79,7 +79,6 @@ jspm_packages/
 
 # Lock files (keep only package-lock.json for Docker)
 yarn.lock
-pnpm-lock.yaml
 bun.lock
 
 # Output of 'npm pack'

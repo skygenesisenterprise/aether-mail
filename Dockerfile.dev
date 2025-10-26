@@ -13,8 +13,8 @@ RUN apk add --no-cache \
 RUN apk add --no-cache docker-cli
 
 # Créer un utilisateur non-root pour le développement
-RUN addgroup -g 1000 -S developer && \
-    adduser -S developer -u 1000 -G developer
+RUN addgroup -g 1001 -S developer && \
+    adduser -S developer -u 1001 -G developer
 
 # Définir le répertoire de travail
 WORKDIR /app
@@ -24,10 +24,10 @@ RUN chown -R developer:developer /app
 
 # Copier les fichiers de configuration en tant que root d'abord
 COPY --chown=developer:developer package*.json ./
-COPY --chown=developer:developer bun.lock ./
+COPY --chown=developer:developer pnpm-lock.yaml ./
 
 # Installer les dépendances
-RUN npm ci
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 # Copier le code source avec les bonnes permissions
 COPY --chown=developer:developer . .

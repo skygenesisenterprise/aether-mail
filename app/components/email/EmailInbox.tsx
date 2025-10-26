@@ -7,6 +7,29 @@ import EmailViewer from "./EmailViewer";
 import EmailComposer from "./EmailComposer";
 import { useEmailStore } from "../../store/emailStore";
 
+// Type for backend email response
+interface BackendEmailResponse {
+  id: string;
+  subject: string;
+  body: string;
+  from: {
+    name: string;
+    email: string;
+  };
+  to: string;
+  cc?: string;
+  bcc?: string;
+  timestamp: string;
+  is_read: boolean;
+  is_starred: boolean;
+  is_encrypted: boolean;
+  has_attachments: boolean;
+  attachments: Array<{
+    filename: string;
+    filesize: number;
+  }>;
+}
+
 const EmailInbox: React.FC = () => {
   const { folder } = useParams<{ folder: string }>(); // Récupérer le dossier actif depuis la route
   const { emails, setEmails, updateEmail, deleteEmail, setCurrentFolder } =
@@ -49,11 +72,26 @@ const EmailInbox: React.FC = () => {
           const data = await response.json();
           console.log("Fetched emails:", data);
           if (data.success && data.mails) {
-            // Le backend retourne maintenant le bon format directement
+            // Transformer les données du backend vers le format frontend
             setEmails(
-              data.mails.map((mail: any) => ({
-                ...mail,
+              data.mails.map((mail: BackendEmailResponse) => ({
+                id: mail.id,
+                subject: mail.subject,
+                body: mail.body,
+                from: {
+                  name: mail.from.name,
+                  email: mail.from.email,
+                  verified: false, // Par défaut non vérifié
+                },
+                to: mail.to,
+                cc: mail.cc,
+                bcc: mail.bcc,
                 timestamp: new Date(mail.timestamp),
+                isRead: mail.is_read,
+                isStarred: mail.is_starred,
+                isEncrypted: mail.is_encrypted,
+                hasAttachments: mail.has_attachments,
+                attachments: mail.attachments || [],
               })),
             );
           } else {
