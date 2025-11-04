@@ -1,7 +1,6 @@
 import type React from "react";
 import { useState } from "react";
 import Layout from "./Layout";
-import EmailInbox from "../email/EmailInbox";
 import type { Email } from "../email/EmailList";
 
 interface EmailLayoutProps {

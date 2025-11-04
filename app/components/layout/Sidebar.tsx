@@ -6,7 +6,7 @@ import {
   InboxIcon,
   PaperAirplaneIcon,
   TrashIcon,
-  ExclamationCircleIcon,
+  ExclamationTriangleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   FolderIcon,
@@ -45,15 +45,17 @@ const SidebarItem = ({
     <>
       <div
         className={cn(
-          "flex items-center gap-3 rounded-xl px-4 py-3 text-sm glass-transition cursor-pointer",
-          "hover:bg-white/10 hover:backdrop-blur-sm",
-          active ? "bg-white/20 backdrop-blur-sm glass-primary" : "",
+          "flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-all duration-200 cursor-pointer",
+          "hover:bg-gray-800",
+          active
+            ? "bg-gray-800 text-blue-400 border-l-2 border-blue-500"
+            : "text-secondary",
         )}
       >
         {hasSubfolders && (
           <button
             onClick={onToggle}
-            className="w-4 h-4 flex-shrink-0 glass-text-muted hover:glass-text-secondary glass-transition"
+            className="w-4 h-4 flex-shrink-0 text-tertiary hover:text-secondary transition-colors"
           >
             {isExpanded ? (
               <ChevronDownIcon className="w-4 h-4" />
@@ -63,10 +65,10 @@ const SidebarItem = ({
           </button>
         )}
         {!hasSubfolders && <div className="w-4 h-4 flex-shrink-0" />}
-        <div className="w-5 h-5 flex-shrink-0 glass-text-secondary">{icon}</div>
-        <span className="truncate glass-text-primary font-medium">{label}</span>
+        <div className="w-5 h-5 flex-shrink-0">{icon}</div>
+        <span className="truncate font-medium">{label}</span>
         {count !== undefined && count > 0 && (
-          <div className="ml-auto flex h-6 min-w-6 items-center justify-center rounded-full glass-primary text-xs font-bold text-white glass-pulse">
+          <div className="ml-auto flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
             {count}
           </div>
         )}
@@ -79,13 +81,13 @@ const SidebarItem = ({
 
   if (to) {
     return (
-      <Link to={to} className="block glass-transition">
+      <Link to={to} className="block transition-colors">
         {content}
       </Link>
     );
   }
 
-  return <div className="block glass-transition">{content}</div>;
+  return <div className="block transition-colors">{content}</div>;
 };
 
 const Sidebar = ({
@@ -152,11 +154,11 @@ const Sidebar = ({
   };
 
   const sidebarContent = (
-    <div className="flex h-full flex-col glass-strong glass-no-border">
-      {/* Glass Header */}
-      <div className="p-6 border-b border-white/10">
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <div className="p-6 border-b border-gray-800">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl glass-gradient flex items-center justify-center glass-float">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
             <svg
               className="w-6 h-6 text-white"
               fill="currentColor"
@@ -166,29 +168,20 @@ const Sidebar = ({
             </svg>
           </div>
           <div>
-            <h2 className="text-lg font-bold glass-text-primary">
-              Aether Mail
-            </h2>
-            <p className="text-xs glass-text-muted">Liquid Glass 2025</p>
+            <h2 className="text-lg font-bold text-primary">Aether Mail</h2>
+            <p className="text-xs text-tertiary">Secure Email Client</p>
           </div>
         </div>
       </div>
 
       {/* Navigation sections */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {/* Favorites section - Glass style */}
-        <div className="glass-card glass-shimmer">
-          <h3 className="text-xs font-semibold glass-text-muted uppercase tracking-wider mb-4 flex items-center">
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-            </svg>
-            Favorites
+        {/* Quick Access */}
+        <div>
+          <h3 className="text-xs font-semibold text-tertiary uppercase tracking-wider mb-4">
+            Quick Access
           </h3>
-          <nav className="space-y-2">
+          <nav className="space-y-1">
             <SidebarItem
               icon={<InboxIcon />}
               label="Inbox"
@@ -199,8 +192,8 @@ const Sidebar = ({
           </nav>
         </div>
 
-        {/* Folders section - Glass hierarchical */}
-        <div className="glass-card glass-shimmer">
+        {/* Folders */}
+        <div>
           <SidebarItem
             icon={<FolderIcon />}
             label="Folders"
@@ -240,7 +233,7 @@ const Sidebar = ({
                 active={isRouteActive("/archive")}
               />
               <SidebarItem
-                icon={<ExclamationCircleIcon />}
+                icon={<ExclamationTriangleIcon />}
                 label="Junk Email"
                 to="/junk"
                 count={counts.junk}
@@ -257,8 +250,8 @@ const Sidebar = ({
           )}
         </div>
 
-        {/* Categories section - Glass style */}
-        <div className="glass-card glass-shimmer">
+        {/* Categories */}
+        <div>
           <SidebarItem
             icon={<TagIcon />}
             label="Categories"
@@ -270,33 +263,25 @@ const Sidebar = ({
           {expandedFolders.categories && (
             <div className="ml-6 mt-2 space-y-1">
               <SidebarItem
-                icon={
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-400 to-red-600 glass-pulse" />
-                }
+                icon={<div className="w-3 h-3 rounded-full bg-red-500" />}
                 label="Important"
                 to="/category/important"
                 active={isRouteActive("/category/important")}
               />
               <SidebarItem
-                icon={
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 glass-pulse" />
-                }
+                icon={<div className="w-3 h-3 rounded-full bg-blue-500" />}
                 label="Work"
                 to="/category/work"
                 active={isRouteActive("/category/work")}
               />
               <SidebarItem
-                icon={
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-400 to-green-600 glass-pulse" />
-                }
+                icon={<div className="w-3 h-3 rounded-full bg-green-500" />}
                 label="Personal"
                 to="/category/personal"
                 active={isRouteActive("/category/personal")}
               />
               <SidebarItem
-                icon={
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-400 to-purple-600 glass-pulse" />
-                }
+                icon={<div className="w-3 h-3 rounded-full bg-purple-500" />}
                 label="Projects"
                 to="/category/projects"
                 active={isRouteActive("/category/projects")}
@@ -304,49 +289,11 @@ const Sidebar = ({
             </div>
           )}
         </div>
-
-        {/* Calendar section - Glass integration */}
-        <div className="glass-card glass-shimmer">
-          <h3 className="text-xs font-semibold glass-text-muted uppercase tracking-wider mb-4 flex items-center">
-            <CalendarIcon className="w-4 h-4 mr-2" />
-            Calendar
-          </h3>
-          <nav className="space-y-2">
-            <SidebarItem
-              icon={<CalendarIcon />}
-              label="Today"
-              to="/calendar/today"
-              active={isRouteActive("/calendar/today")}
-            />
-            <SidebarItem
-              icon={<CalendarIcon />}
-              label="Week"
-              to="/calendar/week"
-              active={isRouteActive("/calendar/week")}
-            />
-          </nav>
-        </div>
-
-        {/* People section - Glass integration */}
-        <div className="glass-card glass-shimmer">
-          <h3 className="text-xs font-semibold glass-text-muted uppercase tracking-wider mb-4 flex items-center">
-            <UserGroupIcon className="w-4 h-4 mr-2" />
-            People
-          </h3>
-          <nav className="space-y-2">
-            <SidebarItem
-              icon={<UserGroupIcon />}
-              label="Contacts"
-              to="/contacts"
-              active={isRouteActive("/contacts")}
-            />
-          </nav>
-        </div>
       </div>
 
-      {/* Glass Footer */}
-      <div className="p-4 border-t border-white/10">
-        <div className="glass-button glass-gradient w-full text-center">
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-800">
+        <button className="btn-secondary w-full text-sm">
           <svg
             className="w-4 h-4 inline mr-2"
             fill="currentColor"
@@ -355,7 +302,7 @@ const Sidebar = ({
             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
           </svg>
           New Folder
-        </div>
+        </button>
       </div>
     </div>
   );
@@ -381,7 +328,7 @@ const Sidebar = ({
           animate={isOpen ? "open" : "closed"}
           variants={sidebarVariants}
           transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-          className="fixed inset-y-0 left-0 z-50 w-64 bg-proton-dark shadow-xl border-r border-proton-border"
+          className="fixed inset-y-0 left-0 z-50 w-64 surface-primary border-r border-gray-800 shadow-xl"
         >
           {sidebarContent}
         </motion.div>
@@ -391,7 +338,7 @@ const Sidebar = ({
 
   // Desktop view
   return (
-    <div className="hidden w-72 flex-shrink-0 glass-backdrop md:block">
+    <div className="hidden w-72 flex-shrink-0 surface-primary border-r border-gray-800 md:block">
       {sidebarContent}
     </div>
   );

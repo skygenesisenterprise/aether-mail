@@ -236,7 +236,7 @@ const EmailInbox: React.FC = () => {
   });
 
   return (
-    <div className="flex h-full bg-white dark:bg-gray-900">
+    <div className="flex h-full">
       {/* Vue mobile - une seule colonne */}
       {isMobileView ? (
         <>
@@ -269,10 +269,10 @@ const EmailInbox: React.FC = () => {
           )}
         </>
       ) : (
-        /* Vue desktop - trois colonnes */
+        /* Vue desktop - deux colonnes */
         <div className="flex flex-1">
           {/* Colonne 1: Liste des emails - largeur fixe */}
-          <div className="w-96 flex-shrink-0 border-r border-gray-200 dark:border-gray-700">
+          <div className="w-96 flex-shrink-0 border-r border-gray-800">
             <EmailList
               emails={emails}
               onSelectEmail={handleSelectEmail}
@@ -294,9 +294,9 @@ const EmailInbox: React.FC = () => {
               />
             ) : (
               /* État vide quand aucun email n'est sélectionné */
-              <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
+              <div className="flex-1 flex items-center justify-center surface-secondary">
                 <div className="text-center max-w-md mx-auto px-4">
-                  <div className="mx-auto h-24 w-24 text-gray-400 mb-4">
+                  <div className="mx-auto h-24 w-24 text-tertiary mb-4">
                     <svg
                       fill="none"
                       viewBox="0 0 24 24"
@@ -311,10 +311,10 @@ const EmailInbox: React.FC = () => {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-medium text-primary mb-2">
                     Select an email
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-tertiary">
                     Choose an email from the list to view its contents
                   </p>
                 </div>
@@ -333,7 +333,7 @@ const EmailInbox: React.FC = () => {
 
       {/* Bouton flottant pour composer un email (Mobile) */}
       <button
-        className="fixed bottom-6 right-6 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 shadow-lg hover:bg-blue-700 focus:outline-none transition-colors"
+        className="fixed bottom-6 right-6 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 shadow-lg hover:bg-blue-700 focus:outline-none transition-colors md:hidden"
         onClick={() => setIsComposerOpen(true)}
       >
         <svg

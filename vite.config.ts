@@ -9,18 +9,18 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       {
-        name: "custom-message", // Nom du plugin
+        name: "custom-message",
         configureServer(server) {
-          console.log("\x1b[36m%s\x1b[0m", "🚀 Vite server is starting..."); // Message personnalisé en cyan
+          console.log("\x1b[36m%s\x1b[0m", "🚀 Aether Mail V1 starting...");
           console.log(
             "\x1b[32m%s\x1b[0m",
-            "🌟 Aether Mail Frontend is ready to go!",
+            "🌟 Modern Dark UI Ready - Production Build",
           );
         },
         buildStart() {
           console.log(
             "\x1b[33m%s\x1b[0m",
-            "📦 Building Aether Mail Frontend...",
+            "📦 Building Aether Mail V1 Production...",
           );
         },
       },
@@ -39,7 +39,20 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 1000, // Augmente la limite à 1 Mo
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ["react", "react-dom"],
+            router: ["react-router-dom"],
+            ui: ["@heroicons/react"],
+            utils: ["zustand", "axios", "clsx", "tailwind-merge"],
+          },
+        },
+      },
+    },
+    optimizeDeps: {
+      include: ["react", "react-dom", "react-router-dom"],
     },
   };
 });

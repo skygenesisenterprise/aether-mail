@@ -161,7 +161,7 @@ export default function ServerConfig() {
                   required
                   value={config.imapPort}
                   onChange={(e) =>
-                    handleChange("imapPort", parseInt(e.target.value))
+                    handleChange("imapPort", parseInt(e.target.value, 10))
                   }
                   className="mt-1 w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                   disabled={loading}
@@ -221,7 +221,7 @@ export default function ServerConfig() {
                   required
                   value={config.smtpPort}
                   onChange={(e) =>
-                    handleChange("smtpPort", parseInt(e.target.value))
+                    handleChange("smtpPort", parseInt(e.target.value, 10))
                   }
                   className="mt-1 w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                   disabled={loading}
