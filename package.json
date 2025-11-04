@@ -1,6 +1,6 @@
 {
   "displayName": "Aether Mail",
-  "license": "AGPL-3.0 license",
+  "license": "Apache-2.0",
   "description": "Aether Mail is a modern, open-source email client built with React, Vite, and Tailwind CSS. It offers a sleek and intuitive interface for managing your emails efficiently.",
   "author": "Sky Genesis Enterprise",
   "email": "contact@skygenesisenterprise.com",
