@@ -2,10 +2,10 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import EmailList, { type Email } from "./EmailList";
-import EmailToolbar from "./EmailToolbar";
 import EmailViewer from "./EmailViewer";
 import EmailComposer from "./EmailComposer";
 import { useEmailStore } from "../../store/emailStore";
+import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 
 // Type for backend email response
 interface BackendEmailResponse {
@@ -193,12 +193,12 @@ const EmailInbox: React.FC = () => {
   };
 
   // Gérer la réponse à un email
-  const handleReplyEmail = (_email: Email) => {
+  const handleReplyEmail = (email: Email) => {
     setIsComposerOpen(true);
   };
 
   // Gérer le transfert d'un email
-  const handleForwardEmail = (_email: Email) => {
+  const handleForwardEmail = (email: Email) => {
     setIsComposerOpen(true);
   };
 
@@ -209,6 +209,31 @@ const EmailInbox: React.FC = () => {
 
   // Calculer l'ID de l'email sélectionné de manière sûre
   const selectedEmailId = selectedEmail ? selectedEmail.id : null;
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    emails,
+    selectedEmailId,
+    onSelectEmail: handleSelectEmail,
+    onDelete: handleDeleteEmail,
+    onReply: handleReplyEmail,
+    onForward: handleForwardEmail,
+    onStar: handleStarEmail,
+    onNewEmail: () => setIsComposerOpen(true),
+    onSearch: () => {
+      // Focus search input
+      const searchInput = document.querySelector(
+        'input[placeholder="Search..."]',
+      ) as HTMLInputElement;
+      if (searchInput) {
+        searchInput.focus();
+      }
+    },
+    onRefresh: () => {
+      // Trigger email refresh
+      window.location.reload();
+    },
+  });
 
   return (
     <div className="flex h-full bg-white dark:bg-gray-900">
@@ -231,12 +256,6 @@ const EmailInbox: React.FC = () => {
           {/* Vue de l'email sélectionné en mobile */}
           {selectedEmail && (
             <div className="flex-1 flex flex-col">
-              <EmailToolbar
-                selectedEmail={selectedEmail}
-                onReply={handleReplyEmail}
-                onForward={handleForwardEmail}
-                onDelete={handleDeleteEmail}
-              />
               <EmailViewer
                 email={selectedEmail}
                 onClose={handleCloseEmailView}
@@ -266,21 +285,13 @@ const EmailInbox: React.FC = () => {
           {/* Colonne 2: Visualiseur d'emails - largeur flexible */}
           <div className="flex-1 flex flex-col min-w-0">
             {selectedEmail ? (
-              <>
-                <EmailToolbar
-                  selectedEmail={selectedEmail}
-                  onReply={handleReplyEmail}
-                  onForward={handleForwardEmail}
-                  onDelete={handleDeleteEmail}
-                />
-                <EmailViewer
-                  email={selectedEmail}
-                  onStar={handleStarEmail}
-                  onDelete={handleDeleteEmail}
-                  onReply={handleReplyEmail}
-                  onForward={handleForwardEmail}
-                />
-              </>
+              <EmailViewer
+                email={selectedEmail}
+                onStar={handleStarEmail}
+                onDelete={handleDeleteEmail}
+                onReply={handleReplyEmail}
+                onForward={handleForwardEmail}
+              />
             ) : (
               /* État vide quand aucun email n'est sélectionné */
               <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-800">

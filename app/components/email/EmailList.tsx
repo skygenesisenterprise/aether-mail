@@ -10,6 +10,7 @@ import {
   ArrowsUpDownIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
+import { cn } from "../../lib/utils";
 
 // Email interface
 export interface Email {
@@ -19,6 +20,7 @@ export interface Email {
     email: string;
     verified?: boolean;
   };
+  to?: string;
   subject: string;
   body: string;
   timestamp: Date;
@@ -83,56 +85,60 @@ const EmailList: React.FC<EmailListProps> = ({
   );
 
   return (
-    <div className="flex h-full flex-col border-r border-proton-border bg-proton-dark-secondary">
-      {/* Search bar */}
-      <div className="p-4 border-b border-proton-border">
+    <div className="flex h-full flex-col glass-strong glass-no-border border-r border-white/10">
+      {/* Glass Search bar */}
+      <div className="p-4 border-b border-white/10">
         <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon className="h-5 w-5 glass-text-muted" />
+          </div>
           <input
             type="text"
             placeholder="Search emails..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-12 pr-4 py-2.5 text-sm bg-proton-dark border border-proton-border rounded-xl placeholder-proton-text-muted text-proton-text focus:outline-none focus:ring-2 focus:ring-proton-primary focus:border-transparent transition-colors"
+            className="glass-input w-full pl-12 pr-4 py-3 text-sm glass-strong"
           />
-          <MagnifyingGlassIcon className="absolute left-3 top-3 h-4 w-4 text-proton-text-muted" />
         </div>
       </div>
 
-      {/* Filter options */}
-      <div className="flex items-center justify-between px-4 py-3 bg-proton-dark border-b border-proton-border">
-        <div className="text-sm text-proton-text-secondary">
+      {/* Glass Filter options */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="text-xs glass-text-muted font-medium">
           {filteredEmails.length}{" "}
-          {filteredEmails.length === 1 ? "message" : "messages"}
+          {filteredEmails.length === 1 ? "email" : "emails"}
         </div>
         <div className="flex gap-2">
           <button
             aria-label="Filter emails"
-            className="rounded-lg p-2 text-proton-text-secondary hover:bg-proton-dark-tertiary transition-colors"
+            className={`glass-button glass-shimmer text-xs p-2 ${
+              filterMenuOpen ? "glass-primary" : ""
+            }`}
             onClick={() => setFilterMenuOpen(!filterMenuOpen)}
           >
             <FunnelIcon className="h-4 w-4" />
           </button>
           <button
             aria-label="Sort emails"
-            className="rounded-lg p-2 text-proton-text-secondary hover:bg-proton-dark-tertiary transition-colors"
+            className="glass-button glass-shimmer text-xs p-2"
           >
             <ArrowsUpDownIcon className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      {/* Email list */}
+      {/* Glass Email list */}
       <div className="flex-1 overflow-auto">
         {filteredEmails.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-            <div className="mb-4 rounded-full bg-proton-dark-tertiary p-4">
+            <div className="mb-6 w-20 h-20 rounded-2xl glass-gradient flex items-center justify-center glass-float">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
                 stroke="currentColor"
-                className="h-8 w-8 text-proton-text-muted"
+                className="h-10 w-10 text-white"
               >
                 <path
                   strokeLinecap="round"
@@ -141,42 +147,66 @@ const EmailList: React.FC<EmailListProps> = ({
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-proton-text mb-2">
+            <h3 className="text-lg font-semibold glass-text-primary mb-2">
               No emails found
             </h3>
-            <p className="text-sm text-proton-text-muted">
+            <p className="text-sm glass-text-muted">
               Try adjusting your search or filters
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-proton-border">
+          <div className="p-2 space-y-2">
             {filteredEmails.map((email, index) => (
-              <motion.li
+              <motion.div
                 key={email.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{
+                  delay: index * 0.05,
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                }}
                 onClick={() => onSelectEmail(email)}
-                className={`group cursor-pointer transition-all hover:bg-proton-dark-tertiary ${selectedEmailId === email.id ? "bg-proton-primary/5 border-r-4 border-proton-primary" : ""}`}
+                className={cn(
+                  "glass-card glass-hover cursor-pointer glass-transition-all",
+                  selectedEmailId === email.id
+                    ? "glass-primary ring-2 ring-white/30"
+                    : "",
+                )}
               >
-                <div className="relative px-4 py-4">
+                <div className="relative p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center flex-1 min-w-0">
+                      {/* Glass Avatar */}
                       <div className="flex-shrink-0 mr-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-proton-primary to-proton-secondary flex items-center justify-center text-white text-sm font-medium">
+                        <div
+                          className={cn(
+                            "w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white glass-transition-all",
+                            !email.isRead
+                              ? "glass-gradient glass-pulse"
+                              : "glass-strong",
+                          )}
+                        >
                           {email.from.name.charAt(0).toUpperCase()}
                         </div>
                       </div>
+
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-1">
                           <h3
-                            className={`truncate text-sm font-medium ${!email.isRead ? "text-proton-text" : "text-proton-text-secondary"}`}
+                            className={cn(
+                              "truncate text-sm font-medium glass-transition-all",
+                              !email.isRead
+                                ? "glass-text-primary font-bold"
+                                : "glass-text-secondary",
+                            )}
                           >
                             {email.from.name}
                             {email.from.verified && (
-                              <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-proton-success/20">
+                              <span className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full glass-success">
                                 <svg
-                                  className="w-2.5 h-2.5 text-proton-success"
+                                  className="w-2.5 h-2.5 text-white"
                                   fill="currentColor"
                                   viewBox="0 0 20 20"
                                 >
@@ -189,43 +219,56 @@ const EmailList: React.FC<EmailListProps> = ({
                               </span>
                             )}
                           </h3>
-                          <p className="text-xs text-proton-text-muted ml-2 flex-shrink-0">
+                          <p className="text-xs glass-text-muted ml-2 flex-shrink-0">
                             {formatDate(email.timestamp)}
                           </p>
                         </div>
                         <h4
-                          className={`truncate text-sm mt-0.5 ${!email.isRead ? "font-medium text-proton-text" : "text-proton-text-secondary"}`}
+                          className={cn(
+                            "truncate text-sm mb-1 glass-transition-all",
+                            !email.isRead
+                              ? "glass-text-primary font-semibold"
+                              : "glass-text-secondary",
+                          )}
                         >
                           {email.subject}
                         </h4>
-                        <div className="mt-1 truncate text-xs text-proton-text-muted">
+                        <div className="truncate text-xs glass-text-muted leading-relaxed">
                           {truncateText(
                             email.body.replace(/<[^>]*>/g, ""),
-                            120,
+                            100,
                           )}
                         </div>
                       </div>
                     </div>
+
+                    {/* Glass Status icons */}
                     <div className="ml-3 flex flex-shrink-0 items-center space-x-2">
                       {email.isStarred && (
-                        <StarIconSolid className="h-4 w-4 text-proton-warning" />
+                        <div className="w-6 h-6 rounded-lg glass-warning flex items-center justify-center glass-pulse">
+                          <StarIconSolid className="h-3.5 w-3.5 text-white" />
+                        </div>
                       )}
                       {email.isEncrypted && (
-                        <LockClosedIcon className="h-4 w-4 text-proton-primary" />
+                        <div className="w-6 h-6 rounded-lg glass-primary flex items-center justify-center">
+                          <LockClosedIcon className="h-3.5 w-3.5 text-white" />
+                        </div>
                       )}
                       {email.hasAttachments && (
-                        <PaperClipIcon className="h-4 w-4 text-proton-text-muted" />
+                        <div className="w-6 h-6 rounded-lg glass-strong flex items-center justify-center">
+                          <PaperClipIcon className="h-3.5 w-3.5 glass-text-secondary" />
+                        </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Email labels */}
+                  {/* Glass Email labels */}
                   {email.labels && email.labels.length > 0 && (
-                    <div className="mt-3 flex gap-1">
+                    <div className="mt-3 flex gap-2">
                       {email.labels.map((label) => (
                         <span
                           key={label}
-                          className="inline-flex items-center rounded-full bg-proton-primary/20 px-2 py-0.5 text-xs font-medium text-proton-primary"
+                          className="inline-flex items-center rounded-full glass-gradient px-3 py-1 text-xs font-medium text-white glass-shimmer"
                         >
                           {label}
                         </span>
@@ -233,14 +276,14 @@ const EmailList: React.FC<EmailListProps> = ({
                     </div>
                   )}
 
-                  {/* Unread indicator */}
+                  {/* Glass Unread indicator */}
                   {!email.isRead && (
-                    <div className="absolute inset-y-0 left-0 w-1 bg-proton-primary rounded-r" />
+                    <div className="absolute left-0 top-0 bottom-0 w-1 glass-gradient rounded-r-full glass-pulse" />
                   )}
                 </div>
-              </motion.li>
+              </motion.div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../../store/authStore";
+import KeyboardShortcutsHelp from "../ui/KeyboardShortcutsHelp";
 import {
   MoonIcon,
   SunIcon,
@@ -14,21 +15,41 @@ import {
   ArrowRightOnRectangleIcon,
   MagnifyingGlassIcon,
   PencilIcon,
+  PaperAirplaneIcon,
+  FolderIcon,
+  TagIcon,
+  ArchiveBoxIcon,
+  TrashIcon,
+  StarIcon,
+  ClockIcon,
+  ArrowUturnLeftIcon,
+  ArrowUturnRightIcon,
+  PrinterIcon,
+  EllipsisHorizontalIcon,
 } from "@heroicons/react/24/outline";
 
 interface HeaderProps {
   toggleSidebar: () => void;
   toggleTheme: () => void;
   isDarkMode: boolean;
+  selectedEmail?: any;
+  onReply?: (email: any) => void;
+  onForward?: (email: any) => void;
+  onDelete?: (email: any) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
   toggleSidebar,
   toggleTheme,
   isDarkMode,
+  selectedEmail,
+  onReply,
+  onForward,
+  onDelete,
 }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
 
@@ -38,52 +59,65 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="border-b border-proton-border bg-proton-dark-secondary shadow-sm">
-      {/* Proton Mail inspired header */}
-      <div className="flex h-16 items-center justify-between px-6">
+    <header className="glass-strong glass-no-border border-b border-white/10">
+      {/* Liquid Glass Header */}
+      <div className="flex h-20 items-center justify-between px-8">
         {/* Left side - Logo and mobile menu */}
         <div className="flex items-center">
           <button
-            className="mr-4 rounded-lg p-2 text-proton-text-secondary hover:bg-proton-dark-tertiary hover:text-proton-text md:hidden"
+            className="mr-6 glass-button glass-shimmer md:hidden"
             onClick={toggleSidebar}
           >
             <Bars3Icon className="h-5 w-5" />
           </button>
 
-          {/* Proton Mail logo */}
-          <div className="flex items-center">
-            <div className="text-xl font-bold text-proton-primary">
-              Aether Mail
+          {/* Aether Mail logo with glass effect */}
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-2xl glass-gradient flex items-center justify-center glass-float">
+              <svg
+                className="w-7 h-7 text-white"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold glass-text-primary">
+                Aether Mail
+              </h1>
+              <p className="text-xs glass-text-muted">Liquid Glass 2025</p>
             </div>
           </div>
         </div>
 
-        {/* Center - Search bar */}
+        {/* Center - Glass Search bar */}
         <div className="flex-1 max-w-2xl mx-8">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-proton-text-muted" />
+              <MagnifyingGlassIcon className="h-5 w-5 glass-text-muted" />
             </div>
             <input
               type="text"
-              placeholder="Search emails..."
-              className="block w-full pl-12 pr-4 py-2.5 text-sm bg-proton-dark border border-proton-border rounded-xl placeholder-proton-text-muted text-proton-text focus:outline-none focus:ring-2 focus:ring-proton-primary focus:border-transparent transition-colors"
+              placeholder="Search emails, contacts, or calendar..."
+              className="glass-input w-full pl-12 pr-4 py-3 text-sm glass-strong"
             />
           </div>
         </div>
 
-        {/* Right side - Actions and user menu */}
+        {/* Right side - Glass Actions and user menu */}
         <div className="flex items-center space-x-3">
-          {/* New Email button - Proton style */}
-          <button className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-white bg-proton-primary hover:bg-proton-accent-hover transition-colors shadow-sm">
+          {/* New Email button - Glass effect */}
+          <button className="glass-button glass-primary glass-shimmer">
             <PencilIcon className="h-4 w-4 mr-2" />
             New Email
           </button>
 
-          {/* Theme toggle */}
+          {/* Glass Theme toggle */}
           <button
             onClick={toggleTheme}
-            className="rounded-lg p-2 text-proton-text-secondary hover:bg-proton-dark-tertiary hover:text-proton-text transition-colors"
+            className="glass-button glass-shimmer"
+            title="Toggle theme"
           >
             {isDarkMode ? (
               <SunIcon className="h-5 w-5" />
@@ -92,79 +126,80 @@ const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Settings */}
-          <button className="rounded-lg p-2 text-proton-text-secondary hover:bg-proton-dark-tertiary hover:text-proton-text transition-colors">
+          {/* Glass Settings */}
+          <button className="glass-button glass-shimmer" title="Settings">
             <CogIcon className="h-5 w-5" />
           </button>
 
-          {/* Notifications */}
+          {/* Glass Notifications */}
           <div className="relative">
             <button
-              className="rounded-lg p-2 text-proton-text-secondary hover:bg-proton-dark-tertiary hover:text-proton-text transition-colors"
+              className="glass-button glass-shimmer relative"
               onClick={() => setNotificationsOpen(!notificationsOpen)}
+              title="Notifications"
             >
               <BellIcon className="h-5 w-5" />
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-proton-error text-xs font-bold text-white">
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full glass-error text-xs font-bold text-white glass-pulse">
                 3
               </span>
             </button>
 
-            {/* Notifications dropdown */}
+            {/* Glass Notifications dropdown */}
             {notificationsOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute right-0 mt-2 w-80 origin-top-right rounded-xl bg-proton-dark shadow-xl border border-proton-border py-2"
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className="absolute right-0 mt-2 w-96 origin-top-right glass-modal"
               >
-                <div className="px-4 py-3">
-                  <h3 className="text-sm font-medium text-proton-text">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold glass-text-primary mb-2">
                     Notifications
                   </h3>
-                  <p className="mt-1 text-xs text-proton-text-muted">
+                  <p className="text-sm glass-text-muted">
                     You have 3 unread notifications
                   </p>
                 </div>
-                <div className="border-t border-proton-border">
-                  <div className="px-4 py-3 hover:bg-proton-dark-tertiary">
+                <div className="space-y-3">
+                  <div className="glass-card glass-hover">
                     <div className="flex items-start">
-                      <div className="rounded-full bg-proton-dark-tertiary p-2">
-                        <LockIcon className="h-5 w-5 text-proton-primary" />
+                      <div className="w-10 h-10 rounded-xl glass-gradient flex items-center justify-center mr-3">
+                        <LockIcon className="h-5 w-5 text-white" />
                       </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-proton-text">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium glass-text-primary">
                           Security alert
                         </p>
-                        <p className="text-xs text-proton-text-muted">
+                        <p className="text-xs glass-text-muted mt-1">
                           Your encryption key was updated successfully
                         </p>
-                        <p className="mt-1 text-xs text-proton-text-muted">
+                        <p className="text-xs glass-text-muted mt-2">
                           Just now
                         </p>
                       </div>
                     </div>
                   </div>
-                  <div className="px-4 py-3 hover:bg-proton-dark-tertiary">
+                  <div className="glass-card glass-hover">
                     <div className="flex items-start">
-                      <div className="rounded-full bg-proton-dark-tertiary p-2">
-                        <EnvelopeIcon className="h-5 w-5 text-proton-primary" />
+                      <div className="w-10 h-10 rounded-xl glass-gradient flex items-center justify-center mr-3">
+                        <EnvelopeIcon className="h-5 w-5 text-white" />
                       </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-proton-text">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium glass-text-primary">
                           New message
                         </p>
-                        <p className="text-xs text-proton-text-muted">
+                        <p className="text-xs glass-text-muted mt-1">
                           You received a new message from Alice
                         </p>
-                        <p className="mt-1 text-xs text-proton-text-muted">
+                        <p className="text-xs glass-text-muted mt-2">
                           1 hour ago
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="border-t border-proton-border px-4 py-2">
-                  <button className="text-center text-xs font-medium text-proton-primary hover:text-proton-accent-hover">
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <button className="glass-button w-full glass-gradient">
                     View all notifications
                   </button>
                 </div>
@@ -172,62 +207,60 @@ const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* User menu */}
+          {/* Glass User menu */}
           <div className="relative">
             <button
-              className="flex items-center rounded-lg p-1 text-proton-text-secondary hover:bg-proton-dark-tertiary hover:text-proton-text transition-colors"
+              className="flex items-center glass-button glass-shimmer"
               onClick={() => setUserMenuOpen(!userMenuOpen)}
             >
               <span className="sr-only">Open user menu</span>
-              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-proton-dark-tertiary text-proton-text">
-                <UserCircleIcon className="h-6 w-6" />
+              <div className="w-8 h-8 rounded-xl glass-gradient flex items-center justify-center mr-3">
+                <UserCircleIcon className="h-5 w-5 text-white" />
               </div>
-              <span className="ml-2 hidden text-sm font-medium md:block">
+              <span className="text-sm font-medium glass-text-primary hidden md:block">
                 Alex Morgan
               </span>
-              <ChevronDownIcon className="ml-1 hidden h-4 w-4 md:block" />
+              <ChevronDownIcon className="ml-2 h-4 w-4 glass-text-secondary hidden md:block" />
             </button>
 
-            {/* User dropdown menu */}
+            {/* Glass User dropdown menu */}
             {userMenuOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-proton-dark shadow-xl border border-proton-border py-2"
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className="absolute right-0 mt-2 w-72 origin-top-right glass-modal"
               >
-                <div className="border-b border-proton-border px-4 py-3">
-                  <p className="text-sm font-medium text-proton-text">
+                <div className="mb-4 pb-4 border-b border-white/10">
+                  <p className="text-sm font-medium glass-text-primary">
                     Alex Morgan
                   </p>
-                  <p className="truncate text-xs text-proton-text-muted">
+                  <p className="text-xs glass-text-muted mt-1">
                     alex.morgan@aethermail.me
                   </p>
                 </div>
 
-                {/* Link to Profile */}
-                <Link
-                  to="/profile"
-                  className="flex w-full items-center px-4 py-2 text-left text-sm text-proton-text-secondary hover:bg-proton-dark-tertiary hover:text-proton-text"
-                >
-                  <UserCircleIcon className="mr-3 h-5 w-5 text-proton-text-muted" />
-                  Your profile
-                </Link>
+                <div className="space-y-2">
+                  <Link
+                    to="/profile"
+                    className="glass-button w-full text-left glass-hover"
+                  >
+                    <UserCircleIcon className="mr-3 h-5 w-5" />
+                    Your profile
+                  </Link>
+                  <Link
+                    to="/settings"
+                    className="glass-button w-full text-left glass-hover"
+                  >
+                    <CogIcon className="mr-3 h-5 w-5" />
+                    Settings
+                  </Link>
+                </div>
 
-                {/* Link to Settings */}
-                <Link
-                  to="/settings"
-                  className="flex w-full items-center px-4 py-2 text-left text-sm text-proton-text-secondary hover:bg-proton-dark-tertiary hover:text-proton-text"
-                >
-                  <CogIcon className="mr-3 h-5 w-5 text-proton-text-muted" />
-                  Settings
-                </Link>
-
-                <div className="border-t border-proton-border">
-                  {/* Button to Sign Out */}
+                <div className="mt-4 pt-4 border-t border-white/10">
                   <button
                     onClick={handleSignOut}
-                    className="flex w-full items-center px-4 py-2 text-left text-sm text-proton-error hover:bg-proton-dark-tertiary"
+                    className="glass-button w-full text-left glass-hover text-red-400"
                   >
                     <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5" />
                     Sign out
@@ -238,6 +271,109 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Liquid Glass Ribbon Toolbar */}
+      <div className="glass-strong glass-no-border border-t border-white/10 px-8 py-3">
+        <div className="flex items-center justify-between">
+          {/* Left section - File operations */}
+          <div className="flex items-center space-x-2">
+            <button className="glass-button glass-shimmer text-xs">
+              <PencilIcon className="h-4 w-4 mr-2" />
+              New
+            </button>
+            <button className="glass-button glass-shimmer text-xs">
+              <PaperAirplaneIcon className="h-4 w-4 mr-2" />
+              Send
+            </button>
+            <button className="glass-button glass-shimmer text-xs">
+              <FolderIcon className="h-4 w-4 mr-2" />
+              Move
+            </button>
+            <button className="glass-button glass-shimmer text-xs">
+              <TagIcon className="h-4 w-4 mr-2" />
+              Categorize
+            </button>
+            <button className="glass-button glass-shimmer text-xs">
+              <ArchiveBoxIcon className="h-4 w-4 mr-2" />
+              Archive
+            </button>
+            <button className="glass-button glass-shimmer text-xs">
+              <TrashIcon className="h-4 w-4 mr-2" />
+              Delete
+            </button>
+          </div>
+
+          {/* Center section - Email actions */}
+          <div className="flex items-center space-x-2">
+            <button
+              className={`glass-button glass-shimmer text-xs ${
+                selectedEmail ? "" : "opacity-50 cursor-not-allowed"
+              }`}
+              disabled={!selectedEmail}
+              onClick={() => selectedEmail && onReply?.(selectedEmail)}
+            >
+              <ArrowUturnLeftIcon className="h-4 w-4 mr-2" />
+              Reply
+            </button>
+            <button
+              className={`glass-button glass-shimmer text-xs ${
+                selectedEmail ? "" : "opacity-50 cursor-not-allowed"
+              }`}
+              disabled={!selectedEmail}
+              onClick={() => selectedEmail && onForward?.(selectedEmail)}
+            >
+              <ArrowUturnRightIcon className="h-4 w-4 mr-2" />
+              Forward
+            </button>
+            <button
+              className={`glass-button glass-shimmer text-xs ${
+                selectedEmail ? "" : "opacity-50 cursor-not-allowed"
+              }`}
+              disabled={!selectedEmail}
+            >
+              <StarIcon className="h-4 w-4 mr-2" />
+              Follow Up
+            </button>
+            <button
+              className={`glass-button glass-shimmer text-xs ${
+                selectedEmail ? "" : "opacity-50 cursor-not-allowed"
+              }`}
+              disabled={!selectedEmail}
+            >
+              <ClockIcon className="h-4 w-4 mr-2" />
+              Snooze
+            </button>
+          </div>
+
+          {/* Right section - Additional actions */}
+          <div className="flex items-center space-x-2">
+            <button
+              className={`glass-button glass-shimmer text-xs ${
+                selectedEmail ? "" : "opacity-50 cursor-not-allowed"
+              }`}
+              disabled={!selectedEmail}
+            >
+              <PrinterIcon className="h-4 w-4 mr-2" />
+              Print
+            </button>
+            <button
+              className={`glass-button glass-shimmer text-xs ${
+                selectedEmail ? "" : "opacity-50 cursor-not-allowed"
+              }`}
+              disabled={!selectedEmail}
+            >
+              <EllipsisHorizontalIcon className="h-4 w-4 mr-2" />
+              More
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Glass Keyboard shortcuts help modal */}
+      <KeyboardShortcutsHelp
+        isOpen={shortcutsHelpOpen}
+        onClose={() => setShortcutsHelpOpen(false)}
+      />
     </header>
   );
 };

@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
 import { useAuthStore } from "./store/authStore";
-import Layout from "./components/layout/Layout";
+import EmailLayout from "./components/layout/EmailLayout";
 import EmailInbox from "./components/email/EmailInbox";
 import Login from "./components/auth/login"; // Importer le composant Login
 import Register from "./components/auth/register"; // Importer le composant Register
@@ -27,12 +27,12 @@ const AppContent: React.FC = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/recover" element={<Recover />} />
 
-        {/* Routes protégées (avec Layout) */}
+        {/* Routes protégées (avec EmailLayout) */}
         {isAuthenticated || isDev ? (
           <Route
             path="/*"
             element={
-              <Layout>
+              <EmailLayout>
                 <Routes>
                   {/* Redirect root to inbox */}
                   <Route path="/" element={<Navigate to="/inbox" replace />} />
@@ -50,7 +50,7 @@ const AppContent: React.FC = () => {
                     }
                   />
                 </Routes>
-              </Layout>
+              </EmailLayout>
             }
           />
         ) : (

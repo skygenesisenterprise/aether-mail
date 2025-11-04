@@ -35,29 +35,35 @@ const EmailViewer: React.FC<EmailViewerProps> = ({
 }) => {
   if (!email) {
     return (
-      <div className="flex h-full flex-col items-center justify-center p-12 text-center bg-proton-dark">
-        <div className="mb-6 rounded-full bg-proton-dark-secondary p-6 shadow-sm border border-proton-border">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="h-12 w-12 text-proton-text-muted"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.839 2.51l-4.66-2.51m0 0l-1.023-.55a2.25 2.25 0 00-2.134 0l-1.022.55m0 0l-4.661 2.51m16.5 1.615a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V8.844a2.25 2.25 0 011.183-1.98l7.5-4.04a2.25 2.25 0 012.134 0l7.5 4.04a2.25 2.25 0 011.183 1.98V19.5z"
-            />
-          </svg>
+      <div className="flex h-full flex-col items-center justify-center p-12 text-center relative overflow-hidden">
+        {/* Animated background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-glass-primary/5 via-glass-secondary/10 to-glass-accent/5 animate-gradient-shift" />
+
+        {/* Glass card container */}
+        <div className="relative glass-card-xl p-8 max-w-sm mx-auto animate-float">
+          <div className="glass-icon-container mb-6 animate-pulse-glow">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="h-16 w-16 text-glass-text-primary"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.839 2.51l-4.66-2.51m0 0l-1.023-.55a2.25 2.25 0 00-2.134 0l-1.022.55m0 0l-4.661 2.51m16.5 1.615a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V8.844a2.25 2.25 0 011.183-1.98l7.5-4.04a2.25 2.25 0 012.134 0l7.5 4.04a2.25 2.25 0 011.183 1.98V19.5z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-glass-text-primary mb-3 bg-gradient-to-r from-glass-text-primary to-glass-text-secondary bg-clip-text text-transparent">
+            Select an email to view
+          </h3>
+          <p className="text-glass-text-secondary max-w-sm leading-relaxed">
+            Choose an email from the list to view its contents and details
+          </p>
         </div>
-        <h3 className="text-xl font-semibold text-proton-text mb-2">
-          Select an email to view
-        </h3>
-        <p className="text-proton-text-secondary max-w-sm">
-          Choose an email from the list to view its contents and details
-        </p>
       </div>
     );
   }
@@ -65,96 +71,112 @@ const EmailViewer: React.FC<EmailViewerProps> = ({
   const attachments = email.attachments || [];
 
   const content = (
-    <div className="flex h-full flex-col bg-proton-dark-secondary">
-      {/* Email header */}
-      <div className="border-b border-proton-border p-6 bg-proton-dark">
+    <div className="flex h-full flex-col relative">
+      {/* Animated background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-glass-primary/5 via-glass-secondary/10 to-glass-accent/5 animate-gradient-shift" />
+
+      {/* Glass reading pane header */}
+      <div className="relative glass-card-lg border-b border-glass-border/20 backdrop-blur-xl">
         {isMobile && (
           <button
             onClick={onClose}
-            className="mb-4 inline-flex items-center rounded-lg p-2 text-proton-text-secondary hover:bg-proton-dark-tertiary transition-colors"
+            className="mb-4 glass-button-sm inline-flex items-center"
           >
             <XMarkIcon className="h-5 w-5" />
             <span className="ml-2 text-sm font-medium">Back</span>
           </button>
         )}
 
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-semibold text-proton-text mb-4 break-words">
-              {email.subject}
-            </h2>
+        {/* Subject and sender info - Liquid Glass style */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-glass-text-primary mb-4 break-words bg-gradient-to-r from-glass-text-primary to-glass-text-secondary bg-clip-text text-transparent">
+            {email.subject}
+          </h1>
 
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-proton-primary to-proton-secondary flex items-center justify-center text-white text-lg font-medium">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              {/* Glass avatar with shimmer */}
+              <div className="relative">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-glass-primary to-glass-secondary flex items-center justify-center text-white text-lg font-bold glass-avatar animate-shimmer">
                   {email.from.name.charAt(0).toUpperCase()}
                 </div>
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-proton-text text-base">
-                      {email.from.name}
-                      {email.from.verified && (
-                        <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full bg-proton-success/20 text-xs font-medium text-proton-success">
-                          <ShieldCheckIcon className="mr-1 h-3 w-3" />
-                          Verified
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-sm text-proton-text-secondary mt-0.5">
-                      {email.from.email}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2 ml-4">
-                    {email.isEncrypted && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full bg-proton-primary/20 text-xs font-medium text-proton-primary">
-                        <LockClosedIcon className="mr-1.5 h-3 w-3" />
-                        Encrypted
-                      </span>
-                    )}
-                    <p className="text-sm text-proton-text-muted">
-                      {formatDate(email.timestamp)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* CC/BCC if present */}
-                {(email.cc || email.bcc) && (
-                  <div className="mt-3 text-sm text-proton-text-secondary">
-                    {email.cc && (
-                      <p className="mb-1">
-                        <strong className="text-proton-text">CC:</strong>{" "}
-                        {email.cc}
-                      </p>
-                    )}
-                    {email.bcc && (
-                      <p>
-                        <strong className="text-proton-text">BCC:</strong>{" "}
-                        {email.bcc}
-                      </p>
-                    )}
+                {email.from.verified && (
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-glass-success rounded-full flex items-center justify-center animate-pulse-glow">
+                    <ShieldCheckIcon className="h-2.5 w-2.5 text-white" />
                   </div>
                 )}
               </div>
+              <div>
+                <div className="flex items-center">
+                  <p className="font-semibold text-glass-text-primary text-lg">
+                    {email.from.name}
+                  </p>
+                  {email.from.verified && (
+                    <span className="ml-2 glass-badge-success inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium">
+                      <ShieldCheckIcon className="mr-1 h-3 w-3" />
+                      Verified
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-glass-text-secondary">
+                  {email.from.email}
+                </p>
+              </div>
             </div>
+
+            <div className="flex items-center space-x-3">
+              {email.isEncrypted && (
+                <span className="glass-badge-primary inline-flex items-center px-3 py-1 rounded-full text-xs font-medium">
+                  <LockClosedIcon className="mr-1 h-3 w-3" />
+                  Encrypted
+                </span>
+              )}
+              <p className="text-sm text-glass-text-muted glass-badge px-3 py-1 rounded-full">
+                {formatDate(email.timestamp)}
+              </p>
+            </div>
+          </div>
+
+          {/* To/CC/BCC fields - Glass style */}
+          <div className="mt-4 p-3 glass-card rounded-lg text-sm text-glass-text-secondary space-y-2">
+            <p className="flex items-center">
+              <span className="font-medium text-glass-text-primary mr-2">
+                To:
+              </span>
+              <span>{email.to || "me"}</span>
+            </p>
+            {email.cc && (
+              <p className="flex items-center">
+                <span className="font-medium text-glass-text-primary mr-2">
+                  CC:
+                </span>
+                <span>{email.cc}</span>
+              </p>
+            )}
+            {email.bcc && (
+              <p className="flex items-center">
+                <span className="font-medium text-glass-text-primary mr-2">
+                  BCC:
+                </span>
+                <span>{email.bcc}</span>
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-proton-border">
+        {/* Quick actions - Glass toolbar */}
+        <div className="flex items-center justify-between pt-4 border-t border-glass-border/20">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => onReply?.(email)}
-              className="inline-flex items-center px-4 py-2 rounded-lg bg-proton-primary text-white text-sm font-medium hover:bg-proton-accent-hover transition-colors"
+              className="glass-button-primary inline-flex items-center px-4 py-2 text-sm font-medium"
             >
               <ArrowPathRoundedSquareIcon className="mr-2 h-4 w-4" />
               Reply
             </button>
             <button
               onClick={() => onForward?.(email)}
-              className="inline-flex items-center px-4 py-2 rounded-lg border border-proton-border bg-proton-dark text-proton-text text-sm font-medium hover:bg-proton-dark-tertiary transition-colors"
+              className="glass-button inline-flex items-center px-4 py-2 text-sm font-medium"
             >
               <svg
                 className="mr-2 h-4 w-4"
@@ -176,68 +198,73 @@ const EmailViewer: React.FC<EmailViewerProps> = ({
           <div className="flex items-center space-x-2">
             <button
               onClick={() => onStar?.(email)}
-              className="rounded-lg p-2 text-proton-text-secondary hover:bg-proton-dark-tertiary transition-colors"
+              className={`glass-icon-button ${email.isStarred ? "text-glass-warning animate-pulse-glow" : ""}`}
               title={email.isStarred ? "Remove star" : "Add star"}
             >
               {email.isStarred ? (
-                <StarIconSolid className="h-5 w-5 text-proton-warning" />
+                <StarIconSolid className="h-5 w-5" />
               ) : (
                 <StarIcon className="h-5 w-5" />
               )}
             </button>
             <button
               onClick={() => onDelete?.(email)}
-              className="rounded-lg p-2 text-proton-text-secondary hover:bg-proton-dark-tertiary transition-colors"
+              className="glass-icon-button text-glass-danger hover:text-glass-danger"
               title="Delete"
             >
               <TrashIcon className="h-5 w-5" />
             </button>
-            <button className="rounded-lg p-2 text-proton-text-secondary hover:bg-proton-dark-tertiary transition-colors">
+            <button className="glass-icon-button">
               <EllipsisHorizontalIcon className="h-5 w-5" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Email content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-6">
-          <div className="prose prose-gray max-w-none">
-            {/* Render HTML body */}
+      {/* Email content - Glass reading pane */}
+      <div className="flex-1 overflow-auto relative">
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          {/* Message body with glass card */}
+          <div className="glass-card-xl p-8 mb-6 animate-fade-in">
             <div
-              className="text-proton-text leading-relaxed"
+              className="prose prose-sm max-w-none dark:prose-invert text-glass-text-primary leading-relaxed"
               dangerouslySetInnerHTML={{ __html: email.body }}
             />
           </div>
 
-          {/* Attachments */}
+          {/* Attachments section - Glass style */}
           {attachments.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-sm font-semibold text-proton-text mb-4">
+            <div className="glass-card-lg p-6 animate-fade-in">
+              <h3 className="text-lg font-semibold text-glass-text-primary mb-6 flex items-center">
+                <div className="glass-icon-container mr-3">
+                  <PaperClipIcon className="h-5 w-5" />
+                </div>
                 Attachments ({attachments.length})
               </h3>
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {attachments.map((attachment, index) => (
                   <div
                     key={`attachment-${attachment.filename}-${index}`}
-                    className="flex items-center justify-between p-4 rounded-lg border border-proton-border bg-proton-dark hover:bg-proton-dark-tertiary transition-colors"
+                    className="glass-card p-4 hover:scale-[1.02] transition-all duration-300 group"
                   >
-                    <div className="flex items-center">
-                      <div className="rounded-lg bg-proton-dark-secondary p-2 border border-proton-border">
-                        <PaperClipIcon className="h-5 w-5 text-proton-text-secondary" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center flex-1 min-w-0">
+                        <div className="glass-icon-container-sm mr-3 group-hover:animate-pulse-glow">
+                          <PaperClipIcon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-glass-text-primary truncate">
+                            {attachment.filename}
+                          </p>
+                          <p className="text-xs text-glass-text-muted">
+                            {formatFileSize(attachment.filesize)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-proton-text">
-                          {attachment.filename}
-                        </p>
-                        <p className="text-xs text-proton-text-muted">
-                          {formatFileSize(attachment.filesize)}
-                        </p>
-                      </div>
+                      <button className="glass-button-sm ml-3 group-hover:scale-110 transition-transform">
+                        <ArrowDownTrayIcon className="h-4 w-4" />
+                      </button>
                     </div>
-                    <button className="rounded-lg p-2 text-proton-text-secondary hover:bg-proton-dark-secondary hover:shadow-sm transition-colors">
-                      <ArrowDownTrayIcon className="h-5 w-5" />
-                    </button>
                   </div>
                 ))}
               </div>
@@ -248,8 +275,14 @@ const EmailViewer: React.FC<EmailViewerProps> = ({
     </div>
   );
 
-  // Desktop view
-  return <div className="flex-1 bg-proton-dark-secondary">{content}</div>;
+  // Desktop view with glass background
+  return (
+    <div className="flex-1 relative overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-glass-primary/5 via-glass-secondary/10 to-glass-accent/5 animate-gradient-shift" />
+      <div className="relative h-full">{content}</div>
+    </div>
+  );
 };
 
 export default EmailViewer;
