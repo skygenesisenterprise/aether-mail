@@ -36,7 +36,7 @@ services:
       start_period: 40s
     labels:
       - traefik.enable=true
-      - traefik.http.routers.aethermail.rule=Host(`aethermail.skygenesisenterprise.net`)
+      - traefik.http.routers.aethermail.rule=Host(`votre-domaine.com`)
       - traefik.http.routers.aethermail.entrypoints=websecure
       - traefik.http.routers.aethermail.tls.certresolver=letsencrypt
       - traefik.http.services.aethermail.loadbalancer.server.port=3000

@@ -60,5 +60,5 @@ RUN chown -R aethermail:aethermail /app /var/lib/nginx /var/log/nginx /run/nginx
 # ---------------------------
 # Étape 8 : Exposition & Démarrage
 # ---------------------------
-EXPOSE 4000
+EXPOSE 3000
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
