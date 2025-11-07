@@ -29,7 +29,8 @@ pub async fn test_imap_login(
         }));
     }
 
-    let imap_service = ImapService::new();
+    let config = crate::config::Config::from_env().expect("Failed to load config");
+    let imap_service = ImapService::new_with_custom_servers(config.custom_mail_servers);
 
     // Déterminer automatiquement la configuration IMAP selon le domaine
     let imap_config = if let Some(custom_config) = &payload.server_config {
@@ -122,10 +123,11 @@ pub struct ProviderInfo {
 }
 
 pub async fn get_supported_providers() -> Result<Json<Vec<ProviderInfo>>, StatusCode> {
-    let imap_service = ImapService::new();
+    let config = crate::config::Config::from_env().expect("Failed to load config");
+    let imap_service = ImapService::new_with_custom_servers(config.custom_mail_servers);
     let providers = imap_service.get_all_providers();
 
-    let provider_info: Vec<ProviderInfo> = providers.into_iter()
+    let mut provider_info: Vec<ProviderInfo> = providers.into_iter()
         .map(|(domain, config)| ProviderInfo {
             domain,
             display_name: config.display_name,
@@ -135,6 +137,19 @@ pub async fn get_supported_providers() -> Result<Json<Vec<ProviderInfo>>, Status
             smtp_port: config.smtp.port,
         })
         .collect();
+
+    // Ajouter les serveurs personnalisés configurés
+    let custom_servers = imap_service.get_custom_servers();
+    for (domain, server_config) in custom_servers {
+        provider_info.push(ProviderInfo {
+            domain: domain.clone(),
+            display_name: format!("{} (Custom)", domain),
+            imap_host: server_config.imap_host.clone(),
+            imap_port: server_config.imap_port,
+            smtp_host: server_config.smtp_host.clone(),
+            smtp_port: server_config.smtp_port,
+        });
+    }
 
     Ok(Json(provider_info))
 }
@@ -179,7 +194,8 @@ pub struct SkyGenesisDomainsResponse {
 }
 
 pub async fn get_sky_genesis_domains() -> Result<Json<SkyGenesisDomainsResponse>, StatusCode> {
-    let imap_service = ImapService::new();
+    let config = crate::config::Config::from_env().expect("Failed to load config");
+    let imap_service = ImapService::new_with_custom_servers(config.custom_mail_servers);
     let domains = imap_service.get_sky_genesis_domains();
 
     Ok(Json(SkyGenesisDomainsResponse { domains }))

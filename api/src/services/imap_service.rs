@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use crate::config::MailServerConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImapConfig {
@@ -24,10 +25,15 @@ pub struct EmailProviderConfig {
 
 pub struct ImapService {
     providers: HashMap<String, EmailProviderConfig>,
+    custom_servers: HashMap<String, MailServerConfig>,
 }
 
 impl ImapService {
     pub fn new() -> Self {
+        Self::new_with_custom_servers(HashMap::new())
+    }
+
+    pub fn new_with_custom_servers(custom_servers: HashMap<String, MailServerConfig>) -> Self {
         let mut providers = HashMap::new();
 
         // Configuration par défaut pour Sky Genesis Enterprise
@@ -145,7 +151,7 @@ impl ImapService {
             display_name: "Generic".to_string(),
         });
 
-        Self { providers }
+        Self { providers, custom_servers }
     }
 
     pub fn get_provider_config(&self, email: &str) -> Option<EmailProviderConfig> {
@@ -156,6 +162,23 @@ impl ImapService {
             return Some(config.clone());
         }
 
+        // Vérifier si c'est un domaine configuré via variables d'environnement
+        if let Some(custom_config) = self.custom_servers.get(domain) {
+            return Some(EmailProviderConfig {
+                imap: crate::services::imap_service::ImapConfig {
+                    host: custom_config.imap_host.clone(),
+                    port: custom_config.imap_port,
+                    tls: custom_config.imap_tls,
+                },
+                smtp: crate::services::imap_service::SmtpConfig {
+                    host: custom_config.smtp_host.clone(),
+                    port: custom_config.smtp_port,
+                    secure: custom_config.smtp_secure,
+                },
+                display_name: domain.to_string(),
+            });
+        }
+
         // Vérifier si c'est un domaine hébergé sur Sky Genesis Enterprise
         if self.is_sky_genesis_domain(domain) {
             // Utiliser la configuration Sky Genesis Enterprise par défaut
@@ -164,6 +187,23 @@ impl ImapService {
                 config.display_name = format!("{} (Sky Genesis)", domain);
                 return Some(config);
             }
+        }
+
+        // Vérifier s'il y a une configuration par défaut personnalisée
+        if let Some(default_config) = self.custom_servers.get("default") {
+            return Some(EmailProviderConfig {
+                imap: crate::services::imap_service::ImapConfig {
+                    host: default_config.imap_host.clone(),
+                    port: default_config.imap_port,
+                    tls: default_config.imap_tls,
+                },
+                smtp: crate::services::imap_service::SmtpConfig {
+                    host: default_config.smtp_host.clone(),
+                    port: default_config.smtp_port,
+                    secure: default_config.smtp_secure,
+                },
+                display_name: domain.to_string(),
+            });
         }
 
         // Sinon, utiliser la configuration générique
@@ -218,6 +258,19 @@ impl ImapService {
         config.display_name = format!("{} (Sky Genesis)", domain);
 
         self.providers.insert(domain, config);
+    }
+
+    /// Ajoute un serveur personnalisé depuis la configuration
+    pub fn add_custom_server(&mut self, domain: String, config: MailServerConfig) {
+        self.custom_servers.insert(domain, config);
+    }
+
+    /// Retourne la liste des serveurs personnalisés configurés
+    pub fn get_custom_servers(&self) -> Vec<(String, &MailServerConfig)> {
+        self.custom_servers.iter()
+            .filter(|(domain, _)| *domain != "default")
+            .map(|(domain, config)| (domain.clone(), config))
+            .collect()
     }
 
     /// Liste tous les domaines hébergés sur Sky Genesis Enterprise
