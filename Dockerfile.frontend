@@ -1,0 +1,55 @@
+# Étape de build
+FROM node:20-alpine as builder
+
+# Installation de pnpm
+RUN npm install -g pnpm
+
+# Configuration du répertoire de travail
+WORKDIR /app
+
+# Copier les fichiers de dépendances
+COPY package.json pnpm-lock.yaml* ./
+
+# Installation des dépendances
+RUN pnpm fetch
+
+# Copier le code source
+COPY . .
+
+# Installation des dépendances et génération Prisma
+RUN pnpm install --frozen-lockfile
+RUN npx prisma generate
+
+# Build de l'application frontend
+RUN pnpm run build
+
+# Étape de production avec nginx
+FROM nginx:alpine
+
+# Copier les fichiers buildés
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copier la configuration nginx
+COPY nginx.frontend.conf /etc/nginx/conf.d/default.conf
+
+# Créer l'utilisateur non-root (optionnel, nginx tourne déjà avec nginx)
+RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+
+# Changer les permissions
+RUN chown -R nextjs:nodejs /usr/share/nginx/html && \
+    chown -R nextjs:nodejs /var/cache/nginx && \
+    chown -R nextjs:nodejs /var/log/nginx && \
+    chown -R nextjs:nodejs /etc/nginx/conf.d
+
+# Créer le répertoire pour nginx pid
+RUN touch /var/run/nginx.pid && \
+    chown -R nextjs:nodejs /var/run/nginx.pid
+
+# Utilisateur non-root
+USER nextjs
+
+# Exposer le port
+EXPOSE 80
+
+# Démarrer nginx
+CMD ["nginx", "-g", "daemon off;"]

@@ -1,7 +1,6 @@
 use axum::{Json, http::StatusCode};
 use serde::{Deserialize, Serialize};
-use diesel::PgConnection;
-use crate::models::{NewUser, User};
+use crate::models::NewUser;
 use crate::queries;
 use crate::services::auth as auth_service;
 use tracing;
@@ -35,7 +34,18 @@ pub async fn login(
 
     if let Some(hash) = user.password {
         if auth_service::verify_password(&payload.password, &hash).unwrap_or(false) {
-            let token = auth_service::create_jwt(&user.id, "secret").unwrap();
+            let config = crate::config::Config::from_env().unwrap_or_else(|_| {
+                crate::config::Config {
+                    database_url: String::new(),
+                    jwt_secret: "default-secret".to_string(),
+                    api_access_token: String::new(),
+                    server_host: String::new(),
+                    server_port: 3000,
+                    use_test_data: true,
+                    custom_mail_servers: std::collections::HashMap::new(),
+                }
+            });
+            let token = auth_service::create_jwt(&user.id, &config.jwt_secret).unwrap();
             Ok(Json(LoginResponse { token }))
         } else {
             Err(StatusCode::UNAUTHORIZED)

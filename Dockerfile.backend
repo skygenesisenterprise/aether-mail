@@ -1,0 +1,65 @@
+# Étape de build
+FROM rust:1.75-slim as builder
+
+# Installation des dépendances système
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config \
+    libssl-dev \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configuration du répertoire de travail
+WORKDIR /app
+
+# Copier les fichiers Cargo et les sources
+COPY Cargo.toml Cargo.lock ./
+COPY api/Cargo.toml ./api/
+COPY api/src ./api/src
+
+# Copier également les fichiers de configuration partagés
+COPY api/src/config ./api/src/config
+COPY api/src/controllers ./api/src/controllers
+COPY api/src/core ./api/src/core
+COPY api/src/middlewares ./api/src/middlewares
+COPY api/src/models ./api/src/models
+COPY api/src/queries ./api/src/queries
+COPY api/src/routes ./api/src/routes
+COPY api/src/services ./api/src/services
+COPY api/src/utils ./api/src/utils
+COPY api/src/schema.rs ./api/src/
+COPY api/src/main.rs ./api/src/
+
+# Builder l'application backend
+WORKDIR /app/api
+RUN cargo build --release
+
+# Étape de production
+FROM debian:13-slim
+
+# Installation des dépendances runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libpq5 \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Création de l'utilisateur non-root
+RUN addgroup --system aethermail && adduser --system --ingroup aethermail aethermail
+
+# Configuration du répertoire de travail
+WORKDIR /app
+
+# Copier le binaire compilé
+COPY --from=builder /app/api/target/release/api /app/api
+
+# Changer les permissions
+RUN chown -R aethermail:aethermail /app
+
+# Utilisateur non-root
+USER aethermail
+
+# Exposer le port
+EXPOSE 3000
+
+# Commande de démarrage
+CMD ["/app/api"]

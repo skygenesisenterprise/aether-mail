@@ -1,64 +1,123 @@
-# Base Debian 13 slim
+# =============================================================================
+# Aether Mail - Multi-Stage Docker Build
+# =============================================================================
+# Ce Dockerfile utilise la nouvelle architecture avec containers séparés
+# Il peut être utilisé pour un déploiement monolithique ou comme référence
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Étape 1: Build du Backend Rust
+# -----------------------------------------------------------------------------
+FROM rust:1.75-slim as backend-builder
+
+# Installation des dépendances système pour Rust
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config \
+    libssl-dev \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copier les fichiers Cargo
+COPY Cargo.toml Cargo.lock ./
+COPY api/Cargo.toml ./api/
+COPY api/src ./api/src
+
+# Builder le backend
+WORKDIR /app/api
+RUN cargo build --release
+
+# -----------------------------------------------------------------------------
+# Étape 2: Build du Frontend Node.js
+# -----------------------------------------------------------------------------
+FROM node:20-alpine as frontend-builder
+
+# Installation de pnpm
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+# Copier les fichiers de dépendances frontend
+COPY package.json pnpm-lock.yaml* ./
+COPY tsconfig.json ./
+COPY vite.config.ts ./
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
+COPY index.html ./
+
+# Copier les sources frontend
+COPY app/ ./app/
+COPY public/ ./public/
+
+# Installation des dépendances et build
+RUN pnpm install --frozen-lockfile
+RUN npx prisma generate
+RUN pnpm run build
+
+# -----------------------------------------------------------------------------
+# Étape 3: Image de production monolithique
+# -----------------------------------------------------------------------------
 FROM debian:13-slim
 
-# ---------------------------
-# Étape 1 : Installation système
-# ---------------------------
+# Installation des dépendances runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     gnupg \
-    build-essential \
-    git \
     postgresql-client \
     nginx \
     supervisor \
+    libpq5 \
+    libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
-# ---------------------------
-# Étape 2 : Installation Node.js 20 et PNPM
-# ---------------------------
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g pnpm@latest \
-    && rm -rf /var/lib/apt/lists/*
+# Création de l'utilisateur non-root
+RUN addgroup --system aethermail && adduser --system --ingroup aethermail aethermail
 
-# ---------------------------
-# Étape 3 : Préparation du répertoire de travail
-# ---------------------------
-RUN mkdir -p /app /var/log/supervisor /var/lib/nginx /run/nginx
+# Préparation des répertoires
+RUN mkdir -p /app/backend /app/frontend /var/log/supervisor /var/lib/nginx /run/nginx
 WORKDIR /app
 
-# ---------------------------
-# Étape 4 : Installation des dépendances avec PNPM
-# ---------------------------
-COPY package.json ./
-COPY pnpm-lock.yaml* ./
-RUN pnpm fetch
+# Copier le backend compilé
+COPY --from=backend-builder /app/api/target/release/api /app/backend/
 
-# ---------------------------
-# Étape 5 : Copier le code et builder
-# ---------------------------
-COPY . .
+# Copier les fichiers frontend buildés
+COPY --from=frontend-builder /app/dist /app/frontend/
 
-# Installer les dépendances et build
-RUN pnpm install
-RUN npx prisma generate && pnpm run build
-
-# ---------------------------
-# Étape 6 : Config Nginx & Supervisor
-# ---------------------------
-COPY nginx.conf /etc/nginx/sites-enabled/default
+# Copier les configurations
+COPY nginx.monolith.conf /etc/nginx/sites-enabled/default
 COPY supervisord.conf /etc/supervisord.conf
 
-# ---------------------------
-# Étape 7 : Sécurité et utilisateur non-root
-# ---------------------------
-RUN addgroup --system aethermail && adduser --system --ingroup aethermail aethermail
+# Copier les fichiers de configuration Prisma
+COPY prisma/ ./prisma/
+
+# Permissions
 RUN chown -R aethermail:aethermail /app /var/lib/nginx /var/log/nginx /run/nginx
 
-# ---------------------------
-# Étape 8 : Exposition & Démarrage
-# ---------------------------
-EXPOSE 3000
+# Utilisateur non-root
+USER aethermail
+
+# Exposer les ports
+EXPOSE 80 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:80/health || exit 1
+
+# Démarrage avec supervisor
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+
+# =============================================================================
+# Alternative: Utilisation des containers séparés (recommandé)
+# =============================================================================
+# 
+# Pour une architecture avec containers séparés, utilisez:
+# - Dockerfile.backend (pour le backend Rust)
+# - Dockerfile.frontend (pour le frontend Nginx)
+# - docker-compose.separated.yml (pour orchestrer les services)
+#
+# Commandes:
+#   docker-compose -f docker-compose.separated.yml up -d --build
+#
+# =============================================================================

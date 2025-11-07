@@ -1,6 +1,5 @@
 use axum::{Json, http::StatusCode};
-use serde::{Deserialize, Serialize};
-use diesel::PgConnection;
+use serde::Deserialize;
 use crate::models::{NewFolder, Folder};
 use crate::queries;
 

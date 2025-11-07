@@ -94,10 +94,10 @@ pub async fn test_imap_login(
 
 async fn test_imap_connection(
     email: &str,
-    password: &str,
+    _password: &str,
     host: &str,
     port: u16,
-    use_tls: bool,
+    _use_tls: bool,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Note: Cette fonction nécessite une vraie implémentation IMAP
     // Pour l'instant, on simule une connexion réussie

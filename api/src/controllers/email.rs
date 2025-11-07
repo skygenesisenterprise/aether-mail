@@ -1,8 +1,7 @@
-use axum::{Json, http::StatusCode, Extension};
-use serde::{Deserialize, Serialize};
-use diesel::PgConnection;
+use axum::{Json, http::StatusCode};
+use serde::Deserialize;
 use std::fs;
-use crate::models::{NewEmail, Email, EmailResponse, EmailAddress, AttachmentResponse};
+use crate::models::{NewEmail, Email, EmailResponse};
 use crate::services::email_service;
 
 #[derive(Deserialize)]

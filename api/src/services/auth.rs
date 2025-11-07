@@ -1,5 +1,5 @@
 use bcrypt::{hash, verify, DEFAULT_COST};
-use jsonwebtoken::{encode, decode, Header, Algorithm, Validation, EncodingKey, DecodingKey, errors::Error};
+use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey, errors::Error};
 use serde::{Deserialize, Serialize};
 use chrono::{Utc, Duration};
 
@@ -31,6 +31,7 @@ pub fn create_jwt(user_id: &str, secret: &str) -> Result<String, Error> {
     encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_ref()))
 }
 
+#[allow(dead_code)]
 pub fn verify_jwt(token: &str, secret: &str) -> Result<Claims, Error> {
     decode::<Claims>(token, &DecodingKey::from_secret(secret.as_ref()), &Validation::default())
         .map(|data| data.claims)

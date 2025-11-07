@@ -234,6 +234,7 @@ impl ImapService {
         self.get_provider_config(email).map(|config| config.imap)
     }
 
+    #[allow(dead_code)]
     pub fn get_smtp_config(&self, email: &str) -> Option<SmtpConfig> {
         self.get_provider_config(email).map(|config| config.smtp)
     }
@@ -245,11 +246,13 @@ impl ImapService {
             .collect()
     }
 
+    #[allow(dead_code)]
     pub fn add_custom_provider(&mut self, domain: String, config: EmailProviderConfig) {
         self.providers.insert(domain, config);
     }
 
     /// Ajoute un domaine hébergé sur Sky Genesis Enterprise
+    #[allow(dead_code)]
     pub fn add_sky_genesis_domain(&mut self, domain: String) {
         let sge_config = self.providers.get("skygenesisenterprise.com")
             .expect("Sky Genesis Enterprise config should exist");
@@ -260,7 +263,19 @@ impl ImapService {
         self.providers.insert(domain, config);
     }
 
+    /// Liste tous les domaines hébergés sur Sky Genesis Enterprise
+    pub fn get_sky_genesis_domains(&self) -> Vec<String> {
+        self.providers.iter()
+            .filter(|(domain, config)| {
+                *domain != "skygenesisenterprise.com" &&
+                config.imap.host == "mail.skygenesisenterprise.com"
+            })
+            .map(|(domain, _)| domain.clone())
+            .collect()
+    }
+
     /// Ajoute un serveur personnalisé depuis la configuration
+    #[allow(dead_code)]
     pub fn add_custom_server(&mut self, domain: String, config: MailServerConfig) {
         self.custom_servers.insert(domain, config);
     }
@@ -270,17 +285,6 @@ impl ImapService {
         self.custom_servers.iter()
             .filter(|(domain, _)| *domain != "default")
             .map(|(domain, config)| (domain.clone(), config))
-            .collect()
-    }
-
-    /// Liste tous les domaines hébergés sur Sky Genesis Enterprise
-    pub fn get_sky_genesis_domains(&self) -> Vec<String> {
-        self.providers.iter()
-            .filter(|(domain, config)| {
-                *domain != "skygenesisenterprise.com" &&
-                config.imap.host == "mail.skygenesisenterprise.com"
-            })
-            .map(|(domain, _)| domain.clone())
             .collect()
     }
 }
