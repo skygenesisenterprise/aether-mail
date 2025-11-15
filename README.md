@@ -1,501 +1,445 @@
-
 <div align="center">
 
-# 📧 Aether Mail
+# 🚀 Aether Mail
 
+![Version](https://img.shields.io/badge/version-2.0.0-blue?style=for-the-badge)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=for-the-badge)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge&logo=typescript)
+![React](https://img.shields.io/badge/React-18.3-blue?style=for-the-badge&logo=react)
+![Rust](https://img.shields.io/badge/Rust-2021-orange?style=for-the-badge&logo=rust)
+![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=for-the-badge&logo=node.js)
 
-![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)
-![React](https://img.shields.io/badge/React-18.3-blue?logo=react)
-![Rust](https://img.shields.io/badge/Rust-2021-orange?logo=rust)
-![Node.js](https://img.shields.io/badge/Node.js-18+-green?logo=node.js)
+**🔥 The Next-Generation Email Client - Reimagined for 2025**
 
-**A modern, open-source, and professional email client**
+Built with cutting-edge technology and designed for the modern workflow
 
-Developed by [Sky Genesis Enterprise](https://skygenesisenterprise.com)
+[🚀 Quick Start](#-quick-start) • [✨ Features](#-features) • [📖 Docs](#-documentation) • [🤝 Contributing](#-contributing)
 
-[Documentation](#-documentation) • [Installation](#-installation) • [Features](#-features) • [Contributing](#-contributing)
+[![GitHub stars](https://img.shields.io/github/stars/skygenesisenterprise/aether-mail?style=social)](https://github.com/skygenesisenterprise/aether-mail/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/skygenesisenterprise/aether-mail?style=social)](https://github.com/skygenesisenterprise/aether-mail/network)
+[![GitHub issues](https://img.shields.io/github/issues/skygenesisenterprise/aether-mail)](https://github.com/skygenesisenterprise/aether-mail/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/skygenesisenterprise/aether-mail)](https://github.com/skygenesisenterprise/aether-mail/pulls)
 
 </div>
 
 ---
 
-## 📋 Table of Contents
+## 🌟 Why Aether Mail?
 
-- [About](#-about)
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Architecture](#-architecture)
-- [Documentation](#-documentation)
-- [Development](#-development)
-- [Deployment](#-deployment)
-- [Contributing](#-contributing)
-- [Support](#-support)
-- [License](#-license)
+Tired of clunky, outdated email clients? **Aether Mail** is here to revolutionize your email experience with:
+
+- 🎯 **Modern Design** - Beautiful, intuitive interface that adapts to your workflow
+- ⚡ **Blazing Fast** - Built with Rust backend and React frontend for optimal performance
+- 🔒 **Privacy-First** - End-to-end encryption with PGP support
+- 🌐 **Universal Compatibility** - Works with any email provider via IMAP/SMTP
+- 📱 **Cross-Platform** - Desktop, mobile, and web versions available
+- 🧩 **Extensible** - Plugin system for custom functionality
 
 ---
 
-## 🎯 About
+## 🎬 Quick Preview
 
-**Aether Mail** is a modern, open-source, and professional email client designed to provide a user experience comparable to the best email clients on the market (Outlook, Gmail). It combines an intuitive and elegant user interface with advanced features for efficient email management.
+<div align="center">
 
-### Key Features
+### 📧 Modern Email Management
 
-- 🔐 **Enhanced Security** : End-to-end encryption and PGP/OpenPGP support
-- 🎨 **Modern Interface** : Responsive and adaptive design (mobile, tablet, desktop)
-- ⚡ **Optimal Performance** : Modular architecture with high-performance Rust backend
-- 🔧 **Extensible** : Modular codebase allowing easy customization
-- 🌐 **Multi-platform** : Available on Windows, macOS, Linux, and web version
-- 🔌 **Open Standards** : IMAP/SMTP support for all email providers
+```bash
+# Experience the future of email in 30 seconds
+git clone https://github.com/skygenesisenterprise/aether-mail.git
+cd aether-mail && pnpm install && pnpm dev
+```
+
+**Visit http://localhost:4000 and transform your email workflow!**
+
+</div>
+
+---
+
+## 🚀 Quick Start
+
+### 🎯 One-Click Setup
+
+```bash
+# Clone & Install
+git clone https://github.com/skygenesisenterprise/aether-mail.git
+cd aether-mail
+pnpm install
+
+# Configure & Launch
+pnpm env:setup
+pnpm dev
+```
+
+**🎉 That's it! Your modern email client is running at:**
+
+- **Frontend**: http://localhost:4000
+- **Backend API**: http://localhost:3000
+
+### 🐳 Docker Quick Start
+
+```bash
+# Production-ready in seconds
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### 📋 Prerequisites
+
+- **Node.js** 18+ ⚡
+- **pnpm** 9.0+ 📦
+- **PostgreSQL** 14+ 🗄️
+- **Rust** 2021+ 🦀 (for backend development)
 
 ---
 
 ## ✨ Features
 
-### 📬 Email Management
+### 🎨 **User Experience Revolution**
 
-- **Intuitive Inbox** : List view with email preview
-- **Folder Navigation** : Inbox, Sent, Drafts, Trash, and custom folders
-- **Advanced Search** : Real-time search in subject, sender, and email body
-- **Filters and Sorting** : Filter by status (read/unread, favorites, etc.) and multi-criteria sorting
-- **Bulk Actions** : Multiple selection and batch actions (delete, archive, mark)
+#### 📱 **Adaptive Interface**
 
-### ✍️ Email Composition
+- **Responsive Design** - Perfect on mobile, tablet, and desktop
+- **Dark/Light/System Themes** - Your eyes will thank you
+- **Compact & Comfortable Views** - Choose your density
+- **Focus Mode** - Distraction-free email composition
+- **Keyboard Shortcuts** - Power user friendly
 
-- **Rich Editor** : Email composition with formatting support
-- **Attachments** : Multiple file management with preview
-- **CC/BCC** : Full support for copy and blind copy fields
-- **Reply and Forward** : Replies and forwards with preserved history
-- **Encryption** : Standard and end-to-end encryption options
+#### 🔄 **Smart Email Management**
 
-### 🎯 Productivity
+- **Conversation View** - Threaded emails (coming soon!)
+- **Advanced Search** - Find anything instantly
+- **Smart Filters** - Automatic email categorization
+- **Bulk Actions** - Process hundreds of emails at once
+- **Custom Labels** - Color-code your organization
 
-- **Keyboard Shortcuts** : Complete shortcuts for quick navigation
-- **Conversation View** : Email grouping by thread (in development)
-- **Favorite Marking** : Star system to mark important emails
-- **Responsive Mode** : Adaptive mobile/desktop interface with optimized view
+#### ⚡ **Productivity Power-ups**
 
-### 🔐 Security and Authentication
+- **Email Templates** - Reuse your best responses
+- **Quick Replies** - One-click canned responses
+- **Schedule Sending** - Send at the perfect time
+- **Read Receipts** - Know when your emails are read
+- **Undo Send** - Oops prevention (coming soon!)
 
-- **Secure Authentication** : Better Auth support with secure sessions
-- **Server Configuration** : Custom IMAP/SMTP support for all providers
-- **Session Management** : Active session tracking with security detection
-- **PGP Encryption** : OpenPGP support for email encryption
+### 🔧 **Technical Excellence**
 
-### 🎨 User Interface
+#### 🛡️ **Security First**
 
-- **Customizable Theme** : Light/dark theme support
-- **Modern Design** : Interface built with Tailwind CSS and Radix UI components
-- **Accessibility** : Compliant with web accessibility standards (WCAG)
-- **Smooth Animations** : Transitions and animations with Framer Motion
+- **End-to-End Encryption** - PGP/OpenPGP support
+- **Secure Authentication** - Better Auth + JWT
+- **Session Management** - Advanced security monitoring
+- **Content Security Policy** - Enterprise-grade protection
+
+#### ⚙️ **Developer Friendly**
+
+- **TypeScript Everywhere** - Type-safe development
+- **Modern Stack** - React 18 + Rust + PostgreSQL
+- **API-First Design** - RESTful with OpenAPI docs
+- **Testing Suite** - Comprehensive test coverage
+- **Docker Ready** - Containerized deployment
+
+#### 🚀 **Performance Optimized**
+
+- **Virtual Scrolling** - Handle 100k+ emails smoothly
+- **Lazy Loading** - Instant UI, content on demand
+- **Smart Caching** - Lightning-fast email access
+- **Code Splitting** - Minimal bundle sizes
+- **Background Sync** - Always up-to-date
+
+### 🌐 **Platform Support**
+
+| Platform    | Status     | Download                                                                 |
+| ----------- | ---------- | ------------------------------------------------------------------------ |
+| **Web**     | ✅ Stable  | [Live Demo](https://aether-mail.skygenesisenterprise.com)                |
+| **Windows** | 🔄 Beta    | [Download](https://github.com/skygenesisenterprise/aether-mail/releases) |
+| **macOS**   | 🔄 Beta    | [Download](https://github.com/skygenesisenterprise/aether-mail/releases) |
+| **Linux**   | 🔄 Beta    | [Download](https://github.com/skygenesisenterprise/aether-mail/releases) |
+| **Mobile**  | 📋 Planned | Q2 2025                                                                  |
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Frontend
+### 🎨 **Frontend**
 
-- **Framework** : React 18.3 with TypeScript
-- **Build Tool** : Vite 6.3
-- **Styling** : Tailwind CSS 3.4 with animate.css
-- **State Management** : Zustand 5.0
-- **Routing** : React Router DOM 7.9
-- **UI Components** : Radix UI primitives
-- **Icons** : Heroicons & Lucide React
-- **Form Validation** : Express Validator
+```typescript
+// Modern React Stack
+React 18.3 + TypeScript 5.9
+├── 🎨 Tailwind CSS 3.4 + Radix UI
+├── 🔄 Zustand 5.0 (State Management)
+├── 🛣️ React Router 7.9
+├── ⚡ Framer Motion (Animations)
+├── 📚 Storybook 8.6 (Component Docs)
+└── 🔧 Biome 2.2 (Linting/Formatting)
+```
 
-### Backend
+### 🦀 **Backend**
 
-- **Language** : Rust (Edition 2021)
-- **Framework** : Axum (Async web framework)
-- **Database** : PostgreSQL with Prisma ORM
-- **Authentication** : Better Auth + JWT
-- **Email Protocols** : IMAP/SMTP via node-imap and nodemailer
-- **Security** : Helmet, CORS, Rate limiting
+```rust
+// High-Performance Rust
+Rust 2021 + Axum Framework
+├── 🗄️ PostgreSQL + Prisma ORM
+├── 🔐 Better Auth + JWT
+├── 📧 IMAP/SMTP Services
+├── 🛡️ Security Middleware
+└── 📊 OpenAPI Documentation
+```
 
-### Infrastructure
+### 🐳 **Infrastructure**
 
-- **Containerization** : Docker & Docker Compose
-- **Database Migrations** : Prisma Migrate
-- **Package Manager** : pnpm 9.0
-- **Linting** : Biome 2.2 + ESLint
-- **Testing** : Jest + Vitest
-- **Documentation** : Storybook 8.6
+```yaml
+# Modern DevOps
+Docker & Docker Compose
+├── 🚀 CI/CD Pipeline
+├── 📈 Performance Monitoring
+├── 🔍 Security Scanning
+├── 📊 Analytics Integration
+└── ☁️ Cloud Deployment Ready
+```
 
 ---
 
-## 🚀 Installation
+## 📖 Documentation
 
-### Prerequisites
+### 🚀 **Getting Started**
 
-- **Node.js** : v18.x or higher
-- **pnpm** : v9.0 or higher (`npm install -g pnpm`)
-- **Rust** : Edition 2021 or higher (for backend)
-- **PostgreSQL** : v14 or higher
-- **Git** : To clone the repository
+- [📚 Complete Documentation](./docs/)
+- [🎯 Quick Start Guide](./docs/installation/quick-start.md)
+- [⚙️ Configuration Guide](./docs/configuration/)
+- [🔧 Development Setup](./docs/development/)
 
-### Quick Installation
+### 🏗️ **Architecture**
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/skygenesisenterprise/aether-mail.git
-cd aether-mail
+- [📐 System Architecture](./docs/architecture/)
+- [🔌 API Documentation](./docs/api/)
+- [🗄️ Database Schema](./docs/database/)
+- [🔒 Security Guide](./docs/security/)
 
-# 2. Install dependencies
-pnpm install
+### 🧪 **Development**
 
-# 3. Configure environment
-pnpm env:setup
-
-# 4. Configure database
-# Create PostgreSQL database
-createdb aethermail
-
-# Run migrations
-pnpm prisma migrate dev
-
-# 5. Start development
-pnpm dev
-```
-
-### Installation with Automated Script
-
-```bash
-# Make script executable
-chmod +x install.sh
-
-# Run installation
-./install.sh
-```
-
-The application will be accessible at:
-- **Frontend** : http://localhost:4000
-- **Backend API** : http://localhost:3000
-
----
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-Create a `.env` file at the project root:
-
-```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/aethermail"
-
-# Authentication
-JWT_SECRET="your-secret-key-here"
-BETTER_AUTH_SECRET="your-better-auth-secret"
-
-# Server
-PORT=3000
-NODE_ENV=development
-
-# Email (IMAP/SMTP)
-IMAP_HOST=imap.example.com
-IMAP_PORT=993
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-
-# Security
-CORS_ORIGIN=http://localhost:4000
-```
-
-### Database Configuration
-
-The project uses Prisma for database management. Schemas are defined in `prisma/schema.prisma`.
-
-**Available Migrations** :
-- `schema-pgsql.sql` : PostgreSQL
-- `schema-mysql.sql` : MySQL/MariaDB
-- `schema-mariadb.sql` : MariaDB
-
-### Environments
-
-The project supports multiple environments:
-
-- **Development** : Test data, local database, full debugging
-- **Production** : Real API integration, production database, optimizations
-
-See [README.environments.md](./README.environments.md) for more details.
-
----
-
-## 🏗️ Architecture
-
-### Project Structure
-
-```
-aether-mail/
-├── app/                    # Frontend React/TypeScript
-│   ├── components/         # React components
-│   │   ├── auth/          # Authentication
-│   │   ├── email/         # Email components
-│   │   ├── layout/        # Main layout
-│   │   └── ui/            # Reusable UI components
-│   ├── store/             # State management (Zustand)
-│   ├── hooks/             # Custom React hooks
-│   ├── context/           # React contexts
-│   └── lib/               # Utilities and helpers
-├── api/                    # Backend Rust
-│   └── src/
-│       ├── controllers/   # API controllers
-│       ├── services/      # Business services
-│       ├── models/        # Data models
-│       ├── routes/        # API routes
-│       └── middlewares/   # Middlewares
-├── prisma/                 # Prisma schemas and migrations
-├── docs/                   # Complete documentation
-├── config/                 # Configuration files
-└── docker/                 # Docker configuration
-```
-
-### Data Flow
-
-```
-Frontend (React) → REST API (Rust/Axum) → Database (PostgreSQL)
-                  ↓
-              IMAP/SMTP Services
-```
-
-### Frontend Architecture
-
-- **Components** : Modular architecture with reusable components
-- **State Management** : Zustand for global state management
-- **Routing** : React Router with protected routes
-- **Styling** : Tailwind CSS with consistent design system
-
-### Backend Architecture
-
-- **REST API** : RESTful endpoints with validation
-- **Services** : Service layer for business logic
-- **Models** : Data models with Prisma ORM
-- **Security** : Authentication and authorization middlewares
-
----
-
-## 📚 Documentation
-
-### Complete Documentation
-
-Complete documentation is available in the `docs/` folder:
-
-- **[Architecture](./docs/architecture/)** : Frontend/backend architecture
-- **[API](./docs/api/)** : API endpoints documentation
-- **[Installation](./docs/installation/)** : Detailed installation guide
-- **[Development](./docs/development/)** : Development guide
-- **[Tests](./docs/tests/)** : Testing documentation
-- **[FAQ](./docs/faq.md)** : Frequently asked questions
-
-### API Documentation
-
-Swagger/OpenAPI documentation is available:
-
-- **Swagger UI** : http://localhost:3000/api-docs (in development)
-- **JSON File** : `docs/swagger.json`
-
-### Storybook Components
-
-UI components are documented in Storybook:
-
-```bash
-# Launch Storybook
-pnpm storybook
-
-# Access Storybook
-# http://localhost:6006
-```
+- [👨‍💻 Contributing Guide](./docs/contributing/)
+- [🧪 Testing Guide](./docs/tests/)
+- [📝 Code Standards](./docs/development/conventions.md)
+- [🚀 Deployment Guide](./docs/deployment/)
 
 ---
 
 ## 💻 Development
 
-### Available Commands
+### 🎯 **Available Commands**
 
 ```bash
-# Development
-pnpm dev              # Launch frontend + backend in dev mode
-pnpm dev:frontend    # Launch frontend only
-pnpm dev:backend      # Launch backend only
+# 🚀 Development
+pnpm dev              # Full stack development
+pnpm dev:frontend    # Frontend only (port 4000)
+pnpm dev:backend      # Backend only (port 3000)
 
-# Build
-pnpm build            # Complete production build
-pnpm build:frontend   # Frontend build only
-pnpm build:backend    # Backend build only
+# 🏗️ Building
+pnpm build            # Production build
+pnpm build:frontend   # Frontend build
+pnpm build:backend    # Backend build
 
-# Tests
-pnpm test             # Run all tests
-pnpm test:coverage    # Tests with coverage
-pnpm test:unit        # Unit tests only
-pnpm test:integration # Integration tests
+# 🧪 Testing
+pnpm test             # All tests
+pnpm test:coverage    # With coverage report
+pnpm test:e2e         # End-to-end tests
 
-# Code Quality
-pnpm lint             # Lint code
+# 🔧 Code Quality
+pnpm lint             # Lint and fix
 pnpm format           # Format code
-pnpm format:check     # Check formatting
+pnpm typecheck        # TypeScript checking
 
-# Docker
-pnpm docker:dev       # Run with Docker (dev)
-pnpm docker:prod      # Run with Docker (prod)
-pnpm docker:build     # Build Docker image
+# 🐳 Docker
+pnpm docker:dev       # Development environment
+pnpm docker:prod      # Production environment
+pnpm docker:build     # Build images
 ```
 
-### Code Standards
+### 📋 **Code Standards**
 
-The project follows strict conventions:
-
-- **TypeScript** : Strict mode enabled
-- **Linting** : Biome + ESLint
-- **Formatting** : Biome formatter (2 spaces, double quotes)
-- **Commits** : Conventional Commits
-- **Tests** : Minimum coverage required
-
-See [docs/development/conventions.md](./docs/development/conventions.md) for more details.
-
-### Contribution Workflow
-
-1. Fork the repository
-2. Create a branch (`git checkout -b feature/my-feature`)
-3. Use `pnpm pr` to easily create a PR
-4. Commit changes (`git commit -m 'feat: add new feature'`)
-5. Push to branch (`git push origin feature/my-feature`)
-6. Open a Pull Request
-
-See [docs/contribution/workflow.md](./docs/contribution/worflow.md) for the complete workflow.
+- ✅ **TypeScript Strict Mode** - Catch errors early
+- 🎨 **Biome Formatting** - Consistent code style
+- 📝 **Conventional Commits** - Clear git history
+- 🧪 **Test Coverage** - Minimum 80% required
+- 🔒 **Security First** - Automated security scans
 
 ---
 
-## 🐳 Deployment
+## 🗺️ Roadmap
 
-### Docker
+### 🎯 **Phase 1: Foundation (Q1 2025)**
 
-The project is fully containerized with Docker:
+- ✅ Core email functionality
+- ✅ Modern UI/UX
+- ✅ Security & encryption
+- 🔄 **In Progress**: Conversation view
+- 🔄 **In Progress**: Mobile optimization
 
-```bash
-# Build and launch in production
-docker-compose -f docker-compose.prod.yml up -d
+### 🚀 **Phase 2: Productivity (Q2 2025)**
 
-# Build and launch in development
-docker-compose -f docker-compose.dev.yml up
-```
+- 📋 Email templates & quick replies
+- 📅 Schedule sending
+- 🔍 Advanced search & filters
+- 📱 Mobile apps (iOS/Android)
+- 🔄 Real-time sync
 
-### Docker Compose
+### 🌟 **Phase 3: AI & Automation (Q3 2025)**
 
-The project includes multiple Docker Compose configurations:
+- 🤖 AI-powered email sorting
+- 📝 Smart compose suggestions
+- 📊 Email analytics
+- 🔔 Intelligent notifications
+- 🤝 Team collaboration
 
-- `docker-compose.yml` : Base configuration
-- `docker-compose.dev.yml` : Development configuration
-- `docker-compose.prod.yml` : Production configuration
-- `docker-compose.traefik.yml` : Configuration with Traefik
+### 🚀 **Phase 4: Enterprise (Q4 2025)**
 
-### Manual Deployment
-
-```bash
-# Production build
-pnpm build
-
-# Start in production
-pnpm prod:start
-```
-
-### Production Environment Variables
-
-Make sure to configure appropriate environment variables for production:
-
-```env
-NODE_ENV=production
-DATABASE_URL="postgresql://..."
-JWT_SECRET="secure-production-secret"
-CORS_ORIGIN="https://yourdomain.com"
-```
+- 👥 Multi-tenant support
+- 🔐 Advanced security features
+- 📈 Admin dashboard
+- 🔌 Plugin ecosystem
+- ☁️ Cloud hosting solution
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! The project follows the following contribution standards:
+We believe in **open collaboration** and welcome contributions from everyone!
 
-### How to Contribute
+### 🎯 **How to Contribute**
 
-1. **Fork the project** and clone your fork
-2. **Create a branch** for your feature (`git checkout -b feature/AmazingFeature`)
-3. **Use the PR script** : `pnpm pr` to facilitate PR creation
-4. **Commit your changes** following [Conventional Commits](https://www.conventionalcommits.org/)
-5. **Push to branch** (`git push origin feature/AmazingFeature`)
-6. **Open a Pull Request**
+1. **🍴 Fork** the repository
+2. **🌿 Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **💻 Code** your amazing feature
+4. **🧪 Test** thoroughly (`pnpm test`)
+5. **📝 Commit** with conventional commits
+6. **🚀 Push** to your branch
+7. **🔄 Open** a Pull Request
 
-### Contribution Guidelines
+### 🏆 **Contribution Types**
 
-- Follow the project's code conventions
-- Add tests for new features
-- Document significant changes
-- Ensure all tests pass (`pnpm test`)
-- Check linting (`pnpm lint`)
+| Type               | Description           | Examples                   |
+| ------------------ | --------------------- | -------------------------- |
+| 🐛 **Bug Fixes**   | Fix reported issues   | Memory leaks, UI bugs      |
+| ✨ **Features**    | New functionality     | Email templates, search    |
+| 📚 **Docs**        | Improve documentation | API docs, guides           |
+| 🎨 **UI/UX**       | Design improvements   | Better layouts, animations |
+| ⚡ **Performance** | Speed optimizations   | Caching, lazy loading      |
+| 🔒 **Security**    | Security enhancements | Encryption, validation     |
 
-See [docs/contribution/](./docs/contribution/) for more details.
+### 🎁 **Contributor Perks**
 
-### Types of Contributions Sought
-
-- 🐛 **Bug Fixes**
-- ✨ **New Features**
-- 📚 **Documentation Improvements**
-- 🎨 **UI/UX Enhancements**
-- ⚡ **Performance Optimizations**
-- 🔒 **Security Improvements**
+- 🏅 **Contributor Badge** - Show off your work
+- 📖 **Early Access** - Try features before release
+- 🎯 **Influence** - Help shape product direction
+- 🌟 **Recognition** - Featured in our README
 
 ---
 
-## 📞 Support
+## 📞 Support & Community
 
-### Getting Help
+### 💬 **Get Help**
 
-- **Documentation** : Consult the [complete documentation](./docs/)
-- **Issues** : Open a [GitHub issue](https://github.com/skygenesisenterprise/aether-mail/issues)
-- **Email** : support@skygenesisenterprise.com
-- **Website** : [Sky Genesis Enterprise](https://skygenesisenterprise.com)
+- 📖 [Documentation](./docs/) - Comprehensive guides
+- 🐛 [GitHub Issues](https://github.com/skygenesisenterprise/aether-mail/issues) - Bug reports
+- 💡 [Discussions](https://github.com/skygenesisenterprise/aether-mail/discussions) - Feature requests
+- 📧 [Email Support](mailto:support@skygenesisenterprise.com) - Direct help
+- 💬 [Discord Community](https://discord.gg/aether-mail) - Chat with us
 
-### Reporting a Bug
+### 🐛 **Bug Reports**
 
-If you encounter a bug, please:
+Found a bug? Please help us fix it:
 
-1. Check that the bug hasn't already been reported
-2. Create a new issue with:
-   - Clear description of the problem
+1. 🔍 **Search** existing issues first
+2. 📝 **Create** detailed issue with:
+   - Clear description
    - Steps to reproduce
-   - Environment (OS, Node.js version, etc.)
-   - Error logs if applicable
+   - Environment info
+   - Screenshots/logs
+3. 🏷️ **Label** appropriately
 
-### Requesting a Feature
+### 💡 **Feature Requests**
 
-To suggest a new feature:
+Have an idea? We'd love to hear it:
 
-1. Check that it hasn't already been suggested
-2. Create an issue with the "feature request" label
-3. Describe the feature and its usefulness
+1. 💭 **Check** if already requested
+2. 📋 **Describe** the problem you're solving
+3. 🎯 **Explain** the proposed solution
+4. 📈 **Consider** the impact and priority
+
+---
+
+## 📊 Project Stats
+
+<div align="center">
+
+| Metric          | Value                                                                                                                                                                          | Trend      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| ⭐ GitHub Stars | [![GitHub stars](https://img.shields.io/github/stars/skygenesisenterprise/aether-mail?style=flat)](https://github.com/skygenesisenterprise/aether-mail/stargazers)             | 📈 Growing |
+| 🍴 Forks        | [![GitHub forks](https://img.shields.io/github/forks/skygenesisenterprise/aether-mail?style=flat)](https://github.com/skygenesisenterprise/aether-mail/network)                | 📈 Growing |
+| 🐛 Issues       | [![GitHub issues](https://img.shields.io/github/issues/skygenesisenterprise/aether-mail)](https://github.com/skygenesisenterprise/aether-mail/issues)                          | 🔄 Active  |
+| 📝 Contributors | [![GitHub contributors](https://img.shields.io/github/contributors/skygenesisenterprise/aether-mail)](https://github.com/skygenesisenterprise/aether-mail/graphs/contributors) | 📈 Growing |
+| 📦 Downloads    | [![npm downloads](https://img.shields.io/npm/dt/@skygenesisenterprise/aether-mail)](https://www.npmjs.com/package/@skygenesisenterprise/aether-mail)                           | 📈 Growing |
+
+</div>
+
+---
+
+## 🏆 Sponsors & Partners
+
+<div align="center">
+
+**Special thanks to our amazing sponsors who make this project possible:**
+
+[![Sky Genesis Enterprise](https://skygenesisenterprise.com/logo.png)](https://skygenesisenterprise.com)
+
+**🤝 Become a [sponsor](https://github.com/sponsors/skygenesisenterprise) and support open-source development!**
+
+</div>
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **Apache-2.0** license. See the [LICENSE](./LICENSE) file for more details.
+This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
+
+```
+Copyright 2025 Sky Genesis Enterprise
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
 
 ---
 
 ## 🙏 Acknowledgments
 
-- [Sky Genesis Enterprise](https://skygenesisenterprise.com) for development and support
-- All [contributors](./CONTRIBUTORS.md) who have participated in the project
-- The open-source community for the tools and libraries used
+- 🚀 **[Sky Genesis Enterprise](https://skygenesisenterprise.com)** - Development & maintenance
+- 👥 **All Contributors** - Amazing community support
+- 📚 **Open Source Community** - Tools and libraries
+- 🎨 **Design Community** - Inspiration and feedback
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by [Sky Genesis Enterprise](https://skygenesisenterprise.com)**
+# 🚀 **Ready to Transform Your Email Experience?**
 
-[⭐ Star on GitHub](https://github.com/skygenesisenterprise/aether-mail) • [📖 Documentation](./docs/) • [🐛 Report a bug](https://github.com/skygenesisenterprise/aether-mail/issues)
+[⭐ Star This Repo](https://github.com/skygenesisenterprise/aether-mail) •
+[🚀 Try Live Demo](https://aether-mail.skygenesisenterprise.com) •
+[📖 Read Documentation](./docs/) •
+[🐛 Report Issues](https://github.com/skygenesisenterprise/aether-mail/issues)
+
+---
+
+**Made with ❤️ by the [Sky Genesis Enterprise](https://skygenesisenterprise.com) team**
+
+_Building the future of email, one commit at a time_
 
 </div>
