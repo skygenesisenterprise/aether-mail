@@ -13,11 +13,13 @@ import {
 interface SidebarProps {
   selectedFolder?: string;
   onFolderSelect?: (folder: string) => void;
+  onCompose?: () => void;
 }
 
 export default function Sidebar({
   selectedFolder = "inbox",
   onFolderSelect,
+  onCompose,
 }: SidebarProps) {
   const folders = [
     { id: "inbox", name: "Boîte de réception", icon: Mail, count: 12 },
@@ -33,6 +35,7 @@ export default function Sidebar({
       <div className="p-4">
         <button
           type="button"
+          onClick={onCompose}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-3 flex items-center justify-center gap-2 transition-colors"
         >
           <Plus size={20} />

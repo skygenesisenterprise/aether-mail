@@ -16,13 +16,19 @@ interface Email {
 interface EmailListProps {
   selectedEmail?: string;
   onEmailSelect?: (emailId: string) => void;
+  selectedFolder?: string;
+  onEmailDelete?: (emailId: string) => void;
+  onEmailArchive?: (emailId: string) => void;
 }
 
 export default function EmailList({
   selectedEmail,
   onEmailSelect,
+  selectedFolder = "inbox",
+  onEmailDelete,
+  onEmailArchive,
 }: EmailListProps) {
-  const [emails] = useState<Email[]>([
+  const allEmails: Email[] = [
     {
       id: "1",
       from: "Jean Dupont",
@@ -83,14 +89,47 @@ export default function EmailList({
       isStarred: false,
       hasAttachment: false,
     },
-  ]);
+  ];
+
+  const getFolderEmails = (folder: string): Email[] => {
+    switch (folder) {
+      case "inbox":
+        return allEmails.filter(
+          (e) =>
+            e.id === "1" ||
+            e.id === "2" ||
+            e.id === "3" ||
+            e.id === "4" ||
+            e.id === "5",
+        );
+      case "sent":
+        return [];
+      case "drafts":
+        return [];
+      case "starred":
+        return allEmails.filter((e) => e.isStarred);
+      case "archive":
+        return [];
+      case "trash":
+        return [];
+      default:
+        return allEmails;
+    }
+  };
+
+  const emails = getFolderEmails(selectedFolder);
 
   return (
     <div className="w-96 bg-gray-950 border-r border-gray-800 flex flex-col">
       <div className="p-4 border-b border-gray-800">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white">
-            Boîte de réception
+            {selectedFolder === "inbox" && "Boîte de réception"}
+            {selectedFolder === "sent" && "Envoyés"}
+            {selectedFolder === "drafts" && "Brouillons"}
+            {selectedFolder === "starred" && "Suivis"}
+            {selectedFolder === "archive" && "Archive"}
+            {selectedFolder === "trash" && "Corbeille"}
           </h2>
           <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1">
             {emails.filter((e) => !e.isRead).length}
@@ -177,12 +216,20 @@ export default function EmailList({
               <div className="flex gap-1 ml-auto">
                 <button
                   type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEmailArchive?.(email.id);
+                  }}
                   className="p-1 hover:bg-gray-700 rounded transition-colors"
                 >
                   <Archive size={14} className="text-gray-400" />
                 </button>
                 <button
                   type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEmailDelete?.(email.id);
+                  }}
                   className="p-1 hover:bg-gray-700 rounded transition-colors"
                 >
                   <Trash2 size={14} className="text-gray-400" />

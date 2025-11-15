@@ -16,13 +16,38 @@ export default function MailLayout() {
       <Sidebar
         selectedFolder={selectedFolder}
         onFolderSelect={setSelectedFolder}
+        onCompose={() => setIsComposeOpen(true)}
       />
       <div className="flex-1 flex">
         <EmailList
           selectedEmail={selectedEmail}
           onEmailSelect={setSelectedEmail}
+          selectedFolder={selectedFolder}
+          onEmailDelete={(emailId) => {
+            setSelectedEmail(undefined);
+          }}
+          onEmailArchive={(emailId) => {
+            setSelectedEmail(undefined);
+          }}
         />
-        <EmailViewer emailId={selectedEmail} />
+        <EmailViewer
+          emailId={selectedEmail}
+          onReply={(emailId) => {
+            setIsComposeOpen(true);
+          }}
+          onForward={(emailId) => {
+            setIsComposeOpen(true);
+          }}
+          onDelete={(emailId) => {
+            setSelectedEmail(undefined);
+          }}
+          onArchive={(emailId) => {
+            setSelectedEmail(undefined);
+          }}
+          onToggleStar={(emailId) => {
+            // Toggle star logic would go here
+          }}
+        />
       </div>
       <Compose isOpen={isComposeOpen} onClose={() => setIsComposeOpen(false)} />
     </div>
