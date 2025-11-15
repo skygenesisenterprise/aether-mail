@@ -13,7 +13,7 @@
 	"scripts": {
 		"pr": "node scripts/pr.mjs",
 		"dev": "pnpm env:setup && concurrently \"pnpm dev:frontend\" \"pnpm dev:backend\"",
-		"dev:frontend": "next dev --port 4000",
+		"dev:frontend": "next dev --port 3000",
 		"dev:backend": "node --trace-warnings --loader ts-node/esm --experimental-specifier-resolution=node ./api/server.ts",
 		"prod": "NODE_ENV=production pnpm env:setup && pnpm build && pnpm prod:start",
 		"prod:start": "node --trace-warnings dist/backend/server.js",
