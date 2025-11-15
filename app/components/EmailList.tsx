@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React from "react";
 import { Star, Archive, Trash2, Paperclip } from "lucide-react";
 
 interface Email {
@@ -120,10 +120,10 @@ export default function EmailList({
   const emails = getFolderEmails(selectedFolder);
 
   return (
-    <div className="w-96 bg-gray-950 border-r border-gray-800 flex flex-col">
-      <div className="p-4 border-b border-gray-800">
+    <div className="w-96 bg-card border-r border-border flex flex-col">
+      <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold text-card-foreground">
             {selectedFolder === "inbox" && "Boîte de réception"}
             {selectedFolder === "sent" && "Envoyés"}
             {selectedFolder === "drafts" && "Brouillons"}
@@ -131,7 +131,7 @@ export default function EmailList({
             {selectedFolder === "archive" && "Archive"}
             {selectedFolder === "trash" && "Corbeille"}
           </h2>
-          <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1">
+          <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-1">
             {emails.filter((e) => !e.isRead).length}
           </span>
         </div>
@@ -139,14 +139,11 @@ export default function EmailList({
         <div className="flex gap-2">
           <button
             type="button"
-            className="flex-1 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg px-3 py-2 transition-colors"
+            className="flex-1 bg-muted hover:bg-muted/80 text-card-foreground text-sm rounded-lg px-3 py-2 transition-colors"
           >
             Tout lire
           </button>
-          <button
-            type="button"
-            className="flex-1 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg px-3 py-2 transition-colors"
-          >
+          <button className="flex-1 bg-muted hover:bg-muted/80 text-card-foreground text-sm rounded-lg px-3 py-2 transition-colors">
             Filtrer
           </button>
         </div>
@@ -164,21 +161,21 @@ export default function EmailList({
             }}
             role="button"
             tabIndex={0}
-            className={`p-4 border-b border-gray-800 cursor-pointer transition-colors ${
-              selectedEmail === email.id ? "bg-gray-800" : "hover:bg-gray-900"
-            } ${!email.isRead ? "bg-blue-950/20" : ""}`}
+            className={`p-4 border-b border-border cursor-pointer transition-colors ${
+              selectedEmail === email.id ? "bg-muted" : "hover:bg-muted/50"
+            } ${!email.isRead ? "bg-primary/10" : ""}`}
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-medium text-white">
+                <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-medium text-card-foreground">
                     {email.from.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h3
-                      className={`text-sm truncate ${!email.isRead ? "font-semibold text-white" : "text-gray-300"}`}
+                      className={`text-sm truncate ${!email.isRead ? "font-semibold text-card-foreground" : "text-muted-foreground"}`}
                     >
                       {email.from}
                     </h3>
@@ -186,7 +183,7 @@ export default function EmailList({
                       {email.date}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {email.fromEmail}
                   </p>
                 </div>
@@ -194,19 +191,19 @@ export default function EmailList({
             </div>
 
             <h4
-              className={`text-sm mb-1 truncate ${!email.isRead ? "font-medium text-white" : "text-gray-200"}`}
+              className={`text-sm mb-1 truncate ${!email.isRead ? "font-medium text-card-foreground" : "text-muted-foreground"}`}
             >
               {email.subject}
             </h4>
 
-            <p className="text-xs text-gray-400 line-clamp-2 mb-2">
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
               {email.preview}
             </p>
 
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 {email.hasAttachment && (
-                  <Paperclip size={14} className="text-gray-500" />
+                  <Paperclip size={14} className="text-muted-foreground" />
                 )}
                 {email.isStarred && (
                   <Star size={14} className="text-yellow-500 fill-yellow-500" />
@@ -222,7 +219,7 @@ export default function EmailList({
                   }}
                   className="p-1 hover:bg-gray-700 rounded transition-colors"
                 >
-                  <Archive size={14} className="text-gray-400" />
+                  <Archive size={14} className="text-muted-foreground" />
                 </button>
                 <button
                   type="button"
@@ -232,7 +229,7 @@ export default function EmailList({
                   }}
                   className="p-1 hover:bg-gray-700 rounded transition-colors"
                 >
-                  <Trash2 size={14} className="text-gray-400" />
+                  <Trash2 size={14} className="text-muted-foreground" />
                 </button>
               </div>
             </div>

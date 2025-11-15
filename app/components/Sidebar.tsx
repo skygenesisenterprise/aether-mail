@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Mail,
   Send,
@@ -8,7 +9,17 @@ import {
   Search,
   Settings,
   Plus,
+  ChevronDown,
+  User,
+  Shield,
+  Bell,
+  HelpCircle,
+  LogOut,
+  Monitor,
+  Moon,
+  Sun,
 } from "lucide-react";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface SidebarProps {
   selectedFolder?: string;
@@ -21,6 +32,48 @@ export default function Sidebar({
   onFolderSelect,
   onCompose,
 }: SidebarProps) {
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+
+  const getThemeIcon = () => {
+    switch (theme) {
+      case "dark":
+        return Moon;
+      case "light":
+        return Sun;
+      case "system":
+        return Monitor;
+      default:
+        return Moon;
+    }
+  };
+
+  const getThemeLabel = () => {
+    switch (theme) {
+      case "dark":
+        return "Thème sombre";
+      case "light":
+        return "Thème clair";
+      case "system":
+        return "Thème système";
+      default:
+        return "Thème sombre";
+    }
+  };
+
+  const accountOptions = [
+    { id: "profile", name: "Profil", icon: User },
+    { id: "security", name: "Sécurité", icon: Shield },
+    { id: "notifications", name: "Notifications", icon: Bell },
+    {
+      id: "theme",
+      name: getThemeLabel(),
+      icon: getThemeIcon(),
+      action: toggleTheme,
+    },
+    { id: "help", name: "Aide", icon: HelpCircle },
+    { id: "logout", name: "Déconnexion", icon: LogOut },
+  ];
   const folders = [
     { id: "inbox", name: "Boîte de réception", icon: Mail, count: 12 },
     { id: "sent", name: "Envoyés", icon: Send, count: 0 },
@@ -31,12 +84,12 @@ export default function Sidebar({
   ];
 
   return (
-    <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
+    <div className="w-64 bg-card border-r border-border flex flex-col">
       <div className="p-4">
         <button
           type="button"
           onClick={onCompose}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-3 flex items-center justify-center gap-2 transition-colors"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 py-3 flex items-center justify-center gap-2 transition-colors"
         >
           <Plus size={20} />
           <span className="font-medium">Nouveau message</span>
@@ -46,13 +99,13 @@ export default function Sidebar({
       <div className="px-4 pb-4">
         <div className="relative">
           <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
             size={18}
           />
           <input
             type="text"
             placeholder="Rechercher..."
-            className="w-full bg-gray-800 text-white rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+            className="w-full bg-muted text-card-foreground rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary placeholder-muted-foreground"
           />
         </div>
       </div>
@@ -69,8 +122,8 @@ export default function Sidebar({
               onClick={() => onFolderSelect?.(folder.id)}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg mb-1 transition-colors ${
                 isActive
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                  ? "bg-muted text-card-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
               }`}
             >
               <div className="flex items-center gap-3">
@@ -78,7 +131,7 @@ export default function Sidebar({
                 <span className="text-sm font-medium">{folder.name}</span>
               </div>
               {folder.count > 0 && (
-                <span className="bg-gray-700 text-gray-300 text-xs rounded-full px-2 py-1">
+                <span className="bg-muted text-muted-foreground text-xs rounded-full px-2 py-1">
                   {folder.count}
                 </span>
               )}
@@ -87,14 +140,46 @@ export default function Sidebar({
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-800">
+      <div className="p-4 border-t border-border">
         <button
           type="button"
-          className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors"
+          onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
+          className="w-full flex items-center justify-between px-3 py-2 text-muted-foreground hover:bg-muted hover:text-card-foreground rounded-lg transition-colors"
         >
-          <Settings size={18} />
-          <span className="text-sm font-medium">Paramètres</span>
+          <div className="flex items-center gap-3">
+            <Settings size={18} />
+            <span className="text-sm font-medium">Espace compte</span>
+          </div>
+          <ChevronDown
+            size={16}
+            className={`transition-transform duration-200 ${isAccountMenuOpen ? "rotate-180" : ""}`}
+          />
         </button>
+
+        {isAccountMenuOpen && (
+          <div className="mt-2 space-y-1">
+            {accountOptions.map((option) => {
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={option.action}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    option.id === "logout"
+                      ? "text-destructive hover:bg-destructive/20 hover:text-destructive-foreground"
+                      : option.id === "theme"
+                        ? "text-primary hover:bg-primary/20 hover:text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
+                  }`}
+                >
+                  <Icon size={16} />
+                  <span className="text-sm">{option.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
