@@ -67,7 +67,14 @@ export default function Compose({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isPreview, setIsPreview] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">(
+    "left",
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Suggestions d'emails pour la démo
   const emailSuggestions = [
@@ -221,6 +228,128 @@ export default function Compose({
     setTimeout(() => setDraftSaved(false), 3000);
 
     console.log("Brouillon sauvegardé:", draft);
+  };
+
+  const sendEmail = () => {
+    // Validation basique
+    if (to.length === 0) {
+      alert("Veuillez ajouter au moins un destinataire");
+      return;
+    }
+    if (!subject.trim()) {
+      alert("Veuillez ajouter un objet");
+      return;
+    }
+    if (!body.trim()) {
+      alert("Veuillez rédiger un message");
+      return;
+    }
+
+    const email = {
+      id: Date.now().toString(),
+      to: to.map((r) => r.email).join(", "),
+      cc: cc.map((r) => r.email).join(", "),
+      bcc: bcc.map((r) => r.email).join(", "),
+      subject,
+      body,
+      attachments: attachments.map((f) => ({
+        name: f.name,
+        size: f.size,
+        type: f.type,
+      })),
+      timestamp: new Date().toISOString(),
+    };
+
+    // Simuler l'envoi
+    console.log("Email envoyé:", email);
+
+    // Sauvegarder dans les emails envoyés (pour la démo)
+    const sentEmails = JSON.parse(
+      localStorage.getItem("aether-mail-sent") || "[]",
+    );
+    sentEmails.push(email);
+    localStorage.setItem("aether-mail-sent", JSON.stringify(sentEmails));
+
+    // Afficher une confirmation
+    alert("Email envoyé avec succès !");
+
+    // Fermer la fenêtre de composition
+    onClose?.();
+  };
+
+  // Fonctions pour la barre d'outils
+  const formatText = (command: string, value?: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = body.substring(start, end);
+    let newText = "";
+
+    switch (command) {
+      case "bold":
+        newText = `**${selectedText}**`;
+        setIsBold(!isBold);
+        break;
+      case "italic":
+        newText = `*${selectedText}*`;
+        setIsItalic(!isItalic);
+        break;
+      case "underline":
+        newText = `__${selectedText}__`;
+        setIsUnderline(!isUnderline);
+        break;
+      case "link":
+        const url = prompt("Entrez l'URL:");
+        if (url) {
+          newText = `[${selectedText || "Lien"}](${url})`;
+        }
+        break;
+      case "list":
+        newText = `\n• ${selectedText}`;
+        break;
+      case "orderedList":
+        newText = `\n1. ${selectedText}`;
+        break;
+      case "quote":
+        newText = `> ${selectedText}`;
+        break;
+      case "code":
+        newText = `\`${selectedText}\``;
+        break;
+      default:
+        return;
+    }
+
+    const newBody = body.substring(0, start) + newText + body.substring(end);
+    setBody(newBody);
+
+    // Repositionner le curseur
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(
+        start + newText.length,
+        start + newText.length,
+      );
+    }, 0);
+  };
+
+  const insertEmoji = () => {
+    const emojis = ["😀", "😊", "😎", "👍", "❤️", "🎉", "🔥", "✨", "🚀", "💯"];
+    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const newBody = body.substring(0, start) + emoji + body.substring(start);
+    setBody(newBody);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+    }, 0);
   };
 
   const loadDraft = () => {
@@ -437,93 +566,137 @@ export default function Compose({
           {/* Barre d'outils d'édition */}
           <div className="flex items-center gap-1 p-2 bg-muted/30 rounded-lg border border-border/30">
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={() => formatText("bold")}
+              className={`p-2 rounded transition-colors ${isBold ? "bg-primary/20 text-primary" : "hover:bg-muted"}`}
               title="Gras"
             >
-              <Bold size={16} className="text-muted-foreground" />
+              <Bold
+                size={16}
+                className={isBold ? "text-primary" : "text-muted-foreground"}
+              />
             </button>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={() => formatText("italic")}
+              className={`p-2 rounded transition-colors ${isItalic ? "bg-primary/20 text-primary" : "hover:bg-muted"}`}
               title="Italique"
             >
-              <Italic size={16} className="text-muted-foreground" />
+              <Italic
+                size={16}
+                className={isItalic ? "text-primary" : "text-muted-foreground"}
+              />
             </button>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={() => formatText("underline")}
+              className={`p-2 rounded transition-colors ${isUnderline ? "bg-primary/20 text-primary" : "hover:bg-muted"}`}
               title="Souligné"
             >
-              <Underline size={16} className="text-muted-foreground" />
+              <Underline
+                size={16}
+                className={
+                  isUnderline ? "text-primary" : "text-muted-foreground"
+                }
+              />
             </button>
-            <div className="w-px h-6 bg-gray-600 mx-1"></div>
+            <div className="w-px h-6 bg-border mx-1"></div>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={() => setTextAlign("left")}
+              className={`p-2 rounded transition-colors ${textAlign === "left" ? "bg-primary/20 text-primary" : "hover:bg-muted"}`}
               title="Aligner à gauche"
             >
-              <AlignLeft size={16} className="text-gray-400" />
+              <AlignLeft
+                size={16}
+                className={
+                  textAlign === "left"
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }
+              />
             </button>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={() => setTextAlign("center")}
+              className={`p-2 rounded transition-colors ${textAlign === "center" ? "bg-primary/20 text-primary" : "hover:bg-muted"}`}
               title="Centrer"
             >
-              <AlignCenter size={16} className="text-gray-400" />
+              <AlignCenter
+                size={16}
+                className={
+                  textAlign === "center"
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }
+              />
             </button>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={() => setTextAlign("right")}
+              className={`p-2 rounded transition-colors ${textAlign === "right" ? "bg-primary/20 text-primary" : "hover:bg-muted"}`}
               title="Aligner à droite"
             >
-              <AlignRight size={16} className="text-gray-400" />
+              <AlignRight
+                size={16}
+                className={
+                  textAlign === "right"
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }
+              />
             </button>
-            <div className="w-px h-6 bg-gray-600 mx-1"></div>
+            <div className="w-px h-6 bg-border mx-1"></div>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={() => formatText("list")}
+              className="p-2 hover:bg-muted rounded transition-colors"
               title="Liste à puces"
             >
-              <List size={16} className="text-gray-400" />
+              <List size={16} className="text-muted-foreground" />
             </button>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={() => formatText("orderedList")}
+              className="p-2 hover:bg-muted rounded transition-colors"
               title="Liste numérotée"
             >
-              <ListOrdered size={16} className="text-gray-400" />
+              <ListOrdered size={16} className="text-muted-foreground" />
             </button>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={() => formatText("quote")}
+              className="p-2 hover:bg-muted rounded transition-colors"
               title="Citation"
             >
-              <Quote size={16} className="text-gray-400" />
+              <Quote size={16} className="text-muted-foreground" />
             </button>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={() => formatText("code")}
+              className="p-2 hover:bg-muted rounded transition-colors"
               title="Code"
             >
-              <Code size={16} className="text-gray-400" />
+              <Code size={16} className="text-muted-foreground" />
             </button>
-            <div className="w-px h-6 bg-gray-600 mx-1"></div>
+            <div className="w-px h-6 bg-border mx-1"></div>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={() => formatText("link")}
+              className="p-2 hover:bg-muted rounded transition-colors"
               title="Lien"
             >
               <Link size={16} className="text-muted-foreground" />
             </button>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              className="p-2 hover:bg-muted rounded transition-colors"
               title="Image"
             >
               <Image size={16} className="text-muted-foreground" />
             </button>
             <button
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              onClick={insertEmoji}
+              className="p-2 hover:bg-muted rounded transition-colors"
               title="Émoji"
             >
               <Smile size={16} className="text-muted-foreground" />
             </button>
-            <div className="w-px h-6 bg-gray-600 mx-1"></div>
+            <div className="w-px h-6 bg-border mx-1"></div>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 hover:bg-gray-700 rounded transition-colors"
+              className="p-2 hover:bg-muted rounded transition-colors"
               title="Pièce jointe"
             >
-              <Paperclip size={16} className="text-gray-400" />
+              <Paperclip size={16} className="text-muted-foreground" />
             </button>
             <input
               ref={fileInputRef}
@@ -579,10 +752,17 @@ export default function Compose({
           {!isPreview ? (
             <div className="relative h-full">
               <textarea
+                ref={textareaRef}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Rédigez votre message..."
                 className="w-full h-full bg-muted/50 text-card-foreground rounded-lg p-4 border border-border/50 resize-none focus:outline-none focus:ring-2 focus:ring-primary placeholder-muted-foreground"
+                style={{
+                  fontWeight: isBold ? "bold" : "normal",
+                  fontStyle: isItalic ? "italic" : "normal",
+                  textDecoration: isUnderline ? "underline" : "none",
+                  textAlign: textAlign,
+                }}
               />
               <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
                 {body.length} caractères
@@ -689,7 +869,10 @@ export default function Compose({
             >
               Annuler
             </button>
-            <button className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg flex items-center gap-2 transition-colors">
+            <button
+              onClick={sendEmail}
+              className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg flex items-center gap-2 transition-colors"
+            >
               <Send size={16} />
               <span>Envoyer</span>
             </button>

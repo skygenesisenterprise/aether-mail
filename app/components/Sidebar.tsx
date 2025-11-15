@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Mail,
   Send,
@@ -34,6 +34,21 @@ export default function Sidebar({
 }: SidebarProps) {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Fermer le menu quand on clique à l'extérieur
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const getThemeIcon = () => {
     switch (theme) {
@@ -140,11 +155,43 @@ export default function Sidebar({
         })}
       </nav>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border relative" ref={menuRef}>
+        {/* Menu déroulant qui s'affiche au-dessus */}
+        {isAccountMenuOpen && (
+          <div className="absolute bottom-full left-4 right-4 mb-2 bg-card border border-border rounded-lg shadow-lg z-50">
+            <div className="p-1">
+              {accountOptions.map((option) => {
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={option.action}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                      option.id === "logout"
+                        ? "text-destructive hover:bg-destructive/20 hover:text-destructive-foreground"
+                        : option.id === "theme"
+                          ? "text-primary hover:bg-primary/20 hover:text-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
+                    }`}
+                  >
+                    <Icon size={16} />
+                    <span className="text-sm">{option.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
-          className="w-full flex items-center justify-between px-3 py-2 text-muted-foreground hover:bg-muted hover:text-card-foreground rounded-lg transition-colors"
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+            isAccountMenuOpen
+              ? "bg-muted text-card-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
+          }`}
         >
           <div className="flex items-center gap-3">
             <Settings size={18} />
@@ -155,31 +202,6 @@ export default function Sidebar({
             className={`transition-transform duration-200 ${isAccountMenuOpen ? "rotate-180" : ""}`}
           />
         </button>
-
-        {isAccountMenuOpen && (
-          <div className="mt-2 space-y-1">
-            {accountOptions.map((option) => {
-              const Icon = option.icon;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={option.action}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    option.id === "logout"
-                      ? "text-destructive hover:bg-destructive/20 hover:text-destructive-foreground"
-                      : option.id === "theme"
-                        ? "text-primary hover:bg-primary/20 hover:text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
-                  }`}
-                >
-                  <Icon size={16} />
-                  <span className="text-sm">{option.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
     </div>
   );

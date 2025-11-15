@@ -1,10 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Sidebar from "./Sidebar";
 import EmailList from "./EmailList";
 import EmailViewer, { emailsData } from "./EmailViewer";
 import Compose from "./Compose";
+
+interface Email {
+  id: string;
+  from: string;
+  fromEmail: string;
+  to: string;
+  subject: string;
+  body: string;
+  date: string;
+  isRead: boolean;
+  isStarred: boolean;
+  hasAttachment: boolean;
+  attachments?: Array<{
+    name: string;
+    size: string;
+    type: string;
+  }>;
+}
 
 export default function MailLayout() {
   const [selectedFolder, setSelectedFolder] = useState("inbox");
@@ -13,6 +31,57 @@ export default function MailLayout() {
   const [composeMode, setComposeMode] = useState<
     "new" | "reply" | "replyAll" | "forward"
   >("new");
+
+  // État partagé pour les emails
+  const [emails, setEmails] = useState<Record<string, Email>>(emailsData);
+
+  // Callback pour mettre à jour l'état de lecture
+  const handleEmailReadToggle = useCallback(
+    (emailId: string, isRead: boolean) => {
+      setEmails((prevEmails) => ({
+        ...prevEmails,
+        [emailId]: {
+          ...prevEmails[emailId],
+          isRead,
+        },
+      }));
+    },
+    [],
+  );
+
+  // Callback pour mettre à jour l'état de suivi
+  const handleEmailStarToggle = useCallback((emailId: string) => {
+    setEmails((prevEmails) => ({
+      ...prevEmails,
+      [emailId]: {
+        ...prevEmails[emailId],
+        isStarred: !prevEmails[emailId].isStarred,
+      },
+    }));
+  }, []);
+
+  // Callback pour supprimer un email
+  const handleEmailDelete = useCallback((emailId: string) => {
+    setEmails((prevEmails) => {
+      const newEmails = { ...prevEmails };
+      delete newEmails[emailId];
+      return newEmails;
+    });
+    setSelectedEmail(undefined);
+  }, []);
+
+  // Callback pour archiver un email
+  const handleEmailArchive = useCallback((emailId: string) => {
+    // Dans une vraie app, on déplacerait vers un dossier d'archive
+    setEmails((prevEmails) => ({
+      ...prevEmails,
+      [emailId]: {
+        ...prevEmails[emailId],
+        // isArchived: true
+      },
+    }));
+    setSelectedEmail(undefined);
+  }, []);
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -34,12 +103,11 @@ export default function MailLayout() {
         selectedEmail={selectedEmail}
         onEmailSelect={setSelectedEmail}
         selectedFolder={selectedFolder}
-        onEmailDelete={(emailId) => {
-          setSelectedEmail(undefined);
-        }}
-        onEmailArchive={(emailId) => {
-          setSelectedEmail(undefined);
-        }}
+        emails={emails}
+        onEmailDelete={handleEmailDelete}
+        onEmailArchive={handleEmailArchive}
+        onEmailReadToggle={handleEmailReadToggle}
+        onEmailStarToggle={handleEmailStarToggle}
       />
 
       {/* Colonne de droite : Email Viewer ou Compose */}
@@ -56,6 +124,7 @@ export default function MailLayout() {
         ) : (
           <EmailViewer
             emailId={selectedEmail}
+            emails={emails}
             onReply={(emailId) => {
               setComposeMode("reply");
               setIsComposeOpen(true);
@@ -68,15 +137,10 @@ export default function MailLayout() {
               setComposeMode("forward");
               setIsComposeOpen(true);
             }}
-            onDelete={(emailId) => {
-              setSelectedEmail(undefined);
-            }}
-            onArchive={(emailId) => {
-              setSelectedEmail(undefined);
-            }}
-            onToggleStar={(emailId) => {
-              // Toggle star logic would go here
-            }}
+            onDelete={handleEmailDelete}
+            onArchive={handleEmailArchive}
+            onToggleStar={handleEmailStarToggle}
+            onToggleRead={handleEmailReadToggle}
             onClose={() => {
               setSelectedEmail(undefined);
             }}

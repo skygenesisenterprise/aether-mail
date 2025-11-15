@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Reply,
   ReplyAll,
@@ -9,6 +9,7 @@ import {
   MoreVertical,
   Download,
   Mail,
+  MailOpen,
   Paperclip,
   X,
 } from "lucide-react";
@@ -33,12 +34,14 @@ interface Email {
 
 interface EmailViewerProps {
   emailId?: string;
+  emails?: Record<string, Email>;
   onReply?: (emailId: string) => void;
   onReplyAll?: (emailId: string) => void;
   onForward?: (emailId: string) => void;
   onDelete?: (emailId: string) => void;
   onArchive?: (emailId: string) => void;
   onToggleStar?: (emailId: string) => void;
+  onToggleRead?: (emailId: string, isRead: boolean) => void;
   onClose?: () => void;
 }
 
@@ -153,15 +156,33 @@ export const emailsData: Record<string, Email> = {
 
 export default function EmailViewer({
   emailId,
+  emails: externalEmails,
   onReply,
   onReplyAll,
   onForward,
   onDelete,
   onArchive,
   onToggleStar,
+  onToggleRead,
   onClose,
 }: EmailViewerProps) {
-  const email = emailId ? emailsData[emailId] : null;
+  // Utiliser les emails externes si fournis, sinon utiliser les données statiques
+  const email = emailId
+    ? externalEmails?.[emailId] || emailsData[emailId]
+    : null;
+
+  // Marquer automatiquement comme lu quand l'email est ouvert
+  useEffect(() => {
+    if (email && !email.isRead && onToggleRead && emailId) {
+      onToggleRead(emailId, true);
+    }
+  }, [emailId, email, onToggleRead]);
+
+  const handleToggleRead = () => {
+    if (email && onToggleRead) {
+      onToggleRead(email.id, !email.isRead);
+    }
+  };
 
   const handleDownloadAttachment = (attachment: {
     name: string;
@@ -241,10 +262,29 @@ export default function EmailViewer({
 
             <div className="flex items-center gap-1 ml-4">
               <button
+                onClick={handleToggleRead}
+                className="p-2.5 hover:bg-muted/50 rounded-lg transition-all duration-200 group"
+                title={
+                  email.isRead ? "Marquer comme non lu" : "Marquer comme lu"
+                }
+              >
+                {email.isRead ? (
+                  <MailOpen
+                    size={18}
+                    className="text-muted-foreground group-hover:text-card-foreground"
+                  />
+                ) : (
+                  <Mail
+                    size={18}
+                    className="text-primary group-hover:text-primary/80"
+                  />
+                )}
+              </button>
+              <button
                 onClick={() => {
                   onToggleStar?.(email.id);
                 }}
-                className="p-2.5 hover:bg-gray-700/50 rounded-lg transition-all duration-200 group"
+                className="p-2.5 hover:bg-muted/50 rounded-lg transition-all duration-200 group"
                 title="Suivre"
               >
                 <Star
