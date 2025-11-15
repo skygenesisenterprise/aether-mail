@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  # Base de données de développement
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: aethermail-postgres-dev
+    environment:
+      POSTGRES_DB: aethermail_dev
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./data/schema-dev.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - aethermail-dev
+
+  # Redis pour sessions (optionnel)
+  redis-dev:
+    image: redis:7-alpine
+    container_name: aethermail-redis-dev
+    ports:
+      - "6379:6379"
+    networks:
+      - aethermail-dev
+
+  # Application de développement
+  aethermail-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: aethermail-app-dev
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://dev_user:dev_password@postgres-dev:5432/aethermail_dev
+      BETTER_AUTH_URL: http://localhost:4000
+      BETTER_AUTH_SECRET: dev-secret-key
+      API_BASE_URL: ""
+      API_TOKEN: ""
+    ports:
+      - "5173:5173" # Frontend Vite
+      - "4000:4000" # Backend API
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - postgres-dev
+    networks:
+      - aethermail-dev
+    command: npm run dev
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  aethermail-dev:
+    driver: bridge

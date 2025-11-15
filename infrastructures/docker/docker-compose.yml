@@ -1,0 +1,91 @@
+version: "3.8"
+
+services:
+  aethermail:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: aethermail
+    restart: unless-stopped
+    volumes:
+      - aethermail_data:/app/data
+    networks:
+      - aethermail-aethermail
+      - dokploy_local-network
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - API_BASE_URL=${API_BASE_URL}
+      - API_TOKEN=${API_TOKEN}
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.aethermail.rule=Host(`aethermail.skygenesisenterprise.net`)
+      - traefik.http.routers.aethermail.entrypoints=websecure
+      - traefik.http.routers.aethermail.tls.certresolver=letsencrypt
+      - traefik.http.services.aethermail.loadbalancer.server.port=3000
+      - traefik.http.services.aethermail.loadbalancer.server.scheme=http
+      - traefik.http.services.aethermail.loadbalancer.healthcheck.path=/
+      - traefik.http.services.aethermail.loadbalancer.healthcheck.interval=10s
+      - traefik.http.services.aethermail.loadbalancer.sticky=true
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: aethermail-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aethermail_prod
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data/schema-pgsql.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - aethermail-aethermail
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d aethermail_prod"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: aethermail-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - aethermail-aethermail
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  aethermail_data:
+  postgres_data:
+  redis_data:
+
+networks:
+  aethermail-aethermail:
+    external: true
+  dokploy_local-network:
+    external: true

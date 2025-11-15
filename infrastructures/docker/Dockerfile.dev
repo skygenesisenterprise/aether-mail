@@ -1,0 +1,50 @@
+# Dockerfile pour le développement
+FROM node:20-alpine
+
+# Installer les dépendances système nécessaires pour le développement
+RUN apk add --no-cache \
+    git \
+    curl \
+    vim \
+    htop \
+    && rm -rf /var/cache/apk/*
+
+# Installer Docker CLI pour docker-in-docker (optionnel)
+RUN apk add --no-cache docker-cli
+
+# Créer un utilisateur non-root pour le développement
+RUN addgroup -g 1001 -S developer && \
+    adduser -S developer -u 1001 -G developer
+
+# Définir le répertoire de travail
+WORKDIR /app
+
+# Changer les permissions du répertoire de travail
+RUN chown -R developer:developer /app
+
+# Copier les fichiers de configuration en tant que root d'abord
+COPY --chown=developer:developer package*.json ./
+COPY --chown=developer:developer pnpm-lock.yaml ./
+
+# Installer les dépendances
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# Copier le code source avec les bonnes permissions
+COPY --chown=developer:developer . .
+
+# Créer les répertoires nécessaires
+RUN mkdir -p dist logs && \
+    chown -R developer:developer dist logs
+
+# Passer à l'utilisateur non-root
+USER developer
+
+# Exposer les ports
+EXPOSE 5173 4000
+
+# Variables d'environnement pour le développement
+ENV NODE_ENV=development
+ENV CHOKIDAR_USEPOLLING=true
+
+# Commande par défaut
+CMD ["npm", "run", "dev"]
