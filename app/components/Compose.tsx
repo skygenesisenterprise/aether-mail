@@ -300,12 +300,13 @@ export default function Compose({
         newText = `__${selectedText}__`;
         setIsUnderline(!isUnderline);
         break;
-      case "link":
+      case "link": {
         const url = prompt("Entrez l'URL:");
         if (url) {
           newText = `[${selectedText || "Lien"}](${url})`;
         }
         break;
+      }
       case "list":
         newText = `\n• ${selectedText}`;
         break;

@@ -1,10 +1,21 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import EmailList from "./EmailList";
 import EmailViewer, { emailsData } from "./EmailViewer";
 import Compose from "./Compose";
+
+interface Folder {
+  id: string;
+  name: string;
+  type: "system" | "custom";
+  emailCount: number;
+  unreadCount: number;
+  color?: string;
+  icon?: string;
+  createdAt?: string;
+}
 
 interface Email {
   id: string;
@@ -35,6 +46,37 @@ export default function MailLayout() {
   // État partagé pour les emails
   const [emails, setEmails] = useState<Record<string, Email>>(emailsData);
 
+  // État pour les dossiers personnalisés
+  const [folders, setFolders] = useState<Folder[]>([
+    {
+      id: "work",
+      name: "Travail",
+      type: "custom",
+      emailCount: 89,
+      unreadCount: 5,
+      color: "#3B82F6",
+      icon: "folder",
+    },
+    {
+      id: "personal",
+      name: "Personnel",
+      type: "custom",
+      emailCount: 34,
+      unreadCount: 8,
+      color: "#10B981",
+      icon: "user",
+    },
+    {
+      id: "projects",
+      name: "Projets",
+      type: "custom",
+      emailCount: 156,
+      unreadCount: 12,
+      color: "#F59E0B",
+      icon: "folder",
+    },
+  ]);
+
   // Callback pour mettre à jour l'état de lecture
   const handleEmailReadToggle = useCallback(
     (emailId: string, isRead: boolean) => {
@@ -48,6 +90,25 @@ export default function MailLayout() {
     },
     [],
   );
+
+  // Effet pour écouter les mises à jour de dossiers depuis AccountSpace
+  useEffect(() => {
+    const handleFoldersUpdate = (event: CustomEvent) => {
+      setFolders(event.detail);
+    };
+
+    window.addEventListener(
+      "foldersUpdated",
+      handleFoldersUpdate as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "foldersUpdated",
+        handleFoldersUpdate as EventListener,
+      );
+    };
+  }, []);
 
   // Callback pour mettre à jour l'état de suivi
   const handleEmailStarToggle = useCallback((emailId: string) => {
@@ -88,6 +149,7 @@ export default function MailLayout() {
       {/* Colonne de gauche : Dossiers */}
       <Sidebar
         selectedFolder={selectedFolder}
+        folders={folders}
         onFolderSelect={(folder) => {
           setSelectedFolder(folder);
           setSelectedEmail(undefined); // Réinitialiser l'email sélectionné quand on change de dossier

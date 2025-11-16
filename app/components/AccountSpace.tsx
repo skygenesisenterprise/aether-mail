@@ -36,6 +36,9 @@ import {
   Volume2,
   Wifi,
   HardDrive,
+  Folder,
+  Plus,
+  Edit3,
 } from "lucide-react";
 import ProfilePhotoManager from "./ProfilePhotoManager";
 
@@ -94,7 +97,13 @@ export default function AccountSpace({
   onClose,
 }: AccountSpaceProps) {
   const [activeTab, setActiveTab] = useState<
-    "profile" | "account" | "security" | "notifications" | "storage" | "photo"
+    | "profile"
+    | "account"
+    | "security"
+    | "notifications"
+    | "storage"
+    | "folders"
+    | "photo"
   >("profile");
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editedProfile, setEditedProfile] = useState<UserProfile>(userProfile);
@@ -203,6 +212,16 @@ export default function AccountSpace({
                   icon: <Bell size={18} />,
                 },
                 {
+                  id: "folders",
+                  name: "Dossiers",
+                  icon: <Folder size={18} />,
+                },
+                {
+                  id: "folders",
+                  name: "Dossiers",
+                  icon: <Folder size={18} />,
+                },
+                {
                   id: "storage",
                   name: "Stockage",
                   icon: <HardDrive size={18} />,
@@ -248,6 +267,7 @@ export default function AccountSpace({
               {activeTab === "profile" && "Profil utilisateur"}
               {activeTab === "account" && "Paramètres du compte"}
               {activeTab === "security" && "Sécurité et confidentialité"}
+              {activeTab === "folders" && "Gestion des dossiers"}
               {activeTab === "notifications" && "Préférences de notification"}
               {activeTab === "storage" && "Gestion du stockage"}
             </h1>
@@ -999,6 +1019,240 @@ export default function AccountSpace({
                         </button>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Section Dossiers */}
+            {activeTab === "folders" && (
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="max-w-4xl mx-auto space-y-6">
+                  {/* En-tête */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-card-foreground mb-2">
+                        Gestion des dossiers
+                      </h2>
+                      <p className="text-muted-foreground">
+                        Organisez vos emails avec des dossiers personnalisés
+                      </p>
+                    </div>
+                    <button className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors">
+                      <Plus size={16} />
+                      Nouveau dossier
+                    </button>
+                  </div>
+
+                  {/* Dossiers système */}
+                  <div className="bg-card border border-border rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
+                      <Folder size={18} className="text-primary" />
+                      Dossiers système
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {[
+                        {
+                          id: "inbox",
+                          name: "Boîte de réception",
+                          count: 1247,
+                          unread: 23,
+                          color: "blue",
+                        },
+                        {
+                          id: "sent",
+                          name: "Envoyés",
+                          count: 892,
+                          unread: 0,
+                          color: "green",
+                        },
+                        {
+                          id: "drafts",
+                          name: "Brouillons",
+                          count: 5,
+                          unread: 0,
+                          color: "orange",
+                        },
+                        {
+                          id: "starred",
+                          name: "Suivis",
+                          count: 45,
+                          unread: 2,
+                          color: "yellow",
+                        },
+                        {
+                          id: "archive",
+                          name: "Archive",
+                          count: 234,
+                          unread: 0,
+                          color: "purple",
+                        },
+                        {
+                          id: "trash",
+                          name: "Corbeille",
+                          count: 12,
+                          unread: 0,
+                          color: "red",
+                        },
+                      ].map((folder) => (
+                        <div
+                          key={folder.id}
+                          className="bg-muted/30 border border-border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                        >
+                          <div className="text-center">
+                            <div
+                              className={`w-12 h-12 bg-${folder.color}-100 rounded-lg flex items-center justify-center mx-auto mb-3`}
+                            >
+                              <Folder
+                                size={20}
+                                className={`text-${folder.color}-600`}
+                              />
+                            </div>
+                            <div className="font-medium text-card-foreground text-sm mb-1">
+                              {folder.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {folder.count} emails
+                            </div>
+                            {folder.unread > 0 && (
+                              <div className="mt-2">
+                                <span className="inline-flex items-center justify-center w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full">
+                                  {folder.unread}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dossiers personnalisés */}
+                  <div className="bg-card border border-border rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-card-foreground flex items-center gap-2">
+                        <Users size={18} className="text-primary" />
+                        Mes dossiers personnalisés
+                      </h3>
+                      <span className="text-sm text-muted-foreground">
+                        3 dossiers
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {[
+                        {
+                          id: "work",
+                          name: "Travail",
+                          count: 89,
+                          unread: 5,
+                          color: "#3B82F6",
+                          icon: "briefcase",
+                        },
+                        {
+                          id: "personal",
+                          name: "Personnel",
+                          count: 34,
+                          unread: 8,
+                          color: "#10B981",
+                          icon: "user",
+                        },
+                        {
+                          id: "projects",
+                          name: "Projets",
+                          count: 156,
+                          unread: 12,
+                          color: "#F59E0B",
+                          icon: "folder",
+                        },
+                      ].map((folder) => (
+                        <div
+                          key={folder.id}
+                          className="bg-muted/30 border border-border rounded-lg p-4 hover:shadow-md transition-shadow group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                                style={{
+                                  backgroundColor: folder.color + "20",
+                                  color: folder.color,
+                                }}
+                              >
+                                <Folder size={18} />
+                              </div>
+                              <div>
+                                <div className="font-medium text-card-foreground">
+                                  {folder.name}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {folder.count} emails • {folder.unread} non lu
+                                  {folder.unread > 1 ? "s" : ""}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                className="p-2 hover:bg-background rounded-lg transition-colors"
+                                title="Renommer"
+                              >
+                                <Edit3
+                                  size={14}
+                                  className="text-muted-foreground"
+                                />
+                              </button>
+                              <button
+                                className="p-2 hover:bg-destructive/10 rounded-lg transition-colors text-destructive"
+                                title="Supprimer"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Statistiques */}
+                  <div className="bg-card border border-border rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-card-foreground mb-4">
+                      Statistiques d'utilisation
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-muted/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-card-foreground mb-1">
+                          9
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Total dossiers
+                        </div>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-primary mb-1">
+                          3
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Personnalisés
+                        </div>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-card-foreground mb-1">
+                          2679
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Emails totaux
+                        </div>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-orange-500 mb-1">
+                          50
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Non lus
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
