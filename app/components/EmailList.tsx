@@ -7,9 +7,13 @@ import {
   Mail,
   MailOpen,
   Check,
-  Search,
   MoreVertical,
 } from "lucide-react";
+import AdvancedSearch from "./AdvancedSearch";
+import {
+  useAdvancedSearch,
+  type SearchFilter,
+} from "../hooks/useAdvancedSearch";
 
 interface Email {
   id: string;
@@ -44,9 +48,26 @@ export default function EmailList({
   onEmailReadToggle,
   onEmailStarToggle,
 }: EmailListProps) {
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+  const {
+    query,
+    filters,
+    isSearching,
+    hasActiveSearch,
+    searchHistory,
+    suggestions,
+    searchSummary,
+    search,
+    clearSearch,
+    addFilter,
+    removeFilter,
+  } = useAdvancedSearch({
+    maxHistoryItems: 10,
+    enableHistory: true,
+    enableSuggestions: true,
+  });
 
   // Utiliser les emails externes si fournis, sinon utiliser l'état local
   const emailsData = externalEmails
@@ -146,17 +167,102 @@ export default function EmailList({
   const filteredEmails = useMemo(() => {
     let filtered = getFolderEmails(selectedFolder);
 
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (email) =>
-          email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          email.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          email.preview.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
+    // Appliquer les filtres de recherche avancée
+    filters.forEach((filter: SearchFilter) => {
+      switch (filter.type) {
+        case "date":
+          if (filter.value === "today") {
+            const today = new Date().toDateString();
+            filtered = filtered.filter(
+              (email) => new Date(email.date).toDateString() === today,
+            );
+          } else if (filter.value === "week") {
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            filtered = filtered.filter(
+              (email) => new Date(email.date) >= weekAgo,
+            );
+          } else if (filter.value === "month") {
+            const monthAgo = new Date();
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            filtered = filtered.filter(
+              (email) => new Date(email.date) >= monthAgo,
+            );
+          }
+          break;
+
+        case "sender":
+          filtered = filtered.filter(
+            (email) =>
+              email.from.toLowerCase().includes(filter.value.toLowerCase()) ||
+              email.fromEmail
+                .toLowerCase()
+                .includes(filter.value.toLowerCase()),
+          );
+          break;
+
+        case "attachment":
+          if (filter.value === "has-attachments") {
+            filtered = filtered.filter((email) => email.hasAttachment);
+          } else if (filter.value === "no-attachments") {
+            filtered = filtered.filter((email) => !email.hasAttachment);
+          }
+          break;
+
+        case "folder":
+          // Le filtrage par dossier est déjà géré par selectedFolder
+          break;
+
+        case "priority":
+          if (filter.value === "important") {
+            filtered = filtered.filter((email) => email.isStarred);
+          } else if (filter.value === "unread") {
+            filtered = filtered.filter((email) => !email.isRead);
+          }
+          break;
+      }
+    });
+
+    // Appliquer la recherche textuelle
+    if (query) {
+      // Support des commandes de recherche avancée
+      let searchInSubject = true;
+      let searchInFrom = true;
+      let searchInPreview = true;
+      let actualQuery = query;
+
+      // Parser les commandes comme "from:", "subject:", etc.
+      if (query.includes("from:")) {
+        const fromMatch = query.match(/from:([^\s]+)/);
+        if (fromMatch) {
+          actualQuery = fromMatch[1];
+          searchInSubject = false;
+          searchInPreview = false;
+        }
+      }
+
+      if (query.includes("subject:")) {
+        const subjectMatch = query.match(/subject:([^\s]+)/);
+        if (subjectMatch) {
+          actualQuery = subjectMatch[1];
+          searchInFrom = false;
+          searchInPreview = false;
+        }
+      }
+
+      filtered = filtered.filter((email) => {
+        const queryLower = actualQuery.toLowerCase();
+        return (
+          (searchInSubject &&
+            email.subject.toLowerCase().includes(queryLower)) ||
+          (searchInFrom && email.from.toLowerCase().includes(queryLower)) ||
+          (searchInPreview && email.preview.toLowerCase().includes(queryLower))
+        );
+      });
     }
 
     return filtered;
-  }, [getFolderEmails, selectedFolder, searchQuery]);
+  }, [getFolderEmails, selectedFolder, query, filters]);
 
   const unreadCount = useMemo(
     () => filteredEmails.filter((e) => !e.isRead).length,
@@ -286,20 +392,12 @@ export default function EmailList({
           </div>
         </div>
 
-        {/* Barre de recherche */}
-        <div className="relative mb-3">
-          <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-            size={16}
-          />
-          <input
-            type="text"
-            placeholder="Rechercher des emails..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-muted/50 border border-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder-muted-foreground"
-          />
-        </div>
+        {/* Barre de recherche avancée */}
+        <AdvancedSearch
+          onSearch={search}
+          placeholder="Rechercher des emails, dossiers, contacts..."
+          className="mb-3"
+        />
 
         {/* Actions rapides */}
         {isSelectionMode && selectedEmails.length > 0 && (
@@ -377,10 +475,10 @@ export default function EmailList({
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
             <Mail size={48} className="mb-4 opacity-50" />
             <p className="text-lg font-medium mb-2">
-              {searchQuery ? "Aucun résultat trouvé" : "Aucun email"}
+              {query ? "Aucun résultat trouvé" : "Aucun email"}
             </p>
             <p className="text-sm text-center">
-              {searchQuery
+              {query
                 ? "Essayez de modifier votre recherche"
                 : "Ce dossier est vide"}
             </p>

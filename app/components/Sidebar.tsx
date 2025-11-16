@@ -20,6 +20,7 @@ import {
   Sun,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
+import AccountSpace from "./AccountSpace";
 
 interface SidebarProps {
   selectedFolder?: string;
@@ -33,6 +34,7 @@ export default function Sidebar({
   onCompose,
 }: SidebarProps) {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isAccountSpaceOpen, setIsAccountSpaceOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -77,14 +79,11 @@ export default function Sidebar({
   };
 
   const accountOptions = [
-    { id: "profile", name: "Profil", icon: User },
-    { id: "security", name: "Sécurité", icon: Shield },
-    { id: "notifications", name: "Notifications", icon: Bell },
     {
-      id: "theme",
-      name: getThemeLabel(),
-      icon: getThemeIcon(),
-      action: toggleTheme,
+      id: "account-space",
+      name: "Espace compte",
+      icon: User,
+      action: () => setIsAccountSpaceOpen(true),
     },
     { id: "help", name: "Aide", icon: HelpCircle },
     { id: "logout", name: "Déconnexion", icon: LogOut },
@@ -203,6 +202,32 @@ export default function Sidebar({
           />
         </button>
       </div>
+
+      {/* Espace compte modal */}
+      {isAccountSpaceOpen && (
+        <AccountSpace
+          userProfile={{
+            id: "1",
+            name: "Jean Dupont",
+            email: "jean.dupont@example.com",
+            status: "online",
+            role: "Développeur Senior",
+            department: "Engineering",
+            location: "Paris, France",
+            joinDate: "15 Janvier 2023",
+            lastLogin: "Il y a 2 heures",
+          }}
+          onProfileUpdate={(profile) => {
+            console.log("Profile updated:", profile);
+          }}
+          onLogout={() => {
+            console.log("User logged out");
+            setIsAccountSpaceOpen(false);
+          }}
+          isOpen={isAccountSpaceOpen}
+          onClose={() => setIsAccountSpaceOpen(false)}
+        />
+      )}
     </div>
   );
 }
