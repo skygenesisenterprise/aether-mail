@@ -425,16 +425,11 @@ export default function Sidebar({
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-1">
-                              {folder.unreadCount > 0 && (
-                                <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 mr-1">
-                                  {folder.unreadCount}
-                                </span>
-                              )}
-                              <span className="bg-muted text-muted-foreground text-xs rounded px-2 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {folder.emailCount}
+                            {folder.unreadCount > 0 && (
+                              <span className="bg-muted text-muted-foreground text-xs rounded-full px-2 py-1">
+                                {folder.unreadCount}
                               </span>
-                            </div>
+                            )}
                           </button>
 
                           {/* Actions du dossier (édition, suppression) */}
