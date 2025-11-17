@@ -24,9 +24,12 @@ import {
   FolderOpen,
   Edit3,
   X,
+  Github,
+  ExternalLink,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import AccountSpace from "./AccountSpace";
+import { useAppVersion } from "../hooks/useAppVersion";
 
 interface Folder {
   id: string;
@@ -61,6 +64,7 @@ export default function Sidebar({
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [orderedFolders, setOrderedFolders] = useState<string[]>([]);
   const { theme, toggleTheme } = useTheme();
+  const { version: appVersion, isLoading: isLoadingVersion } = useAppVersion();
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Fermer le menu quand on clique à l'extérieur
@@ -567,6 +571,52 @@ export default function Sidebar({
         </button>
       </div>
 
+      {/* Section App Information - en dessous de Espace compte */}
+      <div className="px-4 pb-4">
+        <div className="bg-gradient-to-r from-primary/5 to-muted/30 rounded-lg border border-border/50">
+          <a
+            href="https://github.com/skygenesisenterprise/aether-mail"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-primary/20 rounded flex items-center justify-center">
+                <Mail size={12} className="text-primary" />
+              </div>
+              <div className="text-left">
+                <h4 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                  Aether Mail
+                </h4>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  {isLoadingVersion ? (
+                    <>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                      <span>Chargement...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Version</span>
+                      <span className="font-mono">{appVersion}</span>
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <Github
+                size={16}
+                className="text-muted-foreground group-hover:text-primary transition-colors"
+              />
+              <ExternalLink
+                size={10}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground group-hover:text-primary"
+              />
+            </div>
+          </a>
+        </div>
+      </div>
+
       {/* Espace compte modal */}
       {isAccountSpaceOpen && (
         <AccountSpace
@@ -581,7 +631,7 @@ export default function Sidebar({
             joinDate: "15 Janvier 2023",
             lastLogin: "Il y a 2 heures",
           }}
-          onProfileUpdate={(profile) => {
+          onProfileUpdate={(profile: any) => {
             console.log("Profile updated:", profile);
           }}
           onLogout={() => {
