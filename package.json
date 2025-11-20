@@ -30,7 +30,7 @@
     "test:coverage:unit": "jest --coverage --passWithNoTests",
     "build": "pnpm build:frontend && pnpm build:backend",
     "build:frontend": "next build",
-    "build:backend": "tsc -p tsconfig.server.json --outDir dist/backend",
+    "build:backend": "tsc -p ./api/tsconfig.build.json --outDir ./dist",
     "build:merge": "cp package.json dist && cp .env dist",
     "build:pgp": "node scripts/pgp-key.cjs",
     "lint": "pnpm exec biome lint --write && pnpm exec tsc --noEmit",
