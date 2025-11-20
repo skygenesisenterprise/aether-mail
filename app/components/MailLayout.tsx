@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import EmailList from "./EmailList";
-import EmailViewer, { emailsData } from "./EmailViewer";
+import EmailViewer from "./EmailViewer";
 import Compose from "./Compose";
 
 interface Folder {
@@ -43,8 +43,8 @@ export default function MailLayout() {
     "new" | "reply" | "replyAll" | "forward"
   >("new");
 
-  // État partagé pour les emails
-  const [emails, setEmails] = useState<Record<string, Email>>(emailsData);
+  // État partagé pour les emails - initialiser vide en mode production
+  const [emails, setEmails] = useState<Record<string, Email>>({});
 
   // État pour les dossiers personnalisés
   const [folders, setFolders] = useState<Folder[]>([
@@ -121,8 +121,19 @@ export default function MailLayout() {
     }));
   }, []);
 
+  // Callback pour mettre à jour l'état de lecture
+  const handleToggleRead = useCallback((emailId: string, isRead: boolean) => {
+    setEmails((prevEmails) => ({
+      ...prevEmails,
+      [emailId]: {
+        ...prevEmails[emailId],
+        isRead,
+      },
+    }));
+  }, []);
+
   // Callback pour supprimer un email
-  const handleEmailDelete = useCallback((emailId: string) => {
+  const handleDeleteEmail = useCallback((emailId: string) => {
     setEmails((prevEmails) => {
       const newEmails = { ...prevEmails };
       delete newEmails[emailId];
@@ -132,7 +143,7 @@ export default function MailLayout() {
   }, []);
 
   // Callback pour archiver un email
-  const handleEmailArchive = useCallback((emailId: string) => {
+  const handleArchiveEmail = useCallback((emailId: string) => {
     // Dans une vraie app, on déplacerait vers un dossier d'archive
     setEmails((prevEmails) => ({
       ...prevEmails,
@@ -142,6 +153,22 @@ export default function MailLayout() {
       },
     }));
     setSelectedEmail(undefined);
+  }, []);
+
+  // Callbacks pour répondre
+  const handleReply = useCallback((emailId: string) => {
+    setComposeMode("reply");
+    setIsComposeOpen(true);
+  }, []);
+
+  const handleReplyAll = useCallback((emailId: string) => {
+    setComposeMode("replyAll");
+    setIsComposeOpen(true);
+  }, []);
+
+  const handleForward = useCallback((emailId: string) => {
+    setComposeMode("forward");
+    setIsComposeOpen(true);
   }, []);
 
   return (
@@ -165,11 +192,22 @@ export default function MailLayout() {
         selectedEmail={selectedEmail}
         onEmailSelect={setSelectedEmail}
         selectedFolder={selectedFolder}
-        emails={emails}
-        onEmailDelete={handleEmailDelete}
-        onEmailArchive={handleEmailArchive}
-        onEmailReadToggle={handleEmailReadToggle}
+        onEmailDelete={handleDeleteEmail}
+        onEmailArchive={handleArchiveEmail}
+        onEmailReadToggle={handleToggleRead}
         onEmailStarToggle={handleEmailStarToggle}
+      />
+
+      <EmailViewer
+        emailId={selectedEmail}
+        onReply={handleReply}
+        onReplyAll={handleReplyAll}
+        onForward={handleForward}
+        onDelete={handleDeleteEmail}
+        onArchive={handleArchiveEmail}
+        onToggleStar={handleEmailStarToggle}
+        onToggleRead={handleToggleRead}
+        onClose={() => setSelectedEmail(undefined)}
       />
 
       {/* Colonne de droite : Email Viewer ou Compose */}
@@ -179,9 +217,7 @@ export default function MailLayout() {
             isOpen={isComposeOpen}
             onClose={() => setIsComposeOpen(false)}
             mode={composeMode}
-            originalEmail={
-              selectedEmail ? emailsData[selectedEmail] : undefined
-            }
+            originalEmail={selectedEmail ? emails[selectedEmail] : undefined}
           />
         ) : (
           <EmailViewer
@@ -199,8 +235,8 @@ export default function MailLayout() {
               setComposeMode("forward");
               setIsComposeOpen(true);
             }}
-            onDelete={handleEmailDelete}
-            onArchive={handleEmailArchive}
+            onDelete={handleDeleteEmail}
+            onArchive={handleArchiveEmail}
             onToggleStar={handleEmailStarToggle}
             onToggleRead={handleEmailReadToggle}
             onClose={() => {

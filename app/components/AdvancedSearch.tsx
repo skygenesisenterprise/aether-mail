@@ -114,11 +114,11 @@ export default function AdvancedSearch({
         }
       });
 
-      // Suggestions de contacts (simulation)
+      // Suggestions de contacts génériques
       const contacts = [
-        { name: "Jean Dupont", email: "jean.dupont@example.com" },
-        { name: "Marie Martin", email: "marie.martin@example.com" },
-        { name: "Lucas Bernard", email: "lucas.bernard@example.com" },
+        { name: "Contact", email: "contact@example.com" },
+        { name: "Info", email: "info@example.com" },
+        { name: "Support", email: "support@example.com" },
       ];
 
       contacts.forEach((contact) => {

@@ -25,6 +25,8 @@ interface Email {
   isRead: boolean;
   isStarred: boolean;
   hasAttachment: boolean;
+  folder?: string;
+  preview?: string;
   attachments?: Array<{
     name: string;
     size: string;
@@ -45,115 +47,6 @@ interface EmailViewerProps {
   onClose?: () => void;
 }
 
-export const emailsData: Record<string, Email> = {
-  "1": {
-    id: "1",
-    from: "Jean Dupont",
-    fromEmail: "jean.dupont@example.com",
-    to: "moi",
-    subject: "Réunion projet Aether",
-    body: `<p>Bonjour,</p>
-    <p>Je voulais confirmer notre réunion de demain concernant le développement de l'interface Aether Mail. Voici les points que nous devrons aborder :</p>
-    <ul>
-      <li>Validation du design final de l'interface</li>
-      <li>Intégration de l'API backend existante</li>
-      <li>Gestion de l'authentification et des sessions</li>
-      <li>Implémentation des fonctionnalités principales (envoi, réception, recherche)</li>
-    </ul>
-    <p>J'ai préparé quelques mockups que je vous présenterai lors de la réunion. Vous trouverez également en pièce jointe le rapport d'avancement du projet.</p>
-    <p>N'hésitez pas à me faire savoir si vous avez des questions ou si vous souhaitez ajouter des points à l'ordre du jour.</p>
-    <p>À demain,<br>Jean</p>`,
-    date: "Aujourd'hui, 14:30",
-    isRead: false,
-    isStarred: true,
-    hasAttachment: true,
-    attachments: [
-      { name: "rapport-projet.pdf", size: "2.4 MB", type: "PDF" },
-      { name: "budget-2024.xlsx", size: "856 KB", type: "XLS" },
-    ],
-  },
-  "2": {
-    id: "2",
-    from: "Marie Martin",
-    fromEmail: "marie.martin@example.com",
-    to: "moi",
-    subject: "Rapport hebdomadaire",
-    body: `<p>Bonjour,</p>
-    <p>Voici le rapport d'avancement pour cette semaine. Nous avons terminé 80% des fonctionnalités prévues.</p>
-    <p>Points clés :</p>
-    <ul>
-      <li>API backend : 90% terminée</li>
-      <li>Interface frontend : 75% terminée</li>
-      <li>Tests : 60% terminés</li>
-    </ul>
-    <p>N'hésitez pas si vous avez des questions.</p>
-    <p>Cordialement,<br>Marie</p>`,
-    date: "Aujourd'hui, 12:15",
-    isRead: true,
-    isStarred: false,
-    hasAttachment: false,
-  },
-  "3": {
-    id: "3",
-    from: "System Notification",
-    fromEmail: "noreply@aether-mail.com",
-    to: "moi",
-    subject: "Mise à jour de sécurité",
-    body: `<p>Une nouvelle mise à jour de sécurité est disponible.</p>
-    <p>Veuillez mettre à jour votre application dès que possible pour bénéficier des dernières corrections de sécurité.</p>
-    <p>Changements inclus :</p>
-    <ul>
-      <li>Correction de vulnérabilités critiques</li>
-      <li>Amélioration du chiffrement</li>
-      <li>Mises à jour des dépendances</li>
-    </ul>
-    <p>Merci de votre confiance.</p>`,
-    date: "Hier",
-    isRead: true,
-    isStarred: false,
-    hasAttachment: false,
-  },
-  "4": {
-    id: "4",
-    from: "Lucas Bernard",
-    fromEmail: "lucas.bernard@example.com",
-    to: "moi",
-    subject: "Design review",
-    body: `<p>Salut !</p>
-    <p>Peux-tu jeter un œil aux derniers mockups pour l'interface mail ? J'aimerais avoir ton avis sur plusieurs points :</p>
-    <ul>
-      <li>L'agencement de la sidebar</li>
-      <li>Les couleurs choisies</li>
-      <li>L'ergonomie générale</li>
-    </ul>
-    <p>J'ai mis les fichiers en pièce jointe.</p>
-    <p>Merci d'avance !</p>
-    <p>Lucas</p>`,
-    date: "Hier",
-    isRead: false,
-    isStarred: true,
-    hasAttachment: true,
-    attachments: [{ name: "mockups-v2.fig", size: "15.2 MB", type: "FIG" }],
-  },
-  "5": {
-    id: "5",
-    from: "Équipe Support",
-    fromEmail: "support@skygenesisenterprise.com",
-    to: "moi",
-    subject: "Ticket #1234 résolu",
-    body: `<p>Bonjour,</p>
-    <p>Votre demande concernant l'intégration API a été traitée.</p>
-    <p>La solution a été déployée en production. Vous pouvez maintenant utiliser les nouveaux endpoints.</p>
-    <p>Documentation mise à jour : <a href="#">https://docs.aether-mail.com/api/v2</a></p>
-    <p>N'hésitez pas à nous contacter si vous rencontrez des problèmes.</p>
-    <p>Cordialement,<br>L'équipe support</p>`,
-    date: "2 jours",
-    isRead: true,
-    isStarred: false,
-    hasAttachment: false,
-  },
-};
-
 export default function EmailViewer({
   emailId,
   emails: externalEmails,
@@ -166,10 +59,8 @@ export default function EmailViewer({
   onToggleRead,
   onClose,
 }: EmailViewerProps) {
-  // Utiliser les emails externes si fournis, sinon utiliser les données statiques
-  const email = emailId
-    ? externalEmails?.[emailId] || emailsData[emailId]
-    : null;
+  // Utiliser les emails externes si fournis
+  const email = emailId ? externalEmails?.[emailId] : null;
 
   // Marquer automatiquement comme lu quand l'email est ouvert
   useEffect(() => {
@@ -184,11 +75,7 @@ export default function EmailViewer({
     }
   };
 
-  const handleDownloadAttachment = (attachment: {
-    name: string;
-    size: string;
-    type: string;
-  }) => {
+  const handleDownloadAttachment = (attachment: any) => {
     // Simuler le téléchargement d'une pièce jointe
     // Dans une vraie application, cela appellerait une API pour télécharger le fichier
 
@@ -416,13 +303,16 @@ export default function EmailViewer({
                 <span className="text-xs text-gray-400">
                   (
                   {email.attachments
-                    .reduce((total, att) => total + parseFloat(att.size), 0)
+                    .reduce(
+                      (total: number, att: any) => total + parseFloat(att.size),
+                      0,
+                    )
                     .toFixed(1)}{" "}
                   MB)
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {email.attachments.map((attachment, index) => (
+                {email.attachments.map((attachment: any, index: number) => (
                   <div
                     key={index}
                     className="flex items-center gap-2 p-2 bg-gray-800/50 rounded-md border border-gray-700/30 hover:bg-gray-800/70 transition-all duration-200 group cursor-pointer"

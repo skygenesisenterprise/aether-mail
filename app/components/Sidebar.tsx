@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import React from "react";
 import {
   Mail,
@@ -30,6 +30,7 @@ import {
 import { useTheme } from "../contexts/ThemeContext";
 import AccountSpace from "./AccountSpace";
 import { useAppVersion } from "../hooks/useAppVersion";
+import { useEmails } from "../hooks/useEmails";
 
 interface Folder {
   id: string;
@@ -55,6 +56,28 @@ export default function Sidebar({
   onCompose,
   folders = [],
 }: SidebarProps) {
+  // Utiliser le hook useEmails pour obtenir les vrais compteurs d'emails
+  const { emails } = useEmails({
+    folder: selectedFolder,
+    autoRefresh: false, // Pas besoin de rafraîchissement automatique ici
+  });
+
+  // Calculer les compteurs d'emails par dossier
+  const folderCounts = useMemo(() => {
+    const emailsList = Object.values(emails);
+
+    return {
+      inbox: emailsList.filter((e) => (e.folder || "inbox") === "inbox").length,
+      sent: emailsList.filter((e) => e.folder === "sent").length,
+      drafts: emailsList.filter((e) => e.folder === "drafts").length,
+      starred: emailsList.filter((e) => e.isStarred).length,
+      archive: emailsList.filter((e) => e.folder === "archive").length,
+      trash: emailsList.filter((e) => e.folder === "trash").length,
+      unread: emailsList.filter(
+        (e) => !e.isRead && (e.folder || "inbox") === "inbox",
+      ).length,
+    };
+  }, [emails]);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isAccountSpaceOpen, setIsAccountSpaceOpen] = useState(false);
   const [isCustomFoldersExpanded, setIsCustomFoldersExpanded] = useState(true);
@@ -118,12 +141,27 @@ export default function Sidebar({
     { id: "logout", name: "Déconnexion", icon: LogOut },
   ];
   const systemFolders = [
-    { id: "inbox", name: "Boîte de réception", icon: Mail, count: 12 },
-    { id: "sent", name: "Envoyés", icon: Send, count: 0 },
-    { id: "drafts", name: "Brouillons", icon: FileText, count: 3 },
-    { id: "starred", name: "Suivis", icon: Star, count: 5 },
-    { id: "archive", name: "Archive", icon: Archive, count: 0 },
-    { id: "trash", name: "Corbeille", icon: Trash2, count: 0 },
+    {
+      id: "inbox",
+      name: "Boîte de réception",
+      icon: Mail,
+      count: folderCounts.inbox,
+    },
+    { id: "sent", name: "Envoyés", icon: Send, count: folderCounts.sent },
+    {
+      id: "drafts",
+      name: "Brouillons",
+      icon: FileText,
+      count: folderCounts.drafts,
+    },
+    { id: "starred", name: "Suivis", icon: Star, count: folderCounts.starred },
+    {
+      id: "archive",
+      name: "Archive",
+      icon: Archive,
+      count: folderCounts.archive,
+    },
+    { id: "trash", name: "Corbeille", icon: Trash2, count: folderCounts.trash },
   ];
 
   // Obtenir l'icône pour les dossiers personnalisés
@@ -258,7 +296,7 @@ export default function Sidebar({
                   <span className="text-sm font-medium">{folder.name}</span>
                 </div>
                 {folder.count > 0 && (
-                  <span className="bg-muted text-muted-foreground text-xs rounded-full px-2 py-1">
+                  <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-1">
                     {folder.count}
                   </span>
                 )}
@@ -344,10 +382,24 @@ export default function Sidebar({
 
                 {folders
                   .filter((folder) => folder.type === "custom")
-                  .map((folder, index) => {
+                  .map((folder) => {
                     const isActive = selectedFolder === folder.id;
                     const isEditing = isEditingFolder === folder.id;
                     const Icon = getCustomFolderIcon(folder.icon);
+
+                    // Calculer les vrais compteurs pour ce dossier personnalisé
+                    const folderEmailCount = useMemo(() => {
+                      const emailsList = Object.values(emails);
+                      return emailsList.filter((e) => e.folder === folder.id)
+                        .length;
+                    }, [emails, folder.id]);
+
+                    const folderUnreadCount = useMemo(() => {
+                      const emailsList = Object.values(emails);
+                      return emailsList.filter(
+                        (e) => e.folder === folder.id && !e.isRead,
+                      ).length;
+                    }, [emails, folder.id]);
 
                     return (
                       <React.Fragment key={folder.id}>
@@ -425,11 +477,18 @@ export default function Sidebar({
                                 </span>
                               )}
                             </div>
-                            {folder.unreadCount > 0 && (
-                              <span className="bg-muted text-muted-foreground text-xs rounded-full px-2 py-1">
-                                {folder.unreadCount}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {folderUnreadCount > 0 && (
+                                <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-1">
+                                  {folderUnreadCount}
+                                </span>
+                              )}
+                              {folderEmailCount > 0 && (
+                                <span className="bg-muted text-muted-foreground text-xs rounded-full px-2 py-1">
+                                  {folderEmailCount}
+                                </span>
+                              )}
+                            </div>
                           </button>
 
                           {/* Actions du dossier (édition, suppression) */}
@@ -617,14 +676,14 @@ export default function Sidebar({
         <AccountSpace
           userProfile={{
             id: "1",
-            name: "Jean Dupont",
-            email: "jean.dupont@example.com",
+            name: "Utilisateur",
+            email: "user@example.com",
             status: "online",
-            role: "Développeur Senior",
-            department: "Engineering",
-            location: "Paris, France",
-            joinDate: "15 Janvier 2023",
-            lastLogin: "Il y a 2 heures",
+            role: "Utilisateur",
+            department: "General",
+            location: "France",
+            joinDate: "Aujourd'hui",
+            lastLogin: "Maintenant",
           }}
           onProfileUpdate={(profile: any) => {
             console.log("Profile updated:", profile);

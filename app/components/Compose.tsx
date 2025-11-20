@@ -98,17 +98,11 @@ export default function Compose({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Suggestions d'emails pour la démo
+  // Suggestions d'emails génériques
   const emailSuggestions = [
-    { id: "1", email: "jean.dupont@example.com", name: "Jean Dupont" },
-    { id: "2", email: "marie.martin@example.com", name: "Marie Martin" },
-    { id: "3", email: "lucas.bernard@example.com", name: "Lucas Bernard" },
-    {
-      id: "4",
-      email: "support@skygenesisenterprise.com",
-      name: "Support Technique",
-    },
-    { id: "5", email: "team@aether-mail.com", name: "Équipe Aether Mail" },
+    { id: "1", email: "contact@example.com", name: "Contact" },
+    { id: "2", email: "info@example.com", name: "Info" },
+    { id: "3", email: "support@example.com", name: "Support" },
   ];
 
   useEffect(() => {

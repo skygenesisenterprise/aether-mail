@@ -13,12 +13,14 @@ import {
   Sparkles,
   Loader2,
   Search,
+  AlertCircle,
 } from "lucide-react";
 import AdvancedSearch from "./AdvancedSearch";
 import {
   useAdvancedSearch,
   type SearchFilter,
 } from "../hooks/useAdvancedSearch";
+import { useEmails } from "../hooks/useEmails";
 
 interface Email {
   id: string;
@@ -30,13 +32,20 @@ interface Email {
   isRead: boolean;
   isStarred: boolean;
   hasAttachment: boolean;
+  folder: string;
+  body?: string;
+  to?: string;
+  attachments?: Array<{
+    name: string;
+    size: string;
+    type: string;
+  }>;
 }
 
 interface EmailListProps {
   selectedEmail?: string;
   onEmailSelect?: (emailId: string) => void;
   selectedFolder?: string;
-  emails?: Record<string, any>;
   onEmailDelete?: (emailId: string) => void;
   onEmailArchive?: (emailId: string) => void;
   onEmailReadToggle?: (emailId: string, isRead: boolean) => void;
@@ -47,7 +56,6 @@ export default function EmailList({
   selectedEmail,
   onEmailSelect,
   selectedFolder = "inbox",
-  emails: externalEmails,
   onEmailDelete,
   onEmailArchive,
   onEmailReadToggle,
@@ -60,121 +68,45 @@ export default function EmailList({
     new Set(),
   );
 
-  const {
-    query,
-    filters,
-    isSearching,
-    hasActiveSearch,
-    searchHistory,
-    suggestions,
-    searchSummary,
-    search,
-    clearSearch,
-    addFilter,
-    removeFilter,
-  } = useAdvancedSearch({
+  const { query, filters, search, clearSearch } = useAdvancedSearch({
     maxHistoryItems: 10,
     enableHistory: true,
     enableSuggestions: true,
   });
 
-  // Utiliser les emails externes si fournis, sinon utiliser l'état local
-  const emailsData = externalEmails
-    ? Object.values(externalEmails)
-    : [
-        {
-          id: "1",
-          from: "Jean Dupont",
-          fromEmail: "jean.dupont@example.com",
-          subject: "Réunion projet Aether",
-          preview:
-            "Bonjour, je voulais confirmer notre réunion de demain concernant le développement de l'interface...",
-          date: "14:30",
-          isRead: false,
-          isStarred: true,
-          hasAttachment: true,
-        },
-        {
-          id: "2",
-          from: "Marie Martin",
-          fromEmail: "marie.martin@example.com",
-          subject: "Rapport hebdomadaire",
-          preview:
-            "Voici le rapport d'avancement pour cette semaine. Nous avons terminé 80% des fonctionnalités...",
-          date: "12:15",
-          isRead: true,
-          isStarred: false,
-          hasAttachment: false,
-        },
-        {
-          id: "3",
-          from: "System Notification",
-          fromEmail: "noreply@aether-mail.com",
-          subject: "Mise à jour de sécurité",
-          preview:
-            "Une nouvelle mise à jour de sécurité est disponible. Veuillez mettre à jour votre application...",
-          date: "Hier",
-          isRead: true,
-          isStarred: false,
-          hasAttachment: false,
-        },
-        {
-          id: "4",
-          from: "Lucas Bernard",
-          fromEmail: "lucas.bernard@example.com",
-          subject: "Design review",
-          preview:
-            "Peux-tu jeter un œil aux derniers mockups pour l'interface mail ? J'aimerais avoir ton avis...",
-          date: "Hier",
-          isRead: false,
-          isStarred: true,
-          hasAttachment: true,
-        },
-        {
-          id: "5",
-          from: "Équipe Support",
-          fromEmail: "support@skygenesisenterprise.com",
-          subject: "Ticket #1234 résolu",
-          preview:
-            "Votre demande concernant l'intégration API a été traitée. La solution a été déployée...",
-          date: "2 jours",
-          isRead: true,
-          isStarred: false,
-          hasAttachment: false,
-        },
-      ];
+  // Utiliser le hook useEmails pour charger les vrais emails depuis le serveur
+  const {
+    emails: emailsData,
+    loading: emailsLoading,
+    error: emailsError,
+    markAsRead,
+    markAsUnread,
+    toggleStar,
+    deleteEmail,
+    archiveEmail,
+    refreshEmails,
+  } = useEmails({
+    folder: selectedFolder,
+    autoRefresh: true,
+    refreshInterval: 30000, // 30 secondes
+  });
 
+  // Utiliser uniquement les vraies données du serveur
+  const emailsList = Object.values(emailsData) as Email[];
   const getFolderEmails = useCallback(
     (folder: string): Email[] => {
-      switch (folder) {
-        case "inbox":
-          return emailsData.filter(
-            (e) =>
-              e.id === "1" ||
-              e.id === "2" ||
-              e.id === "3" ||
-              e.id === "4" ||
-              e.id === "5",
-          );
-        case "sent":
-          return [];
-        case "drafts":
-          return [];
-        case "starred":
-          return emailsData.filter((e) => e.isStarred);
-        case "archive":
-          return [];
-        case "trash":
-          return [];
-        default:
-          return emailsData;
-      }
+      // Filtrer les emails par dossier en utilisant les vraies données du serveur
+      return emailsList.filter((email: Email) => {
+        // Si l'email n'a pas de dossier, le mettre dans inbox par défaut
+        const emailFolder = email.folder || "inbox";
+        return emailFolder === folder;
+      });
     },
-    [emailsData],
+    [emailsList],
   );
 
   const filteredEmails = useMemo(() => {
-    let filtered = getFolderEmails(selectedFolder);
+    let filtered = getFolderEmails(selectedFolder || "inbox");
 
     // Appliquer les filtres de recherche avancée
     filters.forEach((filter: SearchFilter) => {
@@ -274,21 +206,28 @@ export default function EmailList({
   }, [getFolderEmails, selectedFolder, query, filters]);
 
   const unreadCount = useMemo(
-    () => filteredEmails.filter((e) => !e.isRead).length,
+    () => filteredEmails.filter((e: Email) => !e.isRead).length,
     [filteredEmails],
   );
 
   const toggleEmailRead = useCallback(
     async (emailId: string) => {
-      const email = emailsData.find((e) => e.id === emailId);
+      const email = emailsList.find((e: Email) => e.id === emailId);
       if (email) {
         setLoadingEmails((prev) => new Set(prev).add(emailId));
         setAnimatingEmails((prev) => new Set(prev).add(emailId));
 
-        // Simuler une opération asynchrone
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        // Utiliser le hook pour marquer comme lu/non lu
+        try {
+          if (email.isRead) {
+            await markAsUnread(emailId);
+          } else {
+            await markAsRead(emailId);
+          }
+        } catch (error) {
+          console.error("Erreur lors du marquage de l'email:", error);
+        }
 
-        onEmailReadToggle?.(emailId, !email.isRead);
         setLoadingEmails((prev) => {
           const next = new Set(prev);
           next.delete(emailId);
@@ -304,20 +243,23 @@ export default function EmailList({
         }, 300);
       }
     },
-    [emailsData, onEmailReadToggle],
+    [emailsList, markAsRead, markAsUnread],
   );
 
   const toggleEmailStar = useCallback(
     async (emailId: string) => {
-      const email = emailsData.find((e) => e.id === emailId);
+      const email = emailsList.find((e: Email) => e.id === emailId);
       if (email) {
         setLoadingEmails((prev) => new Set(prev).add(emailId));
         setAnimatingEmails((prev) => new Set(prev).add(emailId));
 
-        // Simuler une opération asynchrone
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        // Utiliser le hook pour basculer l'étoile
+        try {
+          await toggleStar(emailId);
+        } catch (error) {
+          console.error("Erreur lors du basculement de l'étoile:", error);
+        }
 
-        onEmailStarToggle?.(emailId);
         setLoadingEmails((prev) => {
           const next = new Set(prev);
           next.delete(emailId);
@@ -333,17 +275,17 @@ export default function EmailList({
         }, 300);
       }
     },
-    [emailsData, onEmailStarToggle],
+    [emailsList, toggleStar],
   );
 
   const markAllAsRead = useCallback(() => {
-    const unreadEmails = filteredEmails.filter((e) => !e.isRead);
-    unreadEmails.forEach((email) => onEmailReadToggle?.(email.id, true));
+    const unreadEmails = filteredEmails.filter((e: Email) => !e.isRead);
+    unreadEmails.forEach((email: Email) => onEmailReadToggle?.(email.id, true));
   }, [filteredEmails, onEmailReadToggle]);
 
   const markAllAsUnread = useCallback(() => {
-    const readEmails = filteredEmails.filter((e) => e.isRead);
-    readEmails.forEach((email) => onEmailReadToggle?.(email.id, false));
+    const readEmails = filteredEmails.filter((e: Email) => e.isRead);
+    readEmails.forEach((email: Email) => onEmailReadToggle?.(email.id, false));
   }, [filteredEmails, onEmailReadToggle]);
 
   const toggleEmailSelection = useCallback((emailId: string) => {
@@ -534,7 +476,27 @@ export default function EmailList({
 
       {/* Liste des emails */}
       <div className="flex-1 overflow-y-auto">
-        {filteredEmails.length === 0 ? (
+        {emailsLoading ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
+            <Loader2 size={32} className="animate-spin mb-4" />
+            <p className="text-lg font-medium">Chargement des emails...</p>
+            <p className="text-sm text-center mt-2">
+              Connexion au serveur mail en cours
+            </p>
+          </div>
+        ) : emailsError ? (
+          <div className="flex flex-col items-center justify-center h-full text-destructive p-8">
+            <AlertCircle size={32} className="mb-4" />
+            <p className="text-lg font-medium">Erreur de connexion</p>
+            <p className="text-sm text-center mt-2 max-w-xs">{emailsError}</p>
+            <button
+              onClick={refreshEmails}
+              className="mt-4 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors text-sm font-medium"
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : filteredEmails.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 animate-in fade-in-50 duration-300">
             <div className="relative mb-6">
               <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
