@@ -34,19 +34,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-
-interface Email {
-  id: string;
-  from: string;
-  fromEmail: string;
-  to: string;
-  subject: string;
-  body: string;
-  date: string;
-  isRead: boolean;
-  isStarred: boolean;
-  hasAttachment: boolean;
-}
+import type { Email } from "../types/email";
 
 type ComposeMode = "new" | "reply" | "replyAll" | "forward";
 

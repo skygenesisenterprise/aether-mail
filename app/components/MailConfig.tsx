@@ -7,11 +7,11 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+} from "./ui/card";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Switch } from "./ui/switch";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 
 interface MailServerConfig {
@@ -113,23 +113,32 @@ export default function MailConfig({ onConfigured }: MailConfigProps) {
     }
 
     try {
-      const response = await fetch("/api/mail/connect", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-id": "demo-user", // Pour démo, sera remplacé par auth réelle
-          "x-user-email": email,
+      const response = await fetch(
+        "http://localhost:8080/api/v1/mail/connect",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-email": email,
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            imapConfig: config.imap,
+            smtpConfig: config.smtp,
+          }),
         },
-        body: JSON.stringify({
-          email,
-          password,
-          imapConfig: config.imap,
-          smtpConfig: config.smtp,
-        }),
-      });
+      );
 
       const result = await response.json();
       if (result.success) {
+        // Configurer le mailService avec les infos d'authentification
+        const { mailService } = await import("../lib/services/mailService");
+        mailService.setAuth(result.data.userId, email);
+
+        // Stocker le userId pour les futures requêtes
+        localStorage.setItem("mailUserId", result.data.userId);
+
         onConfigured?.(config);
         setTestResult({ success: true, message: "Connecté avec succès!" });
       } else {
@@ -165,7 +174,9 @@ export default function MailConfig({ onConfigured }: MailConfigProps) {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setEmail(e.target.value)
+                }
                 placeholder="votre@email.com"
               />
             </div>
@@ -175,7 +186,9 @@ export default function MailConfig({ onConfigured }: MailConfigProps) {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setPassword(e.target.value)
+                }
                 placeholder="Votre mot de passe"
               />
             </div>
@@ -223,7 +236,7 @@ export default function MailConfig({ onConfigured }: MailConfigProps) {
                   <Input
                     id="imap-host"
                     value={config.imap.host}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setConfig((prev) => ({
                         ...prev,
                         imap: { ...prev.imap, host: e.target.value },
@@ -237,10 +250,13 @@ export default function MailConfig({ onConfigured }: MailConfigProps) {
                     id="imap-port"
                     type="number"
                     value={config.imap.port}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setConfig((prev) => ({
                         ...prev,
-                        imap: { ...prev.imap, port: parseInt(e.target.value) },
+                        imap: {
+                          ...prev.imap,
+                          port: parseInt(e.target.value) || 993,
+                        },
                       }))
                     }
                   />
@@ -250,7 +266,7 @@ export default function MailConfig({ onConfigured }: MailConfigProps) {
                 <Switch
                   id="imap-tls"
                   checked={config.imap.tls}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={(checked: boolean) =>
                     setConfig((prev) => ({
                       ...prev,
                       imap: { ...prev.imap, tls: checked },
@@ -267,7 +283,7 @@ export default function MailConfig({ onConfigured }: MailConfigProps) {
                   <Input
                     id="smtp-host"
                     value={config.smtp.host}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setConfig((prev) => ({
                         ...prev,
                         smtp: { ...prev.smtp, host: e.target.value },
@@ -281,10 +297,13 @@ export default function MailConfig({ onConfigured }: MailConfigProps) {
                     id="smtp-port"
                     type="number"
                     value={config.smtp.port}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setConfig((prev) => ({
                         ...prev,
-                        smtp: { ...prev.smtp, port: parseInt(e.target.value) },
+                        smtp: {
+                          ...prev.smtp,
+                          port: parseInt(e.target.value) || 587,
+                        },
                       }))
                     }
                   />
@@ -294,7 +313,7 @@ export default function MailConfig({ onConfigured }: MailConfigProps) {
                 <Switch
                   id="smtp-secure"
                   checked={config.smtp.secure}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={(checked: boolean) =>
                     setConfig((prev) => ({
                       ...prev,
                       smtp: { ...prev.smtp, secure: checked },

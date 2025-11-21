@@ -2,8 +2,8 @@
 
 import type React from "react";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -23,10 +23,15 @@ import {
   TabsTrigger,
 } from "../components/ui/tabs";
 import { useToast } from "../components/ui/use-toast";
+import { mailService } from "../lib/services/mailService";
 
-export default function UnifiedAuthForm() {
+function UnifiedAuthForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  // Récupérer l'URL de redirection depuis les paramètres
+  const redirectUrl = searchParams.get("redirect") || "/";
   const [identifier, setIdentifier] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,7 +59,7 @@ export default function UnifiedAuthForm() {
     try {
       // Utiliser l'API d'authentification mail
       const response = await fetch(
-        "http://localhost:3000/api/auth/authenticate",
+        "http://localhost:8080/api/v1/auth/authenticate",
         {
           method: "POST",
           headers: {
@@ -73,6 +78,11 @@ export default function UnifiedAuthForm() {
         throw new Error(data.error || "Mail authentication failed");
       }
 
+      // Validation supplémentaire : s'assurer que les données nécessaires existent
+      if (!data.data || !data.data.userId || !data.data.email) {
+        throw new Error("Réponse d'authentification invalide");
+      }
+
       // Store mail session data
       localStorage.setItem("mailUserId", data.data.userId);
       localStorage.setItem("mailEmail", data.data.email);
@@ -82,16 +92,25 @@ export default function UnifiedAuthForm() {
       );
       localStorage.setItem("isAuthenticated", "true");
 
+      // Store authentication token if available
+      if (data.data.token) {
+        localStorage.setItem("authToken", data.data.token);
+      }
+      if (data.data.accessToken) {
+        localStorage.setItem("authToken", data.data.accessToken);
+      }
+
+      // Set authentication cookie for middleware
+      document.cookie = "isAuthenticated=true; path=/; max-age=86400";
+
       // Show success toast
       toast({
         title: "Connexion mail réussie",
         description: `Connecté à ${data.data.email}`,
       });
 
-      // Redirect to mail interface
-      setTimeout(() => {
-        router.push("/mail");
-      }, 1000);
+      // Redirect to intended page immediately
+      router.push(redirectUrl);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "An error occurred during login";
@@ -160,6 +179,11 @@ export default function UnifiedAuthForm() {
         throw new Error(data.error || "Registration failed");
       }
 
+      // Validation supplémentaire : s'assurer que les données nécessaires existent
+      if (!data.data || !data.data.tokens || !data.data.account) {
+        throw new Error("Réponse d'inscription invalide");
+      }
+
       // Store tokens and user data
       localStorage.setItem("authToken", data.data.tokens.accessToken);
       localStorage.setItem("refreshToken", data.data.tokens.refreshToken);
@@ -170,16 +194,17 @@ export default function UnifiedAuthForm() {
         JSON.stringify(data.data.memberships),
       );
 
+      // Set authentication cookie for middleware
+      document.cookie = "isAuthenticated=true; path=/; max-age=86400";
+
       // Show success toast
       toast({
         title: "Inscription réussie",
         description: "Votre compte a été créé avec succès",
       });
 
-      // Redirect to dashboard using Next.js router
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1000);
+      // Redirect to intended page immediately
+      router.push(redirectUrl);
     } catch (err) {
       const errorMessage =
         err instanceof Error
@@ -211,11 +236,20 @@ export default function UnifiedAuthForm() {
   // Check if user is already logged in
   useEffect(() => {
     const isAuthenticated = localStorage.getItem("isAuthenticated");
+    const hasRedirectParam = searchParams.get("redirect");
+
     if (isAuthenticated === "true") {
-      // User is already logged in, redirect to mail interface
-      router.push("/mail");
+      if (hasRedirectParam) {
+        // User is authenticated and there's a redirect parameter, redirect to intended page
+        router.push(redirectUrl);
+      } else {
+        // User is authenticated but accessing /login directly
+        // Optionnel : on pourrait afficher un message ou rediriger vers /
+        // Pour l'instant, on laisse l'utilisateur accéder à la page login
+        // au cas où il veut se déconnecter et se reconnecter
+      }
     }
-  }, [router]);
+  }, [router, redirectUrl, searchParams]);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black">
@@ -599,5 +633,13 @@ export default function UnifiedAuthForm() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <UnifiedAuthForm />
+    </Suspense>
   );
 }

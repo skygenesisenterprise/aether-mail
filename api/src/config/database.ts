@@ -1,17 +1,19 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "../../../app/generated/prisma/index.js";
 
 export const config = {
   port: process.env.PORT ? parseInt(process.env.PORT) : 8080,
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv: process.env.NODE_ENV || "development",
   database: {
-    url: process.env.DATABASE_URL || 'file:./prisma/dev.db',
+    url: process.env.DATABASE_URL || "file:./prisma/dev.db",
   },
   jwt: {
-    secret: process.env.JWT_SECRET || 'your-secret-key',
-    expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+    secret: process.env.JWT_SECRET || "your-secret-key",
+    expiresIn: process.env.JWT_EXPIRES_IN || "24h",
   },
   cors: {
-    origin: process.env.API_CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
+    origin: process.env.API_CORS_ORIGINS?.split(",") || [
+      "http://localhost:3000",
+    ],
     credentials: true,
   },
   rateLimit: {
@@ -23,7 +25,7 @@ export const config = {
 export const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: 'file:../prisma/dev.db',
+      url: "file:../prisma/dev.db",
     },
   },
 });
@@ -31,9 +33,9 @@ export const prisma = new PrismaClient({
 export const connectDatabase = async (): Promise<void> => {
   try {
     await prisma.$connect();
-    console.log('✅ Database connected successfully');
+    console.log("✅ Database connected successfully");
   } catch (error) {
-    console.error('❌ Database connection failed:', error);
+    console.error("❌ Database connection failed:", error);
     process.exit(1);
   }
 };
@@ -41,8 +43,8 @@ export const connectDatabase = async (): Promise<void> => {
 export const disconnectDatabase = async (): Promise<void> => {
   try {
     await prisma.$disconnect();
-    console.log('✅ Database disconnected successfully');
+    console.log("✅ Database disconnected successfully");
   } catch (error) {
-    console.error('❌ Database disconnection failed:', error);
+    console.error("❌ Database disconnection failed:", error);
   }
 };

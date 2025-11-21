@@ -14,7 +14,7 @@
     "pr": "node scripts/pr.mjs",
     "dev": "pnpm env:setup && concurrently \"pnpm dev:frontend\" \"pnpm dev:backend\"",
     "dev:frontend": "next dev --port 3000",
-    "dev:backend": "tsx api/src/server.ts",
+    "dev:backend": "cd api && npx tsc && node --trace-warnings ./dist/server.js",
     "prod": "NODE_ENV=production pnpm env:setup && pnpm build && pnpm prod:start",
     "prod:start": "node --trace-warnings dist/backend/server.js",
     "env:setup": "node scripts/setup-env.cjs",

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import React from "react";
+import { useRouter } from "next/navigation";
 import {
   Mail,
   Send,
@@ -31,6 +32,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import AccountSpace from "./AccountSpace";
 import { useAppVersion } from "../hooks/useAppVersion";
 import { useEmails } from "../hooks/useEmails";
+import { mailService } from "../lib/services/mailService";
 
 interface Folder {
   id: string;
@@ -56,6 +58,8 @@ export default function Sidebar({
   onCompose,
   folders = [],
 }: SidebarProps) {
+  const router = useRouter();
+
   // Utiliser le hook useEmails pour obtenir les vrais compteurs d'emails
   const { emails } = useEmails({
     folder: selectedFolder,
@@ -130,6 +134,31 @@ export default function Sidebar({
     }
   };
 
+  const handleLogout = () => {
+    // Déconnecter le service mail
+    mailService.setAuth("", "");
+
+    // Nettoyer le localStorage
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("mailUserId");
+    localStorage.removeItem("mailEmail");
+    localStorage.removeItem("mailServerInfo");
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("idToken");
+    localStorage.removeItem("user");
+    localStorage.removeItem("memberships");
+
+    // Nettoyer les cookies
+    document.cookie =
+      "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie =
+      "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+    // Rediriger vers la page de login
+    router.push("/login");
+  };
+
   const accountOptions = [
     {
       id: "account-space",
@@ -137,8 +166,24 @@ export default function Sidebar({
       icon: User,
       action: () => setIsAccountSpaceOpen(true),
     },
-    { id: "help", name: "Aide", icon: HelpCircle },
-    { id: "logout", name: "Déconnexion", icon: LogOut },
+    {
+      id: "help",
+      name: "Aide",
+      icon: HelpCircle,
+      action: () => {
+        // Ouvrir la page d'aide dans un nouvel onglet
+        window.open(
+          "https://github.com/skygenesisenterprise/aether-mail#readme",
+          "_blank",
+        );
+      },
+    },
+    {
+      id: "logout",
+      name: "Déconnexion",
+      icon: LogOut,
+      action: handleLogout,
+    },
   ];
   const systemFolders = [
     {
@@ -642,7 +687,7 @@ export default function Sidebar({
                 <h4 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
                   Aether Mail
                 </h4>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
                   {isLoadingVersion ? (
                     <>
                       <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
@@ -654,7 +699,7 @@ export default function Sidebar({
                       <span className="font-mono">{appVersion}</span>
                     </>
                   )}
-                </p>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -689,7 +734,7 @@ export default function Sidebar({
             console.log("Profile updated:", profile);
           }}
           onLogout={() => {
-            console.log("User logged out");
+            handleLogout();
             setIsAccountSpaceOpen(false);
           }}
           isOpen={isAccountSpaceOpen}

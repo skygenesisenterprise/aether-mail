@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { MailController } from "../controllers/mailController";
+import { MailController } from "../controllers/mailController.js";
 
 const router: Router = Router();
 
@@ -22,21 +22,21 @@ router.get("/emails", MailController.getEmails);
 router.post("/send", MailController.sendEmail);
 
 // Move email to folder
-router.post("/move", MailController.moveEmail);
+router.patch("/emails/:uid/move", MailController.moveEmail);
 
 // Copy email to folder
-router.post("/copy", MailController.copyEmail);
+router.post("/emails/:uid/copy", MailController.copyEmail);
 
 // Delete email
-router.post("/delete", MailController.deleteEmail);
+router.delete("/emails/:uid", MailController.deleteEmail);
 
 // Mark email as read
-router.post("/mark-read", MailController.markEmailAsRead);
+router.patch("/emails/:uid/read", MailController.markEmailAsRead);
 
 // Mark email as unread
-router.post("/mark-unread", MailController.markEmailAsUnread);
+router.patch("/emails/:uid/unread", MailController.markEmailAsUnread);
 
 // Toggle email star
-router.post("/toggle-star", MailController.toggleEmailStar);
+router.patch("/emails/:uid/star", MailController.toggleEmailStar);
 
 export default router;

@@ -1,9 +1,15 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useEffect, useState } from "react";
-import { useSession, signIn, signOut } from "next-auth/react";
-import { authService, LoginCredentials, AuthResult, User } from "@/lib/services/backend-auth-service";
-import { authEnvironmentService } from "@/lib/services/auth-environment-service";
+import type React from "react";
+import { createContext, useContext, useMemo, useEffect, useState } from "react";
+// import { useSession, signIn, signOut } from "next-auth/react";
+import {
+  authService,
+  type LoginCredentials,
+  type AuthResult,
+  type User,
+} from "../lib/services/backend-auth-service";
+import { authEnvironmentService } from "../lib/services/auth-environment-service";
 
 interface IAuthContext {
   token: string | null;
@@ -20,8 +26,11 @@ interface IAuthContext {
 
 const AuthContext = createContext<IAuthContext | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { data: session } = useSession();
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  // const { data: session } = useSession();
+  const session = null; // Temporaire, à remplacer par next-auth plus tard
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,13 +43,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Update user when session changes (for NextAuth compatibility)
-  useEffect(() => {
-    if (session?.user && !authService.isAuthenticated()) {
-      // If NextAuth session exists but backend auth doesn't, we might need to sync
-      // This is a fallback mechanism
-      setUser(session.user as User);
-    }
-  }, [session]);
+  // useEffect(() => {
+  //   if (session?.user && !authService.isAuthenticated()) {
+  //     // If NextAuth session exists but backend auth doesn't, we might need to sync
+  //     // This is a fallback mechanism
+  //     setUser(session.user as User);
+  //   }
+  // }, [session]);
 
   const login = async (credentials: LoginCredentials): Promise<AuthResult> => {
     setIsLoading(true);
@@ -61,9 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await authService.logout();
       setUser(null);
       // Also sign out from NextAuth if it's active
-      if (session) {
-        signOut({ callbackUrl: '/login' });
-      }
+      // if (session) {
+      //   signOut({ callbackUrl: "/login" });
+      // }
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithKeycloak = () => {
     // Use NextAuth signIn for Keycloak SSO
-    signIn('keycloak', { callbackUrl: '/' });
+    // signIn("keycloak", { callbackUrl: "/" });
+    console.log("Keycloak sign-in not implemented yet");
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -86,18 +96,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return authService.hasAllPermissions(permissions);
   };
 
-  const value = useMemo<IAuthContext>(() => ({
-    token: authService.getAccessToken() || session?.accessToken || null,
-    isAuthenticated: authService.isAuthenticated() || !!session,
-    user: user || (session?.user as User) || null,
-    isLoading,
-    login,
-    logout,
-    signInWithKeycloak,
-    hasPermission,
-    hasAnyPermission,
-    hasAllPermissions,
-  }), [session, user, isLoading]);
+  const value = useMemo<IAuthContext>(
+    () => ({
+      token: authService.getAccessToken() || null, // || session?.accessToken || null,
+      isAuthenticated: authService.isAuthenticated() || false, // || !!session,
+      user: user || null, // || (session?.user as User) || null,
+      isLoading,
+      login,
+      logout,
+      signInWithKeycloak,
+      hasPermission,
+      hasAnyPermission,
+      hasAllPermissions,
+    }),
+    [session, user, isLoading],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
@@ -107,5 +120,3 @@ export function useAuthContext(): IAuthContext {
   if (!ctx) throw new Error("useAuthContext must be used within AuthProvider");
   return ctx;
 }
-
-

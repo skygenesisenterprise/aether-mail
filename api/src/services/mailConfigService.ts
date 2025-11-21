@@ -1,4 +1,4 @@
-import { MailServerConfig } from "./mailService";
+import type { MailServerConfig } from "./mailService.js";
 
 export class MailConfigService {
   static getServerConfig(email: string): MailServerConfig | null {
@@ -9,18 +9,21 @@ export class MailConfigService {
     const domainVar = domain.replace(/\./g, "_").toUpperCase();
 
     // Vérifier la configuration spécifique au domaine
-    const domainConfig = this.getDomainConfig(domainVar);
+    const domainConfig = MailConfigService.getDomainConfig(domainVar);
     if (domainConfig) {
       return domainConfig;
     }
 
     // Vérifier les domaines Sky Genesis Enterprise
-    if (domain.includes("skygenesisenterprise.com")) {
+    if (
+      domain.includes("skygenesisenterprise.com") ||
+      domain.includes("radis.o2switch.net")
+    ) {
       return {
         imap: {
           host:
             process.env.SKYGENESISENTERPRISE_COM_IMAP_HOST ||
-            "mail.skygenesisenterprise.com",
+            "radis.o2switch.net",
           port: parseInt(
             process.env.SKYGENESISENTERPRISE_COM_IMAP_PORT || "993",
           ),
@@ -31,11 +34,11 @@ export class MailConfigService {
         smtp: {
           host:
             process.env.SKYGENESISENTERPRISE_COM_SMTP_HOST ||
-            "smtp.skygenesisenterprise.com",
+            "radis.o2switch.net",
           port: parseInt(
-            process.env.SKYGENESISENTERPRISE_COM_SMTP_PORT || "587",
+            process.env.SKYGENESISENTERPRISE_COM_SMTP_PORT || "465",
           ),
-          secure: process.env.SKYGENESISENTERPRISE_COM_SMTP_SECURE === "true",
+          secure: process.env.SKYGENESISENTERPRISE_COM_SMTP_SECURE !== "false",
           user: email,
           password: "", // Sera rempli plus tard
         },
@@ -43,7 +46,7 @@ export class MailConfigService {
     }
 
     // Vérifier la configuration par défaut
-    const defaultConfig = this.getDefaultConfig();
+    const defaultConfig = MailConfigService.getDefaultConfig();
     if (defaultConfig) {
       return defaultConfig;
     }
@@ -141,7 +144,9 @@ export class MailConfigService {
           .replace("_IMAP_HOST", "")
           .toLowerCase()
           .replace(/_/g, ".");
-        const config = this.getDomainConfig(key.replace("_IMAP_HOST", ""));
+        const config = MailConfigService.getDomainConfig(
+          key.replace("_IMAP_HOST", ""),
+        );
         if (config) {
           providers.push({
             name: domain,
@@ -152,80 +157,6 @@ export class MailConfigService {
       }
     });
 
-    // Ajouter les fournisseurs par défaut
-    const defaultProviders = [
-      { name: "Gmail", domain: "gmail.com", config: this.getGmailConfig() },
-      {
-        name: "Outlook",
-        domain: "outlook.com",
-        config: this.getOutlookConfig(),
-      },
-      { name: "Yahoo", domain: "yahoo.com", config: this.getYahooConfig() },
-    ];
-
-    defaultProviders.forEach((provider) => {
-      if (!providers.find((p) => p.domain === provider.domain)) {
-        providers.push(provider);
-      }
-    });
-
     return providers;
-  }
-
-  private static getGmailConfig(): MailServerConfig {
-    return {
-      imap: {
-        host: "imap.gmail.com",
-        port: 993,
-        tls: true,
-        user: "",
-        password: "",
-      },
-      smtp: {
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        user: "",
-        password: "",
-      },
-    };
-  }
-
-  private static getOutlookConfig(): MailServerConfig {
-    return {
-      imap: {
-        host: "outlook.office365.com",
-        port: 993,
-        tls: true,
-        user: "",
-        password: "",
-      },
-      smtp: {
-        host: "smtp-mail.outlook.com",
-        port: 587,
-        secure: false,
-        user: "",
-        password: "",
-      },
-    };
-  }
-
-  private static getYahooConfig(): MailServerConfig {
-    return {
-      imap: {
-        host: "imap.mail.yahoo.com",
-        port: 993,
-        tls: true,
-        user: "",
-        password: "",
-      },
-      smtp: {
-        host: "smtp.mail.yahoo.com",
-        port: 587,
-        secure: false,
-        user: "",
-        password: "",
-      },
-    };
   }
 }

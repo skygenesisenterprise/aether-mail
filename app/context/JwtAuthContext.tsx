@@ -1,8 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import type React from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation';
-import { User, getCurrentUser, login as loginApi, logout as logoutApi, isAuthenticated, getToken, initializeAuth } from '../lib/jwt-auth';
+import { type User, getCurrentUser, login as loginApi, logout as logoutApi, isAuthenticated, getToken, initializeAuth } from '../lib/jwt-auth';
 
 interface AuthContextType {
   user: User | null;

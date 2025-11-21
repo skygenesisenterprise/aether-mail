@@ -1,194 +1,217 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card"
-import { Separator } from "../components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { useToast } from "../components/ui/use-toast"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "./button";
+import { Input } from "./input";
+import { Label } from "./label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./card";
+import { Separator } from "./separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
+import { useToast } from "./use-toast";
 
 export default function UnifiedAuthForm() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [identifier, setIdentifier] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [fullName, setFullName] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [activeTab, setActiveTab] = useState<"login" | "register">("login")
-  const [isMounted, setIsMounted] = useState(false)
+  const router = useRouter();
+  const { toast } = useToast();
+  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true)
-  }, [])
+    setIsMounted(true);
+  }, []);
 
   // Set page title
   useEffect(() => {
-    document.title = "Sky Genesis Enterprise - Unified Account"
-  }, [])
+    document.title = "Sky Genesis Enterprise - Unified Account";
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     try {
       // Utiliser l'API Prisma existante
-      const response = await fetch("http://localhost:8080/api/v1/accounts/authenticate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "http://localhost:8080/api/v1/accounts/authenticate",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            identifier: identifier || email,
+            password,
+          }),
         },
-        body: JSON.stringify({
-          identifier: identifier || email,
-          password,
-        }),
-      })
+      );
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Authentication failed")
+        throw new Error(data.error || "Authentication failed");
       }
 
       // Store tokens and user data
-      localStorage.setItem("authToken", data.data.tokens.accessToken)
-      localStorage.setItem("refreshToken", data.data.tokens.refreshToken)
-      localStorage.setItem("idToken", data.data.tokens.idToken || "")
-      localStorage.setItem("user", JSON.stringify(data.data.account))
-      localStorage.setItem("memberships", JSON.stringify(data.data.memberships))
+      localStorage.setItem("authToken", data.data.tokens.accessToken);
+      localStorage.setItem("refreshToken", data.data.tokens.refreshToken);
+      localStorage.setItem("idToken", data.data.tokens.idToken || "");
+      localStorage.setItem("user", JSON.stringify(data.data.account));
+      localStorage.setItem(
+        "memberships",
+        JSON.stringify(data.data.memberships),
+      );
 
       // Show success toast
       toast({
         title: "Connexion réussie",
         description: "Bienvenue sur Sky Genesis Enterprise",
-      })
+      });
 
       // Redirect to dashboard using Next.js router
       setTimeout(() => {
-        router.push("/dashboard")
-      }, 1000)
+        router.push("/dashboard");
+      }, 1000);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred during login"
-      setError(errorMessage)
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred during login";
+      setError(errorMessage);
       toast({
         title: "Erreur de connexion",
         description: errorMessage,
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     // Validate passwords match
     if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas")
+      setError("Les mots de passe ne correspondent pas");
       toast({
         title: "Erreur de validation",
         description: "Les mots de passe ne correspondent pas",
         variant: "destructive",
-      })
-      setIsLoading(false)
-      return
+      });
+      setIsLoading(false);
+      return;
     }
 
     if (password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères")
+      setError("Le mot de passe doit contenir au moins 6 caractères");
       toast({
         title: "Erreur de validation",
         description: "Le mot de passe doit contenir au moins 6 caractères",
         variant: "destructive",
-      })
-      setIsLoading(false)
-      return
+      });
+      setIsLoading(false);
+      return;
     }
 
     try {
-      const response = await fetch("http://localhost:8080/api/v1/accounts/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "http://localhost:8080/api/v1/accounts/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            fullName,
+            profile: {
+              firstName: fullName.split(" ")[0],
+              lastName: fullName.split(" ").slice(1).join(" "),
+            },
+          }),
         },
-        body: JSON.stringify({
-          email,
-          password,
-          fullName,
-          profile: {
-            firstName: fullName.split(' ')[0],
-            lastName: fullName.split(' ').slice(1).join(' '),
-          }
-        }),
-      })
+      );
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Registration failed")
+        throw new Error(data.error || "Registration failed");
       }
 
       // Store tokens and user data
-      localStorage.setItem("authToken", data.data.tokens.accessToken)
-      localStorage.setItem("refreshToken", data.data.tokens.refreshToken)
-      localStorage.setItem("idToken", data.data.tokens.idToken || "")
-      localStorage.setItem("user", JSON.stringify(data.data.account))
-      localStorage.setItem("memberships", JSON.stringify(data.data.memberships))
+      localStorage.setItem("authToken", data.data.tokens.accessToken);
+      localStorage.setItem("refreshToken", data.data.tokens.refreshToken);
+      localStorage.setItem("idToken", data.data.tokens.idToken || "");
+      localStorage.setItem("user", JSON.stringify(data.data.account));
+      localStorage.setItem(
+        "memberships",
+        JSON.stringify(data.data.memberships),
+      );
 
       // Show success toast
       toast({
         title: "Inscription réussie",
         description: "Votre compte a été créé avec succès",
-      })
+      });
 
       // Redirect to dashboard using Next.js router
       setTimeout(() => {
-        router.push("/dashboard")
-      }, 1000)
+        router.push("/dashboard");
+      }, 1000);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred during registration"
-      setError(errorMessage)
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "An error occurred during registration";
+      setError(errorMessage);
       toast({
         title: "Erreur d'inscription",
         description: errorMessage,
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSocialLogin = (provider: string) => {
-    if (provider === 'keycloak') {
+    if (provider === "keycloak") {
       // Use NextAuth signIn for Keycloak SSO
-      window.location.href = '/api/auth/signin/keycloak'
+      window.location.href = "/api/auth/signin/keycloak";
     } else {
       toast({
         title: "Connexion OAuth",
         description: `Connexion avec ${provider} bientôt disponible`,
-      })
+      });
     }
-  }
+  };
 
   // Check if user is already logged in
   useEffect(() => {
-    const token = localStorage.getItem("authToken")
+    const token = localStorage.getItem("authToken");
     if (token) {
       // User is already logged in, redirect to dashboard
-      router.push("/dashboard")
+      router.push("/dashboard");
     }
-  }, [router])
+  }, [router]);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black">
@@ -215,7 +238,12 @@ export default function UnifiedAuthForm() {
             <div className="flex justify-center">
               <div className="relative">
                 <div className="w-16 h-16 bg-black rounded-xl flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="w-10 h-10"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <path
                       d="M12 2L2 7L12 12L22 7L12 2Z"
                       fill="white"
@@ -244,7 +272,9 @@ export default function UnifiedAuthForm() {
             </div>
 
             <div className="space-y-2">
-              <CardTitle className="text-2xl font-bold text-black">Sky Genesis Enterprise</CardTitle>
+              <CardTitle className="text-2xl font-bold text-black">
+                Sky Genesis Enterprise
+              </CardTitle>
               <CardDescription className="text-gray-600">
                 Unified Account System - Single Sign-On
               </CardDescription>
@@ -253,150 +283,187 @@ export default function UnifiedAuthForm() {
 
           <CardContent className="space-y-6">
             {isMounted ? (
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "login" | "register")} className="w-full" defaultValue="login">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Sign In</TabsTrigger>
-                <TabsTrigger value="register">Sign Up</TabsTrigger>
-              </TabsList>
+              <Tabs
+                value={activeTab}
+                onValueChange={(value: string) =>
+                  setActiveTab(value as "login" | "register")
+                }
+                className="w-full"
+                defaultValue="login"
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="login">Sign In</TabsTrigger>
+                  <TabsTrigger value="register">Sign Up</TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="login" className="space-y-4">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="identifier" className="text-sm font-medium text-black">
-                      Email, Username, or Phone
-                    </Label>
-                    <Input
-                      id="identifier"
-                      type="text"
-                      placeholder="Enter your identifier"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      required
-                      className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
-                    />
-                  </div>
+                <TabsContent value="login" className="space-y-4">
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="identifier"
+                        className="text-sm font-medium text-black"
+                      >
+                        Email, Username, or Phone
+                      </Label>
+                      <Input
+                        id="identifier"
+                        type="text"
+                        placeholder="Enter your identifier"
+                        value={identifier}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setIdentifier(e.target.value)
+                        }
+                        required
+                        className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
+                      />
+                    </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="text-sm font-medium text-black">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label
+                          htmlFor="password"
+                          className="text-sm font-medium text-black"
+                        >
+                          Password
+                        </Label>
+                        <button
+                          type="button"
+                          className="text-sm text-gray-500 hover:text-black transition-colors"
+                          onClick={() => {
+                            // TODO: Implement forgot password functionality
+                            console.log("Forgot password clicked");
+                          }}
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setPassword(e.target.value)
+                        }
+                        required
+                        className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
+                      />
+                    </div>
+
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-sm">
+                        {error}
+                      </div>
+                    )}
+
+                    <Button
+                      type="submit"
+                      className="w-full bg-black hover:bg-gray-800 text-white font-medium"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Signing in..." : "Sign In"}
+                    </Button>
+                  </form>
+                </TabsContent>
+
+                <TabsContent value="register" className="space-y-4">
+                  <form onSubmit={handleRegister} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="fullName"
+                        className="text-sm font-medium text-black"
+                      >
+                        Full Name
+                      </Label>
+                      <Input
+                        id="fullName"
+                        type="text"
+                        placeholder="John Doe"
+                        value={fullName}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setFullName(e.target.value)
+                        }
+                        required
+                        className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="email"
+                        className="text-sm font-medium text-black"
+                      >
+                        Email
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setEmail(e.target.value)
+                        }
+                        required
+                        className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="password"
+                        className="text-sm font-medium text-black"
+                      >
                         Password
                       </Label>
-                      <button 
-                        type="button" 
-                        className="text-sm text-gray-500 hover:text-black transition-colors"
-                        onClick={() => {
-                          // TODO: Implement forgot password functionality
-                          console.log("Forgot password clicked")
-                        }}
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Create a password"
+                        value={password}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setPassword(e.target.value)
+                        }
+                        required
+                        className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="confirmPassword"
+                        className="text-sm font-medium text-black"
                       >
-                        Forgot password?
-                      </button>
+                        Confirm Password
+                      </Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder="Confirm your password"
+                        value={confirmPassword}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setConfirmPassword(e.target.value)
+                        }
+                        required
+                        className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
+                      />
                     </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
-                    />
-                  </div>
 
-                  {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-sm">
-                      {error}
-                    </div>
-                  )}
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-sm">
+                        {error}
+                      </div>
+                    )}
 
-                  <Button
-                    type="submit"
-                    className="w-full bg-black hover:bg-gray-800 text-white font-medium"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Signing in..." : "Sign In"}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="register" className="space-y-4">
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName" className="text-sm font-medium text-black">
-                      Full Name
-                    </Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="John Doe"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                      className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-black">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium text-black">
-                      Password
-                    </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Create a password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-sm font-medium text-black">
-                      Confirm Password
-                    </Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="Confirm your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
-                    />
-                  </div>
-
-                  {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-sm">
-                      {error}
-                    </div>
-                  )}
-
-                  <Button
-                    type="submit"
-                    className="w-full bg-black hover:bg-gray-800 text-white font-medium"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Creating account..." : "Create Account"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+                    <Button
+                      type="submit"
+                      className="w-full bg-black hover:bg-gray-800 text-white font-medium"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Creating account..." : "Create Account"}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
             ) : (
               <div className="w-full">
                 <div className="grid w-full grid-cols-2">
@@ -410,7 +477,10 @@ export default function UnifiedAuthForm() {
                 <div className="mt-2 space-y-4">
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="identifier" className="text-sm font-medium text-black">
+                      <Label
+                        htmlFor="identifier"
+                        className="text-sm font-medium text-black"
+                      >
                         Email, Username, or Phone
                       </Label>
                       <Input
@@ -418,13 +488,18 @@ export default function UnifiedAuthForm() {
                         type="text"
                         placeholder="Enter your identifier"
                         value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setIdentifier(e.target.value)
+                        }
                         required
                         className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password" className="text-sm font-medium text-black">
+                      <Label
+                        htmlFor="password"
+                        className="text-sm font-medium text-black"
+                      >
                         Password
                       </Label>
                       <Input
@@ -432,7 +507,9 @@ export default function UnifiedAuthForm() {
                         type="password"
                         placeholder="Enter your password"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setPassword(e.target.value)
+                        }
                         required
                         className="bg-white border-gray-300 text-black placeholder:text-gray-400 focus:border-black focus:ring-black"
                       />
@@ -454,7 +531,9 @@ export default function UnifiedAuthForm() {
                 <Separator className="w-full bg-gray-200" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                <span className="bg-white px-2 text-gray-500">
+                  Or continue with
+                </span>
               </div>
             </div>
 
@@ -491,7 +570,11 @@ export default function UnifiedAuthForm() {
                 onClick={() => handleSocialLogin("Microsoft")}
                 className="w-full bg-white hover:bg-gray-50 border border-gray-300 text-black font-medium"
               >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                <svg
+                  className="w-5 h-5 mr-2"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
                   <path fill="#f25022" d="M1 1h10v10H1z" />
                   <path fill="#00a4ef" d="M13 1h10v10H13z" />
                   <path fill="#7fba00" d="M1 13h10v10H1z" />
@@ -505,8 +588,12 @@ export default function UnifiedAuthForm() {
                 onClick={() => handleSocialLogin("GitHub")}
                 className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium"
               >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                <svg
+                  className="w-5 h-5 mr-2"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                 </svg>
                 Continue with GitHub
               </Button>
@@ -514,11 +601,15 @@ export default function UnifiedAuthForm() {
           </CardContent>
 
           <CardFooter className="flex justify-between text-sm text-gray-500 pt-6 border-t">
-            <button className="hover:text-black transition-colors">Terms of Service</button>
-            <button className="hover:text-black transition-colors">Privacy Policy</button>
+            <button className="hover:text-black transition-colors">
+              Terms of Service
+            </button>
+            <button className="hover:text-black transition-colors">
+              Privacy Policy
+            </button>
           </CardFooter>
         </Card>
       </div>
     </div>
-  )
+  );
 }

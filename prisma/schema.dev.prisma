@@ -1,0 +1,43 @@
+// This is your Prisma schema file for development,
+// learn more about it in docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../prisma/dev.db"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  email         String    @unique
+  password      String
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model MailConfig {
+  id          String   @id @default(cuid())
+  userId      String
+  email       String
+  displayName String?
+  imapHost    String
+  imapPort    Int
+  imapSecure  Boolean  @default(true)
+  smtpHost    String
+  smtpPort    Int
+  smtpSecure  Boolean  @default(true)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("mail_configs")
+}

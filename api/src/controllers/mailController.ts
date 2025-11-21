@@ -1,5 +1,6 @@
-import { Request, Response } from "express";
-import { MailService, MailServerConfig } from "../services/mailService";
+import type { Request, Response } from "express";
+import { MailService, type MailServerConfig } from "../services/mailService.js";
+import { MailConfigService } from "../services/mailConfigService.js";
 
 export class MailController {
   static async testConnection(req: Request, res: Response) {
@@ -13,21 +14,19 @@ export class MailController {
         });
       }
 
+      // Utiliser la configuration du serveur mail depuis les variables d'environnement
+      const serverConfig = MailConfigService.getServerConfig(email);
+
+      if (!serverConfig) {
+        return res.status(400).json({
+          success: false,
+          error: "No mail server configuration found for this domain",
+        });
+      }
+
       const config: MailServerConfig = {
-        imap: imapConfig || {
-          host: "imap.gmail.com",
-          port: 993,
-          tls: true,
-          user: email,
-          password,
-        },
-        smtp: smtpConfig || {
-          host: "smtp.gmail.com",
-          port: 587,
-          secure: false,
-          user: email,
-          password,
-        },
+        imap: imapConfig || serverConfig.imap,
+        smtp: smtpConfig || serverConfig.smtp,
       };
 
       const [imapOk, smtpOk] = await Promise.all([
@@ -63,35 +62,91 @@ export class MailController {
         });
       }
 
+      // Utiliser la configuration du serveur mail depuis les variables d'environnement
+      const serverConfig = MailConfigService.getServerConfig(email);
+
+      if (!serverConfig) {
+        return res.status(400).json({
+          success: false,
+          error: "No mail server configuration found for this domain",
+        });
+      }
+
+      // Utiliser la configuration fournie ou celle du serveur
       const config: MailServerConfig = {
-        imap: imapConfig || {
-          host: "imap.gmail.com",
-          port: 993,
-          tls: true,
+        imap: imapConfig || serverConfig.imap,
+        smtp: smtpConfig || serverConfig.smtp,
+      };
+
+      // Ajouter les identifiants à la configuration
+      const fullConfig = {
+        imap: {
+          ...config.imap,
           user: email,
           password,
         },
-        smtp: smtpConfig || {
-          host: "smtp.gmail.com",
-          port: 587,
-          secure: false,
+        smtp: {
+          ...config.smtp,
           user: email,
           password,
         },
       };
 
+      // Tester la connexion IMAP
+      const imapConnected = await MailService.testImapConnection(
+        fullConfig.imap,
+      );
+
+      if (!imapConnected) {
+        return res.status(401).json({
+          success: false,
+          error: "IMAP authentication failed. Check your credentials.",
+        });
+      }
+
+      // Tester la connexion SMTP
+      const smtpConnected = await MailService.testSmtpConnection(
+        fullConfig.smtp,
+      );
+
+      if (!smtpConnected) {
+        return res.status(401).json({
+          success: false,
+          error: "SMTP authentication failed. Check your credentials.",
+        });
+      }
+
+      // Créer une session utilisateur
       const userId = Buffer.from(email).toString("base64").replace(/=/g, "");
 
-      const connection = await MailService.createConnection(userId, config);
+      // Connecter aux serveurs mail
+      const connection = await MailService.createConnection(userId, fullConfig);
 
       res.json({
         success: true,
-        message: "Connected successfully",
-        connectionId: userId,
+        message: "Mail authentication successful",
+        data: {
+          userId,
+          email,
+          serverInfo: {
+            imap: {
+              host: fullConfig.imap.host,
+              port: fullConfig.imap.port,
+              tls: fullConfig.imap.tls,
+            },
+            smtp: {
+              host: fullConfig.smtp.host,
+              port: fullConfig.smtp.port,
+              secure: fullConfig.smtp.secure,
+            },
+          },
+        },
       });
     } catch (error) {
+      console.error("Mail authentication error:", error);
       res.status(500).json({
-        error: "Connection failed",
+        success: false,
+        error: "Authentication failed",
         details: error instanceof Error ? error.message : "Unknown error",
       });
     }
@@ -119,7 +174,13 @@ export class MailController {
 
   static async getFolders(req: Request, res: Response) {
     try {
-      const userId = req.headers["x-user-id"] as string;
+      let userId = req.headers["x-user-id"] as string;
+      const userEmail = req.headers["x-user-email"] as string;
+
+      // Si pas de userId, essayer de le générer depuis l'email
+      if (!userId && userEmail) {
+        userId = Buffer.from(userEmail).toString("base64").replace(/=/g, "");
+      }
 
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
@@ -146,7 +207,13 @@ export class MailController {
 
   static async getEmails(req: Request, res: Response) {
     try {
-      const userId = req.headers["x-user-id"] as string;
+      let userId = req.headers["x-user-id"] as string;
+      const userEmail = req.headers["x-user-email"] as string;
+
+      // Si pas de userId, essayer de le générer depuis l'email
+      if (!userId && userEmail) {
+        userId = Buffer.from(userEmail).toString("base64").replace(/=/g, "");
+      }
 
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
@@ -180,8 +247,13 @@ export class MailController {
 
   static async sendEmail(req: Request, res: Response) {
     try {
-      const userId = req.headers["x-user-id"] as string;
+      let userId = req.headers["x-user-id"] as string;
       const userEmail = req.headers["x-user-email"] as string;
+
+      // Si pas de userId, essayer de le générer depuis l'email
+      if (!userId && userEmail) {
+        userId = Buffer.from(userEmail).toString("base64").replace(/=/g, "");
+      }
 
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
@@ -224,13 +296,20 @@ export class MailController {
 
   static async moveEmail(req: Request, res: Response) {
     try {
-      const userId = req.headers["x-user-id"] as string;
+      let userId = req.headers["x-user-id"] as string;
+      const userEmail = req.headers["x-user-email"] as string;
+
+      // Si pas de userId, essayer de le générer depuis l'email
+      if (!userId && userEmail) {
+        userId = Buffer.from(userEmail).toString("base64").replace(/=/g, "");
+      }
 
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const { uid, fromFolder, toFolder } = req.body;
+      const { uid } = req.params;
+      const { fromFolder, toFolder } = req.body;
 
       if (!uid || !fromFolder || !toFolder) {
         return res
@@ -245,7 +324,7 @@ export class MailController {
 
       const success = await MailService.moveEmail(
         connection.imap,
-        uid,
+        parseInt(uid),
         fromFolder,
         toFolder,
       );
@@ -264,13 +343,20 @@ export class MailController {
 
   static async copyEmail(req: Request, res: Response) {
     try {
-      const userId = req.headers["x-user-id"] as string;
+      let userId = req.headers["x-user-id"] as string;
+      const userEmail = req.headers["x-user-email"] as string;
+
+      // Si pas de userId, essayer de le générer depuis l'email
+      if (!userId && userEmail) {
+        userId = Buffer.from(userEmail).toString("base64").replace(/=/g, "");
+      }
 
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const { uid, fromFolder, toFolder } = req.body;
+      const { uid } = req.params;
+      const { fromFolder, toFolder } = req.body;
 
       if (!uid || !fromFolder || !toFolder) {
         return res
@@ -285,7 +371,7 @@ export class MailController {
 
       const success = await MailService.copyEmail(
         connection.imap,
-        uid,
+        parseInt(uid),
         fromFolder,
         toFolder,
       );
@@ -304,13 +390,20 @@ export class MailController {
 
   static async deleteEmail(req: Request, res: Response) {
     try {
-      const userId = req.headers["x-user-id"] as string;
+      let userId = req.headers["x-user-id"] as string;
+      const userEmail = req.headers["x-user-email"] as string;
+
+      // Si pas de userId, essayer de le générer depuis l'email
+      if (!userId && userEmail) {
+        userId = Buffer.from(userEmail).toString("base64").replace(/=/g, "");
+      }
 
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const { uid, folder } = req.body;
+      const { uid } = req.params;
+      const { folder } = req.body;
 
       if (!uid || !folder) {
         return res.status(400).json({ error: "uid and folder are required" });
@@ -323,7 +416,7 @@ export class MailController {
 
       const success = await MailService.deleteEmail(
         connection.imap,
-        uid,
+        parseInt(uid),
         folder,
       );
 
@@ -343,13 +436,20 @@ export class MailController {
 
   static async markEmailAsRead(req: Request, res: Response) {
     try {
-      const userId = req.headers["x-user-id"] as string;
+      let userId = req.headers["x-user-id"] as string;
+      const userEmail = req.headers["x-user-email"] as string;
+
+      // Si pas de userId, essayer de le générer depuis l'email
+      if (!userId && userEmail) {
+        userId = Buffer.from(userEmail).toString("base64").replace(/=/g, "");
+      }
 
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const { uid, folder } = req.body;
+      const { uid } = req.params;
+      const { folder } = req.body;
 
       if (!uid || !folder) {
         return res.status(400).json({ error: "uid and folder are required" });
@@ -362,7 +462,7 @@ export class MailController {
 
       const success = await MailService.markEmailAsRead(
         connection.imap,
-        uid,
+        parseInt(uid),
         folder,
       );
 
@@ -382,13 +482,20 @@ export class MailController {
 
   static async markEmailAsUnread(req: Request, res: Response) {
     try {
-      const userId = req.headers["x-user-id"] as string;
+      let userId = req.headers["x-user-id"] as string;
+      const userEmail = req.headers["x-user-email"] as string;
+
+      // Si pas de userId, essayer de le générer depuis l'email
+      if (!userId && userEmail) {
+        userId = Buffer.from(userEmail).toString("base64").replace(/=/g, "");
+      }
 
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const { uid, folder } = req.body;
+      const { uid } = req.params;
+      const { folder } = req.body;
 
       if (!uid || !folder) {
         return res.status(400).json({ error: "uid and folder are required" });
@@ -401,7 +508,7 @@ export class MailController {
 
       const success = await MailService.markEmailAsUnread(
         connection.imap,
-        uid,
+        parseInt(uid),
         folder,
       );
 
@@ -421,13 +528,20 @@ export class MailController {
 
   static async toggleEmailStar(req: Request, res: Response) {
     try {
-      const userId = req.headers["x-user-id"] as string;
+      let userId = req.headers["x-user-id"] as string;
+      const userEmail = req.headers["x-user-email"] as string;
+
+      // Si pas de userId, essayer de le générer depuis l'email
+      if (!userId && userEmail) {
+        userId = Buffer.from(userEmail).toString("base64").replace(/=/g, "");
+      }
 
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const { uid, folder, isStarred } = req.body;
+      const { uid } = req.params;
+      const { folder, isStarred } = req.body;
 
       if (!uid || !folder || isStarred === undefined) {
         return res
@@ -442,7 +556,7 @@ export class MailController {
 
       const success = await MailService.toggleEmailStar(
         connection.imap,
-        uid,
+        parseInt(uid),
         folder,
         isStarred,
       );
