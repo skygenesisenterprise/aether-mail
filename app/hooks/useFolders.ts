@@ -35,7 +35,7 @@ export function useFolders(options: UseFoldersOptions = {}) {
     setError(null);
 
     try {
-      const response = await fetch("/api/mail/folders", {
+      const response = await fetch("http://localhost:8080/api/v1/mail/folders", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

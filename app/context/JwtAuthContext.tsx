@@ -68,7 +68,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await loginApi({ email, password });
       setUser(response.user);
       setToken(response.token);
-      router.push('/dashboard');
+      router.push('/');
     } catch (error) {
       setIsLoading(false);
       throw error;

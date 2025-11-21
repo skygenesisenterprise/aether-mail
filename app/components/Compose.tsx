@@ -470,7 +470,7 @@ export default function Compose({
   if (!isOpen) return null;
 
   return (
-    <div className="flex-1 flex flex-col bg-background">
+    <div className="flex flex-col bg-background h-full">
       {/* En-tête du compose */}
       <div className="bg-gradient-to-r from-card to-muted border-b border-border">
         <div className="flex items-center justify-between p-4">

@@ -62,6 +62,20 @@ export default function EmailViewer({
   // Utiliser les emails externes si fournis
   const email = emailId ? externalEmails?.[emailId] : null;
 
+  // Debug: afficher le contenu de l'email dans la console
+  useEffect(() => {
+    if (email) {
+      console.log("Email data:", {
+        id: email.id,
+        subject: email.subject,
+        body: email.body,
+        bodyLength: email.body?.length || 0,
+        hasAttachment: email.hasAttachment,
+        preview: email.preview,
+      });
+    }
+  }, [email]);
+
   // Marquer automatiquement comme lu quand l'email est ouvert
   useEffect(() => {
     if (email && !email.isRead && onToggleRead && emailId) {
@@ -76,33 +90,61 @@ export default function EmailViewer({
   };
 
   const handleDownloadAttachment = (attachment: any) => {
-    // Simuler le téléchargement d'une pièce jointe
-    // Dans une vraie application, cela appellerait une API pour télécharger le fichier
+    try {
+      // Simuler le téléchargement d'une pièce jointe
+      // Dans une vraie application, cela appellerait une API pour télécharger le fichier
 
-    // Créer un contenu factice pour la démonstration
-    const content = `Contenu de la pièce jointe: ${attachment.name}\nType: ${attachment.type}\nTaille: ${attachment.size}\n\nCeci est un fichier de démonstration pour Aether Mail.`;
+      // Créer un contenu factice pour la démonstration
+      const content = `Contenu de la pièce jointe: ${attachment.name}\nType: ${attachment.type}\nTaille: ${attachment.size}\n\nCeci est un fichier de démonstration pour Aether Mail.`;
 
-    // Créer un Blob avec le contenu
-    const blob = new Blob([content], { type: "text/plain" });
+      // Créer un Blob avec le contenu
+      const blob = new Blob([content], { type: "text/plain" });
 
-    // Créer une URL temporaire pour le téléchargement
-    const url = window.URL.createObjectURL(blob);
+      // Créer une URL temporaire pour le téléchargement
+      const url = window.URL.createObjectURL(blob);
 
-    // Créer un élément <a> temporaire pour déclencher le téléchargement
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = attachment.name;
+      // Créer un élément <a> temporaire pour déclencher le téléchargement
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = attachment.name;
 
-    // Ajouter le lien au DOM, cliquer dessus, puis le nettoyer
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      // Ajouter le lien au DOM, cliquer dessus, puis le nettoyer
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-    // Libérer l'URL temporaire
-    window.URL.revokeObjectURL(url);
+      // Libérer l'URL temporaire
+      window.URL.revokeObjectURL(url);
 
-    // Afficher une notification de succès (pourrait être amélioré avec un système de toast)
-    console.log(`Téléchargement de ${attachment.name} initié`);
+      // Afficher une notification de succès (pourrait être amélioré avec un système de toast)
+      console.log(`Téléchargement de ${attachment.name} initié`);
+    } catch (error) {
+      console.error("Erreur lors du téléchargement de la pièce jointe:", error);
+    }
+  };
+
+  // Fonction pour nettoyer et améliorer le HTML de l'email
+  const sanitizeEmailBody = (html: string) => {
+    console.log("sanitizeEmailBody input:", html);
+
+    if (!html || html.trim() === "") {
+      console.log("Body is empty or null");
+      return "";
+    }
+
+    // S'assurer que le HTML a une structure de base
+    let cleanHtml = html.trim();
+
+    console.log("CleanHtml after trim:", cleanHtml);
+
+    // Si ce n'est pas du HTML, traiter comme du texte brut
+    if (!cleanHtml.includes("<") && !cleanHtml.includes(">")) {
+      console.log("Treating as plain text");
+      return `<p>${cleanHtml.replace(/\n/g, "<br>")}</p>`;
+    }
+
+    console.log("Returning HTML as-is");
+    return cleanHtml;
   };
 
   if (!email) {
@@ -357,13 +399,53 @@ export default function EmailViewer({
 
       {/* Contenu de l'email avec design amélioré */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-6">
+        <div className="p-6 min-h-full">
           {/* Corps du message avec typographie améliorée */}
           <div className="prose prose-invert prose-lg max-w-none">
-            <div
-              className="text-card-foreground leading-relaxed space-y-4"
-              dangerouslySetInnerHTML={{ __html: email.body }}
-            />
+            {/* Afficher le preview si disponible et que le body est vide */}
+            {email.preview && (!email.body || email.body.trim() === "") && (
+              <div
+                className="text-card-foreground leading-relaxed space-y-4 break-words"
+                style={{
+                  wordWrap: "break-word",
+                  overflowWrap: "break-word",
+                  whiteSpace: "pre-wrap",
+                  fontSize: "14px",
+                  lineHeight: "1.6",
+                }}
+              >
+                <p>{email.preview}</p>
+              </div>
+            )}
+
+            {/* Afficher le body s'il existe */}
+            {email.body && email.body.trim() !== "" && (
+              <div
+                className="text-card-foreground leading-relaxed space-y-4 break-words"
+                style={{
+                  wordWrap: "break-word",
+                  overflowWrap: "break-word",
+                  whiteSpace: "pre-wrap",
+                  fontSize: "14px",
+                  lineHeight: "1.6",
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeEmailBody(email.body),
+                }}
+              />
+            )}
+
+            {/* Fallback si ni le body ni le preview ne sont disponibles */}
+            {(!email.body || email.body.trim() === "") &&
+              (!email.preview || email.preview.trim() === "") && (
+                <div className="text-muted-foreground italic text-center py-8">
+                  <p>Cet email ne contient pas de contenu textuel.</p>
+                  <p className="text-sm mt-2">
+                    Il peut s'agir d'un email avec uniquement des pièces jointes
+                    ou un contenu formaté non pris en charge.
+                  </p>
+                </div>
+              )}
           </div>
         </div>
       </div>

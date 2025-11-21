@@ -14,6 +14,7 @@ import {
   Loader2,
   Search,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import AdvancedSearch from "./AdvancedSearch";
 import {
@@ -67,6 +68,7 @@ export default function EmailList({
   const [animatingEmails, setAnimatingEmails] = useState<Set<string>>(
     new Set(),
   );
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { query, filters, search, clearSearch } = useAdvancedSearch({
     maxHistoryItems: 10,
@@ -87,8 +89,8 @@ export default function EmailList({
     refreshEmails,
   } = useEmails({
     folder: selectedFolder,
-    autoRefresh: true,
-    refreshInterval: 30000, // 30 secondes
+    autoRefresh: false, // Désactiver l'auto-refresh
+    refreshInterval: 0,
   });
 
   // Utiliser uniquement les vraies données du serveur
@@ -202,7 +204,8 @@ export default function EmailList({
       });
     }
 
-    return filtered;
+    // Inverser l'ordre pour afficher les plus récents en premier
+    return filtered.reverse();
   }, [getFolderEmails, selectedFolder, query, filters]);
 
   const unreadCount = useMemo(
@@ -346,6 +349,41 @@ export default function EmailList({
     return titles[folder] || folder;
   };
 
+  // Formatter la date pour afficher correctement
+  const formatEmailDate = (dateString: string) => {
+    let emailDate: Date;
+
+    try {
+      emailDate = new Date(dateString);
+
+      // Vérifier si la date est valide
+      if (isNaN(emailDate.getTime())) {
+        return "Date invalide";
+      }
+    } catch (e) {
+      return "Date invalide";
+    }
+
+    const now = new Date();
+
+    // Si c'est aujourd'hui, afficher l'heure
+    if (emailDate.toDateString() === now.toDateString()) {
+      return emailDate.toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+    }
+
+    // Sinon afficher la date complète
+    return emailDate.toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "short",
+      year:
+        emailDate.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+    });
+  };
+
   return (
     <div className="w-96 bg-background border-r border-border flex flex-col h-full">
       {/* Header moderne */}
@@ -362,6 +400,21 @@ export default function EmailList({
             )}
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                setIsRefreshing(true);
+                await refreshEmails();
+                setIsRefreshing(false);
+              }}
+              disabled={isRefreshing}
+              className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
+              title="Rafraîchir les emails"
+            >
+              <RefreshCw
+                size={16}
+                className={isRefreshing ? "animate-spin" : ""}
+              />
+            </button>
             <button
               onClick={toggleSelectionMode}
               className={`p-2 rounded-lg transition-colors ${
@@ -614,7 +667,7 @@ export default function EmailList({
                       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <Clock size={10} />
-                          {email.date}
+                          {formatEmailDate(email.date)}
                         </span>
                       </div>
                     </div>

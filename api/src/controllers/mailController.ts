@@ -3,6 +3,32 @@ import { MailService, type MailServerConfig } from "../services/mailService.js";
 import { MailConfigService } from "../services/mailConfigService.js";
 
 export class MailController {
+  static async configureMail(req: Request, res: Response) {
+    try {
+      const config = req.body;
+
+      if (!config) {
+        return res.status(400).json({
+          success: false,
+          error: "Mail configuration is required",
+        });
+      }
+
+      // Pour l'instant, juste valider la configuration
+      // La connexion réelle se fera via /connect
+      res.json({
+        success: true,
+        message: "Mail configuration saved",
+        data: config,
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: "Failed to configure mail",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
   static async testConnection(req: Request, res: Response) {
     try {
       const { email, password, imapConfig, smtpConfig } = req.body;

@@ -5,6 +5,8 @@ import Sidebar from "./Sidebar";
 import EmailList from "./EmailList";
 import EmailViewer from "./EmailViewer";
 import Compose from "./Compose";
+import { useEmails } from "../hooks/useEmails";
+import type { Email as EmailType } from "../types/email";
 
 interface Folder {
   id: string;
@@ -17,24 +19,6 @@ interface Folder {
   createdAt?: string;
 }
 
-interface Email {
-  id: string;
-  from: string;
-  fromEmail: string;
-  to: string;
-  subject: string;
-  body: string;
-  date: string;
-  isRead: boolean;
-  isStarred: boolean;
-  hasAttachment: boolean;
-  attachments?: Array<{
-    name: string;
-    size: string;
-    type: string;
-  }>;
-}
-
 export default function MailLayout() {
   const [selectedFolder, setSelectedFolder] = useState("inbox");
   const [selectedEmail, setSelectedEmail] = useState<string | undefined>();
@@ -43,8 +27,18 @@ export default function MailLayout() {
     "new" | "reply" | "replyAll" | "forward"
   >("new");
 
-  // État partagé pour les emails - initialiser vide en mode production
-  const [emails, setEmails] = useState<Record<string, Email>>({});
+  // Utiliser le hook useEmails pour charger les vraies données
+  const {
+    emails: emailsData,
+    markAsRead,
+    markAsUnread,
+    toggleStar,
+    deleteEmail,
+    archiveEmail,
+  } = useEmails({
+    folder: selectedFolder,
+    autoRefresh: false,
+  });
 
   // État pour les dossiers personnalisés
   const [folders, setFolders] = useState<Folder[]>([
@@ -79,16 +73,18 @@ export default function MailLayout() {
 
   // Callback pour mettre à jour l'état de lecture
   const handleEmailReadToggle = useCallback(
-    (emailId: string, isRead: boolean) => {
-      setEmails((prevEmails) => ({
-        ...prevEmails,
-        [emailId]: {
-          ...prevEmails[emailId],
-          isRead,
-        },
-      }));
+    async (emailId: string, isRead: boolean) => {
+      try {
+        if (isRead) {
+          await markAsRead(emailId);
+        } else {
+          await markAsUnread(emailId);
+        }
+      } catch (error) {
+        console.error("Erreur lors du marquage de l'email:", error);
+      }
     },
-    [],
+    [markAsRead, markAsUnread],
   );
 
   // Effet pour écouter les mises à jour de dossiers depuis AccountSpace
@@ -111,49 +107,50 @@ export default function MailLayout() {
   }, []);
 
   // Callback pour mettre à jour l'état de suivi
-  const handleEmailStarToggle = useCallback((emailId: string) => {
-    setEmails((prevEmails) => ({
-      ...prevEmails,
-      [emailId]: {
-        ...prevEmails[emailId],
-        isStarred: !prevEmails[emailId].isStarred,
-      },
-    }));
-  }, []);
+  const handleEmailStarToggle = useCallback(
+    async (emailId: string) => {
+      try {
+        await toggleStar(emailId);
+      } catch (error) {
+        console.error("Erreur lors du basculement de l'étoile:", error);
+      }
+    },
+    [toggleStar],
+  );
 
-  // Callback pour mettre à jour l'état de lecture
-  const handleToggleRead = useCallback((emailId: string, isRead: boolean) => {
-    setEmails((prevEmails) => ({
-      ...prevEmails,
-      [emailId]: {
-        ...prevEmails[emailId],
-        isRead,
-      },
-    }));
-  }, []);
+  // Callback pour mettre à jour l'état de lecture (alias)
+  const handleToggleRead = useCallback(
+    async (emailId: string, isRead: boolean) => {
+      await handleEmailReadToggle(emailId, isRead);
+    },
+    [handleEmailReadToggle],
+  );
 
   // Callback pour supprimer un email
-  const handleDeleteEmail = useCallback((emailId: string) => {
-    setEmails((prevEmails) => {
-      const newEmails = { ...prevEmails };
-      delete newEmails[emailId];
-      return newEmails;
-    });
-    setSelectedEmail(undefined);
-  }, []);
+  const handleDeleteEmail = useCallback(
+    async (emailId: string) => {
+      try {
+        await deleteEmail(emailId);
+        setSelectedEmail(undefined);
+      } catch (error) {
+        console.error("Erreur lors de la suppression de l'email:", error);
+      }
+    },
+    [deleteEmail],
+  );
 
   // Callback pour archiver un email
-  const handleArchiveEmail = useCallback((emailId: string) => {
-    // Dans une vraie app, on déplacerait vers un dossier d'archive
-    setEmails((prevEmails) => ({
-      ...prevEmails,
-      [emailId]: {
-        ...prevEmails[emailId],
-        // isArchived: true
-      },
-    }));
-    setSelectedEmail(undefined);
-  }, []);
+  const handleArchiveEmail = useCallback(
+    async (emailId: string) => {
+      try {
+        await archiveEmail(emailId);
+        setSelectedEmail(undefined);
+      } catch (error) {
+        console.error("Erreur lors de l'archivage de l'email:", error);
+      }
+    },
+    [archiveEmail],
+  );
 
   // Callbacks pour répondre
   const handleReply = useCallback((emailId: string) => {
@@ -198,18 +195,6 @@ export default function MailLayout() {
         onEmailStarToggle={handleEmailStarToggle}
       />
 
-      <EmailViewer
-        emailId={selectedEmail}
-        onReply={handleReply}
-        onReplyAll={handleReplyAll}
-        onForward={handleForward}
-        onDelete={handleDeleteEmail}
-        onArchive={handleArchiveEmail}
-        onToggleStar={handleEmailStarToggle}
-        onToggleRead={handleToggleRead}
-        onClose={() => setSelectedEmail(undefined)}
-      />
-
       {/* Colonne de droite : Email Viewer ou Compose */}
       <div className="flex-1 flex flex-col">
         {isComposeOpen ? (
@@ -217,12 +202,16 @@ export default function MailLayout() {
             isOpen={isComposeOpen}
             onClose={() => setIsComposeOpen(false)}
             mode={composeMode}
-            originalEmail={selectedEmail ? emails[selectedEmail] : undefined}
+            originalEmail={
+              selectedEmail
+                ? (emailsData[selectedEmail] as EmailType)
+                : undefined
+            }
           />
         ) : (
           <EmailViewer
             emailId={selectedEmail}
-            emails={emails}
+            emails={emailsData}
             onReply={(emailId) => {
               setComposeMode("reply");
               setIsComposeOpen(true);

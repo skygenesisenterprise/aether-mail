@@ -3,6 +3,9 @@ import { MailController } from "../controllers/mailController.js";
 
 const router: Router = Router();
 
+// Configure mail server
+router.post("/config", MailController.configureMail);
+
 // Test mail server connection
 router.post("/test-connection", MailController.testConnection);
 

@@ -103,11 +103,44 @@ function UnifiedAuthForm() {
       // Set authentication cookie for middleware
       document.cookie = "isAuthenticated=true; path=/; max-age=86400";
 
-      // Show success toast
-      toast({
-        title: "Connexion mail réussie",
-        description: `Connecté à ${data.data.email}`,
-      });
+      // Connecter au serveur mail après l'authentification réussie
+      try {
+        const mailConnection = await mailService.connectMail(
+          data.data.email,
+          password,
+        );
+
+        if (!mailConnection.success) {
+          console.warn("Connexion mail échouée:", mailConnection.error);
+          toast({
+            title: "Attention",
+            description: "Authentification réussie mais connexion mail échouée",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Connexion mail réussie",
+            description: `Connecté à ${data.data.email}`,
+          });
+        }
+      } catch (mailError) {
+        console.error("Erreur lors de la connexion mail:", mailError);
+        toast({
+          title: "Attention",
+          description: "Authentification réussie mais erreur de connexion mail",
+          variant: "destructive",
+        });
+      }
+
+      // Émettre un événement pour notifier que la connexion mail est réussie
+      window.dispatchEvent(
+        new CustomEvent("mailConnected", {
+          detail: {
+            email: data.data.email,
+            userId: data.data.userId,
+          },
+        }),
+      );
 
       // Redirect to intended page immediately
       router.push(redirectUrl);

@@ -227,6 +227,35 @@ export function useEmails({
     fetchEmails(selectedFolder);
   }, [selectedFolder, fetchEmails]);
 
+  // Écouter les événements de connexion mail pour recharger les emails
+  useEffect(() => {
+    const handleMailConnected = () => {
+      console.log("Mail connecté, rechargement des emails...");
+      fetchEmails(selectedFolder);
+    };
+
+    window.addEventListener("mailConnected", handleMailConnected);
+
+    return () => {
+      window.removeEventListener("mailConnected", handleMailConnected);
+    };
+  }, [selectedFolder, fetchEmails]);
+
+  // Vérifier l'état de connexion et recharger si nécessaire
+  useEffect(() => {
+    const checkConnectionAndLoad = () => {
+      const isAuthenticated = localStorage.getItem("isAuthenticated");
+      const mailEmail = localStorage.getItem("mailEmail");
+
+      if (isAuthenticated === "true" && mailEmail) {
+        console.log("Utilisateur authentifié, chargement des emails...");
+        fetchEmails(selectedFolder);
+      }
+    };
+
+    checkConnectionAndLoad();
+  }, [selectedFolder, fetchEmails]);
+
   // Auto-rafraîchissement
   useEffect(() => {
     if (!autoRefresh) return;
