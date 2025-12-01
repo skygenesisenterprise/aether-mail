@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Reply,
   ReplyAll,
@@ -12,7 +12,14 @@ import {
   MailOpen,
   Paperclip,
   X,
+  AlertTriangle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
+import {
+  EnhancedEmailService,
+  type EnhancedEmail,
+} from "../lib/services/enhancedEmailService";
 
 interface Email {
   id: string;
@@ -32,6 +39,9 @@ interface Email {
     size: string;
     type: string;
   }>;
+  rawMime?: string;
+  cc?: string;
+  bcc?: string;
 }
 
 interface EmailViewerProps {
@@ -61,6 +71,30 @@ export default function EmailViewer({
 }: EmailViewerProps) {
   // Utiliser les emails externes si fournis
   const email = emailId ? externalEmails?.[emailId] : null;
+  const [enhancedEmail, setEnhancedEmail] = useState<EnhancedEmail | null>(
+    null,
+  );
+  const [showExternalImages, setShowExternalImages] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Traiter l'email avec le service amélioré
+  useEffect(() => {
+    if (email) {
+      setLoading(true);
+      EnhancedEmailService.processEmailForDisplay(email)
+        .then((processed) => {
+          setEnhancedEmail(processed);
+        })
+        .catch((error) => {
+          console.error("Erreur lors du traitement de l'email:", error);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setEnhancedEmail(null);
+    }
+  }, [email]);
 
   // Debug: afficher le contenu de l'email dans la console
   useEffect(() => {
@@ -133,7 +167,7 @@ export default function EmailViewer({
     }
 
     // S'assurer que le HTML a une structure de base
-    let cleanHtml = html.trim();
+    const cleanHtml = html.trim();
 
     console.log("CleanHtml after trim:", cleanHtml);
 
@@ -173,18 +207,21 @@ export default function EmailViewer({
           <div className="flex items-start justify-between mb-6">
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold text-card-foreground mb-2 leading-tight">
-                {email.subject}
+                {enhancedEmail?.displaySubject || email.subject}
               </h1>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span>
                   De:{" "}
                   <span className="text-gray-300 font-medium">
-                    {email.from}
+                    {enhancedEmail?.displayFrom || email.from}
                   </span>
                 </span>
                 <span>•</span>
                 <span>
-                  À: <span className="text-gray-300">{email.to}</span>
+                  À:{" "}
+                  <span className="text-gray-300">
+                    {enhancedEmail?.displayTo || email.to}
+                  </span>
                 </span>
               </div>
             </div>
@@ -302,7 +339,9 @@ export default function EmailViewer({
               <div className="relative">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
                   <span className="text-lg font-bold text-white">
-                    {email.from.charAt(0).toUpperCase()}
+                    {(enhancedEmail?.displayFrom || email.from)
+                      .charAt(0)
+                      .toUpperCase()}
                   </span>
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800"></div>
@@ -310,14 +349,14 @@ export default function EmailViewer({
               <div>
                 <div className="flex items-center gap-3">
                   <h3 className="font-semibold text-white text-base">
-                    {email.from}
+                    {enhancedEmail?.displayFrom || email.from}
                   </h3>
                   <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full font-medium">
                     {email.fromEmail}
                   </span>
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  À: {email.to}
+                  À: {enhancedEmail?.displayTo || email.to}
                 </div>
               </div>
             </div>
@@ -402,8 +441,63 @@ export default function EmailViewer({
         <div className="p-6 min-h-full">
           {/* Corps du message avec typographie améliorée */}
           <div className="prose prose-invert prose-lg max-w-none">
-            {/* Afficher le preview si disponible et que le body est vide */}
-            {email.preview && (!email.body || email.body.trim() === "") && (
+            {/* Avertissements de sécurité */}
+            {enhancedEmail?.securityWarnings &&
+              enhancedEmail.securityWarnings.length > 0 && (
+                <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle size={16} className="text-yellow-500" />
+                    <span className="text-sm font-medium text-yellow-300">
+                      Avertissements de sécurité
+                    </span>
+                  </div>
+                  <ul className="text-xs text-yellow-200 space-y-1">
+                    {enhancedEmail.securityWarnings.map((warning, index) => (
+                      <li key={index}>• {warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+            {/* Contrôle des images externes */}
+            {enhancedEmail?.hasExternalImages && (
+              <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Eye size={16} className="text-blue-400" />
+                    <span className="text-sm text-blue-300">
+                      Cet email contient des images externes
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowExternalImages(!showExternalImages)}
+                    className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-xs rounded-lg transition-colors"
+                  >
+                    {showExternalImages ? (
+                      <>
+                        <EyeOff size={12} className="inline mr-1" />
+                        Masquer
+                      </>
+                    ) : (
+                      <>
+                        <Eye size={12} className="inline mr-1" />
+                        Afficher
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Afficher le contenu traité */}
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <span className="ml-2 text-muted-foreground">
+                  Traitement de l'email...
+                </span>
+              </div>
+            ) : enhancedEmail ? (
               <div
                 className="text-card-foreground leading-relaxed space-y-4 break-words"
                 style={{
@@ -413,9 +507,63 @@ export default function EmailViewer({
                   fontSize: "14px",
                   lineHeight: "1.6",
                 }}
-              >
-                <p>{email.preview}</p>
-              </div>
+                dangerouslySetInnerHTML={{
+                  __html: showExternalImages
+                    ? enhancedEmail.displayBody
+                    : enhancedEmail.displayBody.replace(
+                        /<img[^>]+src\s*=\s*["'][^"']*["'][^>]*>/gi,
+                        '<div class="bg-muted border border-border rounded p-2 text-center text-muted-foreground text-sm">[Image externe bloquée]</div>',
+                      ),
+                }}
+              />
+            ) : (
+              /* Fallback si le traitement échoue */
+              <>
+                {/* Afficher le preview si disponible et que le body est vide */}
+                {email.preview && (!email.body || email.body.trim() === "") && (
+                  <div
+                    className="text-card-foreground leading-relaxed space-y-4 break-words"
+                    style={{
+                      wordWrap: "break-word",
+                      overflowWrap: "break-word",
+                      whiteSpace: "pre-wrap",
+                      fontSize: "14px",
+                      lineHeight: "1.6",
+                    }}
+                  >
+                    <p>{email.preview}</p>
+                  </div>
+                )}
+
+                {/* Afficher le body s'il existe */}
+                {email.body && email.body.trim() !== "" && (
+                  <div
+                    className="text-card-foreground leading-relaxed space-y-4 break-words"
+                    style={{
+                      wordWrap: "break-word",
+                      overflowWrap: "break-word",
+                      whiteSpace: "pre-wrap",
+                      fontSize: "14px",
+                      lineHeight: "1.6",
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeEmailBody(email.body),
+                    }}
+                  />
+                )}
+
+                {/* Fallback si ni le body ni le preview ne sont disponibles */}
+                {(!email.body || email.body.trim() === "") &&
+                  (!email.preview || email.preview.trim() === "") && (
+                    <div className="text-muted-foreground italic text-center py-8">
+                      <p>Cet email ne contient pas de contenu textuel.</p>
+                      <p className="text-sm mt-2">
+                        Il peut s'agir d'un email avec uniquement des pièces
+                        jointes ou un contenu formaté non pris en charge.
+                      </p>
+                    </div>
+                  )}
+              </>
             )}
 
             {/* Afficher le body s'il existe */}

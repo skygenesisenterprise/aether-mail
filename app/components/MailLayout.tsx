@@ -5,6 +5,7 @@ import Sidebar from "./Sidebar";
 import EmailList from "./EmailList";
 import EmailViewer from "./EmailViewer";
 import Compose from "./Compose";
+import Header from "./Header";
 import { useEmails } from "../hooks/useEmails";
 import type { Email as EmailType } from "../types/email";
 
@@ -169,70 +170,75 @@ export default function MailLayout() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
-      {/* Colonne de gauche : Dossiers */}
-      <Sidebar
-        selectedFolder={selectedFolder}
-        folders={folders}
-        onFolderSelect={(folder) => {
-          setSelectedFolder(folder);
-          setSelectedEmail(undefined); // Réinitialiser l'email sélectionné quand on change de dossier
-        }}
-        onCompose={() => {
-          setComposeMode("new");
-          setIsComposeOpen(true);
-        }}
-      />
+    <div className="flex flex-col h-screen bg-background text-foreground">
+      {/* Header */}
+      <Header />
 
-      {/* Colonne du centre : Liste des emails */}
-      <EmailList
-        selectedEmail={selectedEmail}
-        onEmailSelect={setSelectedEmail}
-        selectedFolder={selectedFolder}
-        onEmailDelete={handleDeleteEmail}
-        onEmailArchive={handleArchiveEmail}
-        onEmailReadToggle={handleToggleRead}
-        onEmailStarToggle={handleEmailStarToggle}
-      />
+      <div className="flex flex-1 overflow-hidden">
+        {/* Colonne de gauche : Dossiers */}
+        <Sidebar
+          selectedFolder={selectedFolder}
+          folders={folders}
+          onFolderSelect={(folder) => {
+            setSelectedFolder(folder);
+            setSelectedEmail(undefined); // Réinitialiser l'email sélectionné quand on change de dossier
+          }}
+          onCompose={() => {
+            setComposeMode("new");
+            setIsComposeOpen(true);
+          }}
+        />
 
-      {/* Colonne de droite : Email Viewer ou Compose */}
-      <div className="flex-1 flex flex-col">
-        {isComposeOpen ? (
-          <Compose
-            isOpen={isComposeOpen}
-            onClose={() => setIsComposeOpen(false)}
-            mode={composeMode}
-            originalEmail={
-              selectedEmail
-                ? (emailsData[selectedEmail] as EmailType)
-                : undefined
-            }
-          />
-        ) : (
-          <EmailViewer
-            emailId={selectedEmail}
-            emails={emailsData}
-            onReply={(emailId) => {
-              setComposeMode("reply");
-              setIsComposeOpen(true);
-            }}
-            onReplyAll={(emailId) => {
-              setComposeMode("replyAll");
-              setIsComposeOpen(true);
-            }}
-            onForward={(emailId) => {
-              setComposeMode("forward");
-              setIsComposeOpen(true);
-            }}
-            onDelete={handleDeleteEmail}
-            onArchive={handleArchiveEmail}
-            onToggleStar={handleEmailStarToggle}
-            onToggleRead={handleEmailReadToggle}
-            onClose={() => {
-              setSelectedEmail(undefined);
-            }}
-          />
-        )}
+        {/* Colonne du centre : Liste des emails */}
+        <EmailList
+          selectedEmail={selectedEmail}
+          onEmailSelect={setSelectedEmail}
+          selectedFolder={selectedFolder}
+          onEmailDelete={handleDeleteEmail}
+          onEmailArchive={handleArchiveEmail}
+          onEmailReadToggle={handleToggleRead}
+          onEmailStarToggle={handleEmailStarToggle}
+        />
+
+        {/* Colonne de droite : Email Viewer ou Compose */}
+        <div className="flex-1 flex flex-col">
+          {isComposeOpen ? (
+            <Compose
+              isOpen={isComposeOpen}
+              onClose={() => setIsComposeOpen(false)}
+              mode={composeMode}
+              originalEmail={
+                selectedEmail
+                  ? (emailsData[selectedEmail] as EmailType)
+                  : undefined
+              }
+            />
+          ) : (
+            <EmailViewer
+              emailId={selectedEmail}
+              emails={emailsData}
+              onReply={(emailId) => {
+                setComposeMode("reply");
+                setIsComposeOpen(true);
+              }}
+              onReplyAll={(emailId) => {
+                setComposeMode("replyAll");
+                setIsComposeOpen(true);
+              }}
+              onForward={(emailId) => {
+                setComposeMode("forward");
+                setIsComposeOpen(true);
+              }}
+              onDelete={handleDeleteEmail}
+              onArchive={handleArchiveEmail}
+              onToggleStar={handleEmailStarToggle}
+              onToggleRead={handleEmailReadToggle}
+              onClose={() => {
+                setSelectedEmail(undefined);
+              }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

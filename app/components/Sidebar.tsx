@@ -9,28 +9,15 @@ import {
   Archive,
   Star,
   Search,
-  Settings,
   Plus,
   ChevronDown,
   ChevronRight,
-  User,
-  Shield,
-  Bell,
-  HelpCircle,
-  LogOut,
-  Monitor,
-  Moon,
-  Sun,
   Folder,
   FolderOpen,
   Edit3,
   X,
-  Github,
-  ExternalLink,
 } from "lucide-react";
-import { useTheme } from "../contexts/ThemeContext";
-import AccountSpace from "./AccountSpace";
-import { useAppVersion } from "../hooks/useAppVersion";
+
 import { useEmails } from "../hooks/useEmails";
 import { mailService } from "../lib/services/mailService";
 
@@ -82,109 +69,13 @@ export default function Sidebar({
       ).length,
     };
   }, [emails]);
-  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
-  const [isAccountSpaceOpen, setIsAccountSpaceOpen] = useState(false);
   const [isCustomFoldersExpanded, setIsCustomFoldersExpanded] = useState(true);
   const [isEditingFolder, setIsEditingFolder] = useState<string | null>(null);
   const [editingFolderName, setEditingFolderName] = useState("");
   const [draggedFolder, setDraggedFolder] = useState<string | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [orderedFolders, setOrderedFolders] = useState<string[]>([]);
-  const { theme, toggleTheme } = useTheme();
-  const { version: appVersion, isLoading: isLoadingVersion } = useAppVersion();
-  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Fermer le menu quand on clique à l'extérieur
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsAccountMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  const getThemeIcon = () => {
-    switch (theme) {
-      case "dark":
-        return Moon;
-      case "light":
-        return Sun;
-      case "system":
-        return Monitor;
-      default:
-        return Moon;
-    }
-  };
-
-  const getThemeLabel = () => {
-    switch (theme) {
-      case "dark":
-        return "Thème sombre";
-      case "light":
-        return "Thème clair";
-      case "system":
-        return "Thème système";
-      default:
-        return "Thème sombre";
-    }
-  };
-
-  const handleLogout = () => {
-    // Déconnecter le service mail
-    mailService.setAuth("", "");
-
-    // Nettoyer le localStorage
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("mailUserId");
-    localStorage.removeItem("mailEmail");
-    localStorage.removeItem("mailServerInfo");
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("idToken");
-    localStorage.removeItem("user");
-    localStorage.removeItem("memberships");
-
-    // Nettoyer les cookies
-    document.cookie =
-      "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie =
-      "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-    // Rediriger vers la page de login
-    router.push("/login");
-  };
-
-  const accountOptions = [
-    {
-      id: "account-space",
-      name: "Espace compte",
-      icon: User,
-      action: () => setIsAccountSpaceOpen(true),
-    },
-    {
-      id: "help",
-      name: "Aide",
-      icon: HelpCircle,
-      action: () => {
-        // Ouvrir la page d'aide dans un nouvel onglet
-        window.open(
-          "https://github.com/skygenesisenterprise/aether-mail#readme",
-          "_blank",
-        );
-      },
-    },
-    {
-      id: "logout",
-      name: "Déconnexion",
-      icon: LogOut,
-      action: handleLogout,
-    },
-  ];
   const systemFolders = [
     {
       id: "inbox",
@@ -217,7 +108,7 @@ export default function Sidebar({
       case "briefcase":
         return Folder; // Temporaire, à remplacer par une icône appropriée
       case "user":
-        return User;
+        return Folder;
       case "star":
         return Star;
       case "tag":
@@ -620,127 +511,6 @@ export default function Sidebar({
           </div>
         )}
       </nav>
-
-      <div className="p-4 border-t border-border relative" ref={menuRef}>
-        {/* Menu déroulant qui s'affiche au-dessus */}
-        {isAccountMenuOpen && (
-          <div className="absolute bottom-full left-4 right-4 mb-2 bg-card border border-border rounded-lg shadow-lg z-50">
-            <div className="p-1">
-              {accountOptions.map((option) => {
-                const Icon = option.icon;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={option.action}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-                      option.id === "logout"
-                        ? "text-destructive hover:bg-destructive/20 hover:text-destructive-foreground"
-                        : option.id === "theme"
-                          ? "text-primary hover:bg-primary/20 hover:text-primary-foreground"
-                          : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
-                    }`}
-                  >
-                    <Icon size={16} />
-                    <span className="text-sm">{option.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={() => setIsAccountMenuOpen(!isAccountMenuOpen)}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-            isAccountMenuOpen
-              ? "bg-muted text-card-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-card-foreground"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <Settings size={18} />
-            <span className="text-sm font-medium">Espace compte</span>
-          </div>
-          <ChevronDown
-            size={16}
-            className={`transition-transform duration-200 ${isAccountMenuOpen ? "rotate-180" : ""}`}
-          />
-        </button>
-      </div>
-
-      {/* Section App Information - en dessous de Espace compte */}
-      <div className="px-4 pb-4">
-        <div className="bg-gradient-to-r from-primary/5 to-muted/30 rounded-lg border border-border/50">
-          <a
-            href="https://github.com/skygenesisenterprise/aether-mail"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50 group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 bg-primary/20 rounded flex items-center justify-center">
-                <Mail size={12} className="text-primary" />
-              </div>
-              <div className="text-left">
-                <h4 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
-                  Aether Mail
-                </h4>
-                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  {isLoadingVersion ? (
-                    <>
-                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                      <span>Chargement...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Version</span>
-                      <span className="font-mono">{appVersion}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Github
-                size={16}
-                className="text-muted-foreground group-hover:text-primary transition-colors"
-              />
-              <ExternalLink
-                size={10}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground group-hover:text-primary"
-              />
-            </div>
-          </a>
-        </div>
-      </div>
-
-      {/* Espace compte modal */}
-      {isAccountSpaceOpen && (
-        <AccountSpace
-          userProfile={{
-            id: "1",
-            name: "Utilisateur",
-            email: "user@example.com",
-            status: "online",
-            role: "Utilisateur",
-            department: "General",
-            location: "France",
-            joinDate: "Aujourd'hui",
-            lastLogin: "Maintenant",
-          }}
-          onProfileUpdate={(profile: any) => {
-            console.log("Profile updated:", profile);
-          }}
-          onLogout={() => {
-            handleLogout();
-            setIsAccountSpaceOpen(false);
-          }}
-          isOpen={isAccountSpaceOpen}
-          onClose={() => setIsAccountSpaceOpen(false)}
-        />
-      )}
     </div>
   );
 }
