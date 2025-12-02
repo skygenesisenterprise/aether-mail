@@ -1,5 +1,6 @@
 import Imap from "node-imap";
 import nodemailer from "nodemailer";
+import { EmailDecoder } from "../utils/emailDecoder.js";
 
 export interface MailConnection {
   imap: Imap;
@@ -232,7 +233,7 @@ export class MailService {
     limit: number = 50,
   ): Promise<any[]> {
     return new Promise((resolve, reject) => {
-      imap.openBox(folder, false, (err: any, box: any) => {
+      imap.openBox(folder, false, async (err: any, box: any) => {
         if (err) {
           reject(err);
           return;
@@ -248,7 +249,7 @@ export class MailService {
           envelope: true,
         });
 
-        fetch.on("message", (msg: any, seqno: any) => {
+        fetch.on("message", async (msg: any, seqno: any) => {
           const email: any = { seqno, folder };
 
           msg.on("body", (stream: any, info: any) => {
@@ -260,7 +261,14 @@ export class MailService {
                 buffer += chunk.toString("ascii");
               });
               stream.once("end", () => {
-                email.headers = Imap.parseHeader(buffer);
+                const headers = Imap.parseHeader(buffer);
+
+                // Décoder les headers avec EmailDecoder
+                email.subject = EmailDecoder.decodeHeader(headers.subject);
+                email.from = EmailDecoder.decodeHeader(headers.from);
+                email.to = EmailDecoder.decodeHeader(headers.to);
+                email.cc = EmailDecoder.decodeHeader(headers.cc);
+                email.headers = headers;
               });
             } else if (info.which === "1") {
               let buffer = "";
@@ -288,15 +296,16 @@ export class MailService {
 
           msg.once("envelope", (envelope: any) => {
             email.envelope = envelope;
-            // Extraire les informations de l'enveloppe
-            if (envelope.from && envelope.from.length > 0) {
+
+            // Utiliser les valeurs décodées si disponibles, sinon utiliser l'enveloppe
+            if (!email.subject && envelope.subject) {
+              email.subject = EmailDecoder.decodeHeader(envelope.subject);
+            }
+            if (!email.from && envelope.from && envelope.from.length > 0) {
               email.from = envelope.from[0];
             }
-            if (envelope.to && envelope.to.length > 0) {
+            if (!email.to && envelope.to && envelope.to.length > 0) {
               email.to = envelope.to;
-            }
-            if (envelope.subject) {
-              email.subject = envelope.subject;
             }
             if (envelope.messageId) {
               email.messageId = envelope.messageId;
@@ -304,6 +313,15 @@ export class MailService {
           });
 
           msg.once("end", () => {
+            // S'assurer que les valeurs par défaut sont définies
+            email.subject = email.subject || "Sans sujet";
+            email.from = email.from || {
+              name: "Expéditeur inconnu",
+              address: "unknown@example.com",
+            };
+            email.to = email.to || "Moi";
+            email.preview = email.preview || "Aperçu non disponible";
+
             emails.push(email);
           });
         });
@@ -320,6 +338,25 @@ export class MailService {
         });
       });
     });
+  }
+
+  /**
+   * Récupère un email complet avec son contenu décodé
+   */
+  static async fetchFullEmail(
+    imap: Imap,
+    uid: number,
+    folder: string = "INBOX",
+  ): Promise<any> {
+    try {
+      return await EmailDecoder.decodeEmailContent(imap, uid, folder);
+    } catch (error) {
+      console.error(
+        "Erreur lors de la récupération de l'email complet:",
+        error,
+      );
+      throw error;
+    }
   }
 
   static async moveEmail(

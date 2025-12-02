@@ -271,6 +271,50 @@ export class MailController {
     }
   }
 
+  static async getEmail(req: Request, res: Response) {
+    try {
+      let userId = req.headers["x-user-id"] as string;
+      const userEmail = req.headers["x-user-email"] as string;
+
+      // Si pas de userId, essayer de le générer depuis l'email
+      if (!userId && userEmail) {
+        userId = Buffer.from(userEmail).toString("base64").replace(/=/g, "");
+      }
+
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { uid } = req.params;
+      const { folder = "INBOX" } = req.query;
+
+      if (!uid) {
+        return res.status(400).json({ error: "UID is required" });
+      }
+
+      const connection = MailService.getConnection(userId);
+      if (!connection) {
+        return res.status(400).json({ error: "No active connection" });
+      }
+
+      const email = await MailService.fetchFullEmail(
+        connection.imap,
+        parseInt(uid),
+        folder as string,
+      );
+
+      res.json({
+        success: true,
+        email,
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: "Failed to fetch email",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
   static async sendEmail(req: Request, res: Response) {
     try {
       let userId = req.headers["x-user-id"] as string;

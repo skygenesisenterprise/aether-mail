@@ -76,6 +76,7 @@ export default function EmailViewer({
   );
   const [showExternalImages, setShowExternalImages] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingFullEmail, setLoadingFullEmail] = useState(false);
 
   // Traiter l'email avec le service amélioré
   useEffect(() => {
@@ -95,6 +96,47 @@ export default function EmailViewer({
       setEnhancedEmail(null);
     }
   }, [email]);
+
+  // Charger le contenu complet de l'email si nécessaire
+  useEffect(() => {
+    if (emailId && email && (!email.body || email.body.trim() === "")) {
+      setLoadingFullEmail(true);
+      import("../lib/services/mailService").then(({ mailService }) => {
+        mailService
+          .fetchEmail(emailId, email.folder || "inbox")
+          .then((result) => {
+            if (result.success && result.data) {
+              // Mettre à jour l'email avec le contenu complet
+              const updatedEmail = { ...email, ...result.data };
+              // Mettre à jour l'email dans la liste externe
+              if (externalEmails) {
+                externalEmails[emailId] = updatedEmail;
+              }
+              // Retraiter l'email avec le nouveau contenu
+              EnhancedEmailService.processEmailForDisplay(updatedEmail)
+                .then((processed) => {
+                  setEnhancedEmail(processed);
+                })
+                .catch((error) => {
+                  console.error(
+                    "Erreur lors du traitement de l'email complet:",
+                    error,
+                  );
+                });
+            }
+          })
+          .catch((error) => {
+            console.error(
+              "Erreur lors du chargement de l'email complet:",
+              error,
+            );
+          })
+          .finally(() => {
+            setLoadingFullEmail(false);
+          });
+      });
+    }
+  }, [emailId, email]);
 
   // Debug: afficher le contenu de l'email dans la console
   useEffect(() => {
@@ -167,15 +209,59 @@ export default function EmailViewer({
     }
 
     // S'assurer que le HTML a une structure de base
-    const cleanHtml = html.trim();
+    let cleanHtml = html.trim();
 
-    console.log("CleanHtml after trim:", cleanHtml);
+    // Corriger les problèmes d'encodage courants
+    cleanHtml = cleanHtml
+      // Corriger les caractères UTF-8 mal encodés
+      .replace(/Ã©/g, "é")
+      .replace(/Ã¨/g, "è")
+      .replace(/Ãª/g, "ê")
+      .replace(/Ã«/g, "ë")
+      .replace(/Ã§/g, "ç")
+      .replace(/Ã /g, "à")
+      .replace(/Ã¢/g, "â")
+      .replace(/Ã´/g, "ô")
+      .replace(/Ã¹/g, "ù")
+      .replace(/Ã»/g, "û")
+      .replace(/Ã®/g, "î")
+      .replace(/Ã¯/g, "ï")
+      .replace(/Ã¤/g, "ä")
+      .replace(/Ã¶/g, "ö")
+      .replace(/Ã¼/g, "ü")
+      .replace(/Ã‡/g, "Ä")
+      .replace(/Ã–/g, "Ö")
+      .replace(/Ãœ/g, "Ü")
+      .replace(/Ã¿/g, "ÿ")
+      // Corriger les caractères spéciaux Windows-1252
+      .replace(/â‚¬/g, "€")
+      .replace(/â€œ/g, '"')
+      .replace(/â€�/g, '"')
+      .replace(/â€™/g, "'")
+      .replace(/â€¦/g, "...")
+      .replace(/â€" /g, "–")
+      .replace(/â€�/g, "—")
+      // Corriger les espaces insécables
+      .replace(/Â /g, " ")
+      .replace(/&nbsp;/g, " ");
+
+    console.log("CleanHtml after encoding fixes:", cleanHtml);
 
     // Si ce n'est pas du HTML, traiter comme du texte brut
     if (!cleanHtml.includes("<") && !cleanHtml.includes(">")) {
       console.log("Treating as plain text");
-      return `<p>${cleanHtml.replace(/\n/g, "<br>")}</p>`;
+      return `<p style="white-space: pre-wrap; font-family: monospace;">${cleanHtml.replace(/\n/g, "<br>")}</p>`;
     }
+
+    // Nettoyer le HTML
+    cleanHtml = cleanHtml
+      // Supprimer les scripts et styles potentiellement dangereux
+      .replace(/<script[^>]*>.*?<\/script>/gi, "")
+      .replace(/<style[^>]*>.*?<\/style>/gi, "")
+      // Améliorer la lisibilité
+      .replace(/<div[^>]*>/gi, '<div style="margin: 8px 0;">')
+      .replace(/<p[^>]*>/gi, '<p style="margin: 8px 0;">')
+      .replace(/<br\s*\/?>/gi, '<br style="line-height: 1.4;">');
 
     console.log("Returning HTML as-is");
     return cleanHtml;
@@ -439,153 +525,45 @@ export default function EmailViewer({
       {/* Contenu de l'email avec design amélioré */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-6 min-h-full">
+          {loadingFullEmail && (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-3 text-muted-foreground">
+                Chargement du contenu complet...
+              </span>
+            </div>
+          )}
           {/* Corps du message avec typographie améliorée */}
-          <div className="prose prose-invert prose-lg max-w-none">
-            {/* Avertissements de sécurité */}
-            {enhancedEmail?.securityWarnings &&
-              enhancedEmail.securityWarnings.length > 0 && (
-                <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle size={16} className="text-yellow-500" />
-                    <span className="text-sm font-medium text-yellow-300">
-                      Avertissements de sécurité
-                    </span>
-                  </div>
-                  <ul className="text-xs text-yellow-200 space-y-1">
-                    {enhancedEmail.securityWarnings.map((warning, index) => (
-                      <li key={index}>• {warning}</li>
-                    ))}
-                  </ul>
+          {!loadingFullEmail && (
+            <div className="prose prose-invert prose-lg max-w-none">
+              {email.body && email.body.trim() !== "" ? (
+                <div
+                  className="text-card-foreground leading-relaxed space-y-4 break-words"
+                  style={{
+                    wordWrap: "break-word",
+                    overflowWrap: "break-word",
+                    whiteSpace: "pre-wrap",
+                    fontSize: "14px",
+                    lineHeight: "1.6",
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeEmailBody(email.body),
+                  }}
+                />
+              ) : email.preview ? (
+                <div
+                  className="text-card-foreground leading-relaxed space-y-4 break-words"
+                  style={{
+                    wordWrap: "break-word",
+                    overflowWrap: "break-word",
+                    whiteSpace: "pre-wrap",
+                    fontSize: "14px",
+                    lineHeight: "1.6",
+                  }}
+                >
+                  <p>{email.preview}</p>
                 </div>
-              )}
-
-            {/* Contrôle des images externes */}
-            {enhancedEmail?.hasExternalImages && (
-              <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Eye size={16} className="text-blue-400" />
-                    <span className="text-sm text-blue-300">
-                      Cet email contient des images externes
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setShowExternalImages(!showExternalImages)}
-                    className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-xs rounded-lg transition-colors"
-                  >
-                    {showExternalImages ? (
-                      <>
-                        <EyeOff size={12} className="inline mr-1" />
-                        Masquer
-                      </>
-                    ) : (
-                      <>
-                        <Eye size={12} className="inline mr-1" />
-                        Afficher
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Afficher le contenu traité */}
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                <span className="ml-2 text-muted-foreground">
-                  Traitement de l'email...
-                </span>
-              </div>
-            ) : enhancedEmail ? (
-              <div
-                className="text-card-foreground leading-relaxed space-y-4 break-words"
-                style={{
-                  wordWrap: "break-word",
-                  overflowWrap: "break-word",
-                  whiteSpace: "pre-wrap",
-                  fontSize: "14px",
-                  lineHeight: "1.6",
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: showExternalImages
-                    ? enhancedEmail.displayBody
-                    : enhancedEmail.displayBody.replace(
-                        /<img[^>]+src\s*=\s*["'][^"']*["'][^>]*>/gi,
-                        '<div class="bg-muted border border-border rounded p-2 text-center text-muted-foreground text-sm">[Image externe bloquée]</div>',
-                      ),
-                }}
-              />
-            ) : (
-              /* Fallback si le traitement échoue */
-              <>
-                {/* Afficher le preview si disponible et que le body est vide */}
-                {email.preview && (!email.body || email.body.trim() === "") && (
-                  <div
-                    className="text-card-foreground leading-relaxed space-y-4 break-words"
-                    style={{
-                      wordWrap: "break-word",
-                      overflowWrap: "break-word",
-                      whiteSpace: "pre-wrap",
-                      fontSize: "14px",
-                      lineHeight: "1.6",
-                    }}
-                  >
-                    <p>{email.preview}</p>
-                  </div>
-                )}
-
-                {/* Afficher le body s'il existe */}
-                {email.body && email.body.trim() !== "" && (
-                  <div
-                    className="text-card-foreground leading-relaxed space-y-4 break-words"
-                    style={{
-                      wordWrap: "break-word",
-                      overflowWrap: "break-word",
-                      whiteSpace: "pre-wrap",
-                      fontSize: "14px",
-                      lineHeight: "1.6",
-                    }}
-                    dangerouslySetInnerHTML={{
-                      __html: sanitizeEmailBody(email.body),
-                    }}
-                  />
-                )}
-
-                {/* Fallback si ni le body ni le preview ne sont disponibles */}
-                {(!email.body || email.body.trim() === "") &&
-                  (!email.preview || email.preview.trim() === "") && (
-                    <div className="text-muted-foreground italic text-center py-8">
-                      <p>Cet email ne contient pas de contenu textuel.</p>
-                      <p className="text-sm mt-2">
-                        Il peut s'agir d'un email avec uniquement des pièces
-                        jointes ou un contenu formaté non pris en charge.
-                      </p>
-                    </div>
-                  )}
-              </>
-            )}
-
-            {/* Afficher le body s'il existe */}
-            {email.body && email.body.trim() !== "" && (
-              <div
-                className="text-card-foreground leading-relaxed space-y-4 break-words"
-                style={{
-                  wordWrap: "break-word",
-                  overflowWrap: "break-word",
-                  whiteSpace: "pre-wrap",
-                  fontSize: "14px",
-                  lineHeight: "1.6",
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: sanitizeEmailBody(email.body),
-                }}
-              />
-            )}
-
-            {/* Fallback si ni le body ni le preview ne sont disponibles */}
-            {(!email.body || email.body.trim() === "") &&
-              (!email.preview || email.preview.trim() === "") && (
+              ) : (
                 <div className="text-muted-foreground italic text-center py-8">
                   <p>Cet email ne contient pas de contenu textuel.</p>
                   <p className="text-sm mt-2">
@@ -594,7 +572,115 @@ export default function EmailViewer({
                   </p>
                 </div>
               )}
-          </div>
+            </div>
+          )}
+
+          {/* Contrôle des images externes */}
+          {enhancedEmail?.hasExternalImages && (
+            <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Eye size={16} className="text-blue-400" />
+                  <span className="text-sm text-blue-300">
+                    Cet email contient des images externes
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowExternalImages(!showExternalImages)}
+                  className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-xs rounded-lg transition-colors"
+                >
+                  {showExternalImages ? (
+                    <>
+                      <EyeOff size={12} className="inline mr-1" />
+                      Masquer
+                    </>
+                  ) : (
+                    <>
+                      <Eye size={12} className="inline mr-1" />
+                      Afficher
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Afficher le contenu traité */}
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-2 text-muted-foreground">
+                Traitement de l'email...
+              </span>
+            </div>
+          ) : enhancedEmail ? (
+            <div
+              className="text-card-foreground leading-relaxed space-y-4 break-words"
+              style={{
+                wordWrap: "break-word",
+                overflowWrap: "break-word",
+                whiteSpace: "pre-wrap",
+                fontSize: "14px",
+                lineHeight: "1.6",
+              }}
+              dangerouslySetInnerHTML={{
+                __html: showExternalImages
+                  ? enhancedEmail.displayBody
+                  : enhancedEmail.displayBody.replace(
+                      /<img[^>]+src\s*=\s*["'][^"']*["'][^>]*>/gi,
+                      '<div class="bg-muted border border-border rounded p-2 text-center text-muted-foreground text-sm">[Image externe bloquée]</div>',
+                    ),
+              }}
+            />
+          ) : (
+            /* Fallback si le traitement échoue */
+            <>
+              {/* Afficher le preview si disponible et que le body est vide */}
+              {email.preview && (!email.body || email.body.trim() === "") && (
+                <div
+                  className="text-card-foreground leading-relaxed space-y-4 break-words"
+                  style={{
+                    wordWrap: "break-word",
+                    overflowWrap: "break-word",
+                    whiteSpace: "pre-wrap",
+                    fontSize: "14px",
+                    lineHeight: "1.6",
+                  }}
+                >
+                  <p>{email.preview}</p>
+                </div>
+              )}
+
+              {/* Afficher le body s'il existe */}
+              {email.body && email.body.trim() !== "" && (
+                <div
+                  className="text-card-foreground leading-relaxed space-y-4 break-words"
+                  style={{
+                    wordWrap: "break-word",
+                    overflowWrap: "break-word",
+                    whiteSpace: "pre-wrap",
+                    fontSize: "14px",
+                    lineHeight: "1.6",
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeEmailBody(email.body),
+                  }}
+                />
+              )}
+
+              {/* Fallback si ni le body ni le preview ne sont disponibles */}
+              {(!email.body || email.body.trim() === "") &&
+                (!email.preview || email.preview.trim() === "") && (
+                  <div className="text-muted-foreground italic text-center py-8">
+                    <p>Cet email ne contient pas de contenu textuel.</p>
+                    <p className="text-sm mt-2">
+                      Il peut s'agir d'un email avec uniquement des pièces
+                      jointes ou un contenu formaté non pris en charge.
+                    </p>
+                  </div>
+                )}
+            </>
+          )}
         </div>
       </div>
     </div>

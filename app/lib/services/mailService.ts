@@ -144,65 +144,41 @@ class MailService {
             const headers = email.headers || {};
             const attributes = email.attributes || {};
 
-            // Parser l'expéditeur depuis headers.from ou envelope
+            // L'expéditeur est déjà décodé par le backend
             let fromName = "Inconnu";
             let fromEmailAddress = "inconnu@example.com";
 
-            // Essayer d'abord depuis l'envelope (plus fiable)
-            if (email.envelope?.from && email.envelope.from.length > 0) {
-              const from = email.envelope.from[0];
-              fromName = from.name || from.mailbox || "Inconnu";
-              fromEmailAddress = from.host
-                ? `${from.mailbox}@${from.host}`
-                : from.mailbox || "inconnu@example.com";
-            }
-            // Fallback sur headers.from
-            else if (headers.from) {
-              const fromString = Array.isArray(headers.from)
-                ? headers.from[0]
-                : headers.from;
-              if (typeof fromString === "string") {
-                const fromMatch = fromString.match(/^(.+?)\s*<(.+?)>$/);
+            if (email.from) {
+              if (
+                typeof email.from === "object" &&
+                email.from.name &&
+                email.from.address
+              ) {
+                fromName = email.from.name;
+                fromEmailAddress = email.from.address;
+              } else if (typeof email.from === "string") {
+                const fromMatch = email.from.match(/^(.+?)\s*<(.+?)>$/);
                 if (fromMatch) {
                   fromName = fromMatch[1].trim().replace(/"/g, "");
                   fromEmailAddress = fromMatch[2];
-                } else if (fromString.includes("<")) {
+                } else if (email.from.includes("<")) {
                   fromEmailAddress =
-                    fromString.match(/<(.+?)>/)?.[1] || fromString;
+                    email.from.match(/<(.+?)>/)?.[1] || email.from;
                   fromName = fromEmailAddress.split("@")[0];
                 } else {
-                  fromName = fromString;
-                  fromEmailAddress = fromString.includes("@")
-                    ? fromString
-                    : `${fromString}@example.com`;
+                  fromName = email.from;
+                  fromEmailAddress = email.from.includes("@")
+                    ? email.from
+                    : `${email.from}@example.com`;
                 }
               }
             }
 
-            // Parser le sujet depuis headers.subject ou envelope
-            let subject = "Sans sujet";
-            if (headers.subject) {
-              const subjectArray = Array.isArray(headers.subject)
-                ? headers.subject
-                : [headers.subject];
-              subject = subjectArray[0] || "Sans sujet";
-            } else if (email.envelope?.subject) {
-              subject = email.envelope.subject;
-            }
+            // Le sujet est déjà décodé par le backend
+            let subject = email.subject || "Sans sujet";
 
-            // Parser le destinataire depuis headers.to ou envelope
-            let to = "Moi";
-            if (email.envelope?.to && email.envelope.to.length > 0) {
-              const recipient = email.envelope.to[0];
-              to = recipient.host
-                ? `${recipient.mailbox}@${recipient.host}`
-                : recipient.mailbox || "Moi";
-            } else if (headers.to) {
-              const toString = Array.isArray(headers.to)
-                ? headers.to[0]
-                : headers.to;
-              to = typeof toString === "string" ? toString : "Moi";
-            }
+            // Le destinataire est déjà décodé par le backend
+            let to = email.to || "Moi";
 
             // Déterminer les flags depuis le tableau flags
             const flags = Array.isArray(email.flags) ? email.flags : [];
@@ -214,38 +190,8 @@ class MailService {
               (email.attachments && email.attachments.length > 0) ||
               false;
 
-            // Utiliser preview du backend ou générer un aperçu
-            let preview = email.preview || "";
-            if (preview) {
-              // Décoder le quoted-printable si nécessaire
-              if (preview.includes("=")) {
-                try {
-                  // Simple quoted-printable decode pour les caractères de base
-                  preview = preview.replace(
-                    /=([0-9A-F]{2})/g,
-                    (match: string, hex: string) => {
-                      return String.fromCharCode(parseInt(hex, 16));
-                    },
-                  );
-                  // Nettoyer les caractères spéciaux
-                  preview = preview
-                    .replace(/=C3=A9/g, "é")
-                    .replace(/=C3=A8/g, "è")
-                    .replace(/=C3=A7/g, "ç")
-                    .replace(/=C3=B4/g, "ô")
-                    .replace(/=C3=AA/g, "ê")
-                    .replace(/=C3=AE/g, "®")
-                    .replace(/=E2=80=99/g, "'")
-                    .replace(/=E2=80=9C/g, "")
-                    .replace(/=E2=80=9D/g, "")
-                    .replace(/=C2=A0/g, " ");
-                } catch (e) {
-                  console.warn("Erreur lors du décodage du preview:", e);
-                }
-              }
-            } else {
-              preview = "Aperçu non disponible";
-            }
+            // Utiliser preview du backend (déjà décodé)
+            let preview = email.preview || "Aperçu non disponible";
 
             // Obtenir une date valide pour le tri
             let validDate = new Date();
@@ -479,6 +425,94 @@ class MailService {
         return {
           success: false,
           error: result.error || "Erreur lors de l'envoi",
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Erreur réseau",
+      };
+    }
+  }
+
+  // Récupérer un email complet avec son contenu
+  async fetchEmail(
+    emailId: string,
+    folder: string = "inbox",
+  ): Promise<MailServiceResponse<Email>> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/mail/emails/${emailId}?folder=${folder}`,
+        {
+          method: "GET",
+          headers: this.getAuthHeaders(),
+        },
+      );
+
+      // Vérifier si la réponse est du JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        if (text.includes("<!DOCTYPE") || text.includes("<html")) {
+          return {
+            success: false,
+            error:
+              "Le serveur retourne du HTML au lieu de JSON. Le backend est-il démarré ?",
+          };
+        }
+        return {
+          success: false,
+          error: `Réponse invalide du serveur: ${text.substring(0, 100)}...`,
+        };
+      }
+
+      const result = await response.json();
+
+      if (response.ok) {
+        const emailData = result.email;
+        if (!emailData) {
+          return {
+            success: false,
+            error: "Email non trouvé",
+          };
+        }
+
+        // Transformer les données du serveur en format Email
+        const email: Email = {
+          id: emailId,
+          from:
+            typeof emailData.from === "object"
+              ? emailData.from.name || "Inconnu"
+              : emailData.from || "Inconnu",
+          fromEmail:
+            typeof emailData.from === "object"
+              ? emailData.from.address || "inconnu@example.com"
+              : emailData.from?.includes("@")
+                ? emailData.from
+                : "inconnu@example.com",
+          to: Array.isArray(emailData.to)
+            ? emailData.to
+                .map((t: any) => (typeof t === "object" ? t.address || t : t))
+                .join(", ")
+            : typeof emailData.to === "object"
+              ? emailData.to.address || "Moi"
+              : emailData.to || "Moi",
+          subject: emailData.subject || "Sans sujet",
+          body: emailData.html || emailData.text || "",
+          preview: emailData.preview || "Aperçu non disponible",
+          date: this.formatDate(emailData.date || new Date()),
+          isRead: emailData.flags?.includes("\\Seen") || false,
+          isStarred: emailData.flags?.includes("\\Flagged") || false,
+          hasAttachment: emailData.hasAttachment || false,
+          folder: emailData.folder || folder,
+          attachments: emailData.attachments || [],
+        };
+
+        return { success: true, data: email };
+      } else {
+        return {
+          success: false,
+          error: result.error || "Erreur lors de la récupération de l'email",
         };
       }
     } catch (error) {

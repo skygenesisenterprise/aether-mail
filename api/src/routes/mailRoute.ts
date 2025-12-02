@@ -21,6 +21,9 @@ router.get("/folders", MailController.getFolders);
 // Get emails from folder
 router.get("/emails", MailController.getEmails);
 
+// Get single email with full content
+router.get("/emails/:uid", MailController.getEmail);
+
 // Send email
 router.post("/send", MailController.sendEmail);
 
