@@ -175,7 +175,7 @@ export default function MailLayout() {
       <Header />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Colonne de gauche : Dossiers */}
+        {/* Colonne de gauche : App Switcher + Dossiers */}
         <Sidebar
           selectedFolder={selectedFolder}
           folders={folders}

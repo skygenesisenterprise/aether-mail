@@ -14,11 +14,15 @@ export class MailConfigService {
       return domainConfig;
     }
 
-    // Vérifier les domaines Sky Genesis Enterprise
+    // Vérifier les domaines Sky Genesis Enterprise et o2switch
     if (
       domain.includes("skygenesisenterprise.com") ||
-      domain.includes("radis.o2switch.net")
+      domain.includes("radis.o2switch.net") ||
+      domain.includes("o2switch.net")
     ) {
+      // Configuration spécifique pour o2switch avec des timeouts plus longs
+      const isO2Switch = domain.includes("o2switch.net");
+
       return {
         imap: {
           host:
@@ -30,6 +34,9 @@ export class MailConfigService {
           tls: process.env.SKYGENESISENTERPRISE_COM_IMAP_TLS === "true",
           user: email,
           password: "", // Sera rempli plus tard
+          // Timeouts plus longs pour o2switch (serveurs mutualisés plus lents)
+          connTimeout: isO2Switch ? 45000 : 30000, // 45s pour o2switch, 30s par défaut
+          authTimeout: isO2Switch ? 45000 : 30000, // 45s pour o2switch, 30s par défaut
         },
         smtp: {
           host:

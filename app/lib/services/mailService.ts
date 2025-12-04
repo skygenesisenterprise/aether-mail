@@ -175,10 +175,10 @@ class MailService {
             }
 
             // Le sujet est déjà décodé par le backend
-            let subject = email.subject || "Sans sujet";
+            const subject = email.subject || "Sans sujet";
 
             // Le destinataire est déjà décodé par le backend
-            let to = email.to || "Moi";
+            const to = email.to || "Moi";
 
             // Déterminer les flags depuis le tableau flags
             const flags = Array.isArray(email.flags) ? email.flags : [];
@@ -191,7 +191,7 @@ class MailService {
               false;
 
             // Utiliser preview du backend (déjà décodé)
-            let preview = email.preview || "Aperçu non disponible";
+            const preview = email.preview || "Aperçu non disponible";
 
             // Obtenir une date valide pour le tri
             let validDate = new Date();

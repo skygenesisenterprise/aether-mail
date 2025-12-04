@@ -14,6 +14,8 @@ export interface MailServerConfig {
     tls: boolean;
     user: string;
     password: string;
+    connTimeout?: number;
+    authTimeout?: number;
   };
   smtp: {
     host: string;
@@ -39,6 +41,8 @@ export class MailService {
         tls: config.imap.tls,
         user: config.imap.user,
         password: config.imap.password,
+        connTimeout: config.imap.connTimeout || 30000, // 30s pour la connexion
+        authTimeout: config.imap.authTimeout || 30000, // 30s pour l'authentification
         tlsOptions: {
           rejectUnauthorized: false,
         },
@@ -97,7 +101,7 @@ export class MailService {
 
   static async testImapConnection(
     config: MailServerConfig["imap"],
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; error?: string; details?: any }> {
     // Connexion IMAP réelle pour production
     console.log(
       `Testing IMAP connection to ${config.host}:${config.port} for user ${config.user}`,
@@ -110,6 +114,8 @@ export class MailService {
         tls: config.tls,
         user: config.user,
         password: config.password,
+        connTimeout: config.connTimeout || 30000, // 30s pour la connexion
+        authTimeout: config.authTimeout || 30000, // 30s pour l'authentification
         tlsOptions: {
           rejectUnauthorized: false,
           // Pour Sky Genesis Enterprise, ignorer les erreurs de certificat en développement
@@ -117,15 +123,42 @@ export class MailService {
         },
       });
 
+      const timeout = setTimeout(() => {
+        imap.end();
+        resolve({
+          success: false,
+          error: "Connection timeout",
+          details: {
+            host: config.host,
+            port: config.port,
+            user: config.user,
+            connTimeout: config.connTimeout || 30000,
+            authTimeout: config.authTimeout || 30000,
+          },
+        });
+      }, 60000); // 60s timeout global
+
       imap.once("ready", () => {
+        clearTimeout(timeout);
         console.log(`IMAP connection to ${config.host} successful`);
         imap.end();
-        resolve(true);
+        resolve({ success: true });
       });
 
       imap.once("error", (err: Error) => {
+        clearTimeout(timeout);
         console.error(`IMAP connection to ${config.host} failed:`, err.message);
-        resolve(false);
+        resolve({
+          success: false,
+          error: err.message,
+          details: {
+            host: config.host,
+            port: config.port,
+            user: config.user,
+            source: err.name,
+            code: (err as any).code,
+          },
+        });
       });
 
       imap.connect();

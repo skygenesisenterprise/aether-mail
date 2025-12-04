@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       setToken(null);
       setIsLoading(false);
-      router.push('/auth/login');
+      router.push('/login');
     }
   };
 

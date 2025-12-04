@@ -55,15 +55,26 @@ export class MailController {
         smtp: smtpConfig || serverConfig.smtp,
       };
 
-      const [imapOk, smtpOk] = await Promise.all([
+      const [imapResult, smtpResult] = await Promise.all([
         MailService.testImapConnection(config.imap),
         MailService.testSmtpConnection(config.smtp),
       ]);
+
+      const imapOk =
+        typeof imapResult === "boolean"
+          ? imapResult
+          : (imapResult as any).success;
+      const smtpOk =
+        typeof smtpResult === "boolean"
+          ? smtpResult
+          : (smtpResult as any).success;
 
       res.json({
         success: imapOk && smtpOk,
         imap: imapOk,
         smtp: smtpOk,
+        imapDetails: typeof imapResult === "object" ? imapResult : undefined,
+        smtpDetails: typeof smtpResult === "object" ? smtpResult : undefined,
         message:
           imapOk && smtpOk
             ? "Connection successful"
@@ -119,14 +130,20 @@ export class MailController {
       };
 
       // Tester la connexion IMAP
-      const imapConnected = await MailService.testImapConnection(
-        fullConfig.imap,
-      );
+      const imapResult = await MailService.testImapConnection(fullConfig.imap);
+
+      const imapConnected =
+        typeof imapResult === "boolean"
+          ? imapResult
+          : (imapResult as any).success;
 
       if (!imapConnected) {
+        const errorDetails =
+          typeof imapResult === "object" ? imapResult : undefined;
         return res.status(401).json({
           success: false,
           error: "IMAP authentication failed. Check your credentials.",
+          details: errorDetails,
         });
       }
 

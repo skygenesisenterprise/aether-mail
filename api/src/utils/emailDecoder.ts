@@ -13,24 +13,24 @@ export class EmailDecoder {
 
     // Si c'est déjà une chaîne
     if (typeof header === "string") {
-      return this.decodeEncodedWords(header);
+      return EmailDecoder.decodeEncodedWords(header);
     }
 
     // Si c'est un tableau
     if (Array.isArray(header)) {
-      return header.map((h) => this.decodeHeader(h)).join(", ");
+      return header.map((h) => EmailDecoder.decodeHeader(h)).join(", ");
     }
 
     // Si c'est un objet (ex: { address: 'email@example.com', name: 'Name' })
     if (typeof header === "object" && header !== null) {
       if (header.name && header.address) {
-        return `${this.decodeEncodedWords(header.name)} <${header.address}>`;
+        return `${EmailDecoder.decodeEncodedWords(header.name)} <${header.address}>`;
       }
       if (header.address) {
         return header.address;
       }
       if (header.name) {
-        return this.decodeEncodedWords(header.name);
+        return EmailDecoder.decodeEncodedWords(header.name);
       }
     }
 
@@ -51,7 +51,7 @@ export class EmailDecoder {
       (match, charset, encoding, encodedText) => {
         try {
           // Normaliser le charset
-          const normalizedCharset = this.normalizeCharset(charset);
+          const normalizedCharset = EmailDecoder.normalizeCharset(charset);
 
           // Décoder le texte
           let decodedText: string;
@@ -61,7 +61,7 @@ export class EmailDecoder {
             decodedText = Buffer.from(encodedText, "base64").toString("latin1");
           } else {
             // Quoted-Printable
-            decodedText = this.decodeQuotedPrintable(encodedText);
+            decodedText = EmailDecoder.decodeQuotedPrintable(encodedText);
           }
 
           // Convertir le charset si nécessaire
@@ -69,7 +69,7 @@ export class EmailDecoder {
             try {
               // Convertir en buffer puis décoder avec le bon charset
               const buffer = Buffer.from(decodedText, "latin1");
-              return buffer.toString(normalizedCharset);
+              return buffer.toString(normalizedCharset as BufferEncoding);
             } catch (error) {
               console.warn(
                 `Erreur de conversion de charset ${normalizedCharset}:`,
@@ -174,11 +174,11 @@ export class EmailDecoder {
                     const parsed = await simpleParser(buffer);
 
                     // Extraire les informations décodées
-                    email.subject = this.decodeHeader(parsed.subject);
-                    email.from = this.decodeHeader(parsed.from);
-                    email.to = this.decodeHeader(parsed.to);
-                    email.cc = this.decodeHeader(parsed.cc);
-                    email.bcc = this.decodeHeader(parsed.bcc);
+                    email.subject = EmailDecoder.decodeHeader(parsed.subject);
+                    email.from = EmailDecoder.decodeHeader(parsed.from);
+                    email.to = EmailDecoder.decodeHeader(parsed.to);
+                    email.cc = EmailDecoder.decodeHeader(parsed.cc);
+                    email.bcc = EmailDecoder.decodeHeader(parsed.bcc);
                     email.date = parsed.date || new Date();
                     email.messageId = parsed.messageId;
 
@@ -205,7 +205,7 @@ export class EmailDecoder {
                       parseError,
                     );
                     // Fallback: parsing manuel
-                    this.fallbackParsing(buffer, email);
+                    EmailDecoder.fallbackParsing(buffer, email);
                     resolve(email);
                   }
                 });
@@ -258,13 +258,13 @@ export class EmailDecoder {
 
           switch (headerName) {
             case "subject":
-              email.subject = this.decodeHeader(headerValue);
+              email.subject = EmailDecoder.decodeHeader(headerValue);
               break;
             case "from":
-              email.from = this.decodeHeader(headerValue);
+              email.from = EmailDecoder.decodeHeader(headerValue);
               break;
             case "to":
-              email.to = this.decodeHeader(headerValue);
+              email.to = EmailDecoder.decodeHeader(headerValue);
               break;
             case "date":
               email.date = new Date(headerValue);

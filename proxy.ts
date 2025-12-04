@@ -4,8 +4,13 @@ import type { NextRequest } from "next/server";
 // Routes publiques qui ne nécessitent pas d'authentification
 const publicRoutes = ["/login", "/register"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Désactiver l'authentification en développement
+  if (process.env.NODE_ENV === "development") {
+    return NextResponse.next();
+  }
 
   // Si l'utilisateur est sur une route publique, le laisser passer sans vérification
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
@@ -16,7 +21,7 @@ export function middleware(request: NextRequest) {
   const authCookie = request.cookies.get("auth-token");
   const isAuthenticated = request.cookies.get("isAuthenticated")?.value;
 
-  // Si pas d'authentification trouvée, rediriger vers login
+  // Si pas d'authentification trouvée, rediriger vers login avec l'URL originale comme paramètre
   if (!authCookie && isAuthenticated !== "true") {
     // Rediriger vers login avec l'URL originale comme paramètre
     const loginUrl = new URL("/login", request.url);
