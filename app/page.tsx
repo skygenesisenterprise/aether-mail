@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import MailLayout from "./components/MailLayout";
 
 // Cette fonction s'exécute côté serveur
 function checkServerAuth() {
@@ -15,6 +14,6 @@ export default function Home() {
     redirect("/login");
   }
 
-  // Si authentifié, afficher l'interface mail
-  return <MailLayout />;
+  // Si authentifié, rediriger vers la boîte de réception
+  redirect("/inbox");
 }

@@ -37,12 +37,14 @@ interface AdvancedSearchProps {
   onSearch: (query: string, filters: SearchFilter[]) => void;
   placeholder?: string;
   className?: string;
+  compact?: boolean;
 }
 
 export default function AdvancedSearch({
   onSearch,
   placeholder = "Rechercher des emails, dossiers, contacts...",
   className = "",
+  compact = false,
 }: AdvancedSearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);

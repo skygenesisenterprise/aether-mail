@@ -15,8 +15,8 @@ import {
   Search,
   AlertCircle,
   RefreshCw,
+  Filter,
 } from "lucide-react";
-import AdvancedSearch from "./AdvancedSearch";
 import {
   useAdvancedSearch,
   type SearchFilter,
@@ -70,11 +70,24 @@ export default function EmailList({
   );
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { query, filters, search, clearSearch } = useAdvancedSearch({
+  const {
+    query,
+    filters,
+    search: searchHook,
+    clearSearch,
+  } = useAdvancedSearch({
     maxHistoryItems: 10,
     enableHistory: true,
     enableSuggestions: true,
   });
+
+  // Wrapper pour la fonction search du hook
+  const handleSearch = useCallback(
+    async (searchQuery: string, searchFilters: any[]) => {
+      await searchHook(searchQuery, searchFilters);
+    },
+    [searchHook],
+  );
 
   // Utiliser le hook useEmails pour charger les vrais emails depuis le serveur
   const {
@@ -428,18 +441,30 @@ export default function EmailList({
             >
               <Check size={16} />
             </button>
+            <button
+              onClick={() => {
+                // Ouvrir le panneau de recherche avancée
+                // TODO: Implémenter le panneau de recherche avancée
+              }}
+              className={`p-2 rounded-lg transition-colors ${
+                filters.length > 0
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+              title="Filtres avancés"
+            >
+              <Filter size={16} />
+              {filters.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                  {filters.length}
+                </span>
+              )}
+            </button>
             <button className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground">
               <MoreVertical size={16} />
             </button>
           </div>
         </div>
-
-        {/* Barre de recherche avancée */}
-        <AdvancedSearch
-          onSearch={search}
-          placeholder="Rechercher des emails, dossiers, contacts..."
-          className="mb-3"
-        />
 
         {/* Actions rapides améliorées */}
         {isSelectionMode && selectedEmails.length > 0 && (

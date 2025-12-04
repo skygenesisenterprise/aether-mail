@@ -106,7 +106,7 @@ export default function Compose({
           ]);
           setSubject(`Re: ${originalEmail.subject}`);
           setBody(
-            `\n\n---\nLe ${originalEmail.date}, ${originalEmail.from} <${originalEmail.fromEmail}> a écrit :\n${originalEmail.body.replace(/<[^>]*>/g, "")}`,
+            `\n\n---\nLe ${originalEmail.date}, ${originalEmail.from} <${originalEmail.fromEmail}> a écrit :\n${originalEmail.body}`,
           );
           break;
         case "replyAll":
@@ -116,10 +116,15 @@ export default function Compose({
               email: originalEmail.fromEmail,
               name: originalEmail.from,
             },
+            ...originalEmail.to.split(",").map((email) => ({
+              id: `reply-all-${email.trim()}`,
+              email: email.trim(),
+              name: email.trim(),
+            })),
           ]);
           setSubject(`Re: ${originalEmail.subject}`);
           setBody(
-            `\n\n---\nLe ${originalEmail.date}, ${originalEmail.from} <${originalEmail.fromEmail}> a écrit :\n${originalEmail.body.replace(/<[^>]*>/g, "")}`,
+            `\n\n---\nLe ${originalEmail.date}, ${originalEmail.from} <${originalEmail.fromEmail}> a écrit :\n${originalEmail.body}`,
           );
           setShowCc(true);
           break;
@@ -127,7 +132,7 @@ export default function Compose({
           setTo([]);
           setSubject(`Fwd: ${originalEmail.subject}`);
           setBody(
-            `\n\n--- Message transféré ---\nDe: ${originalEmail.from} <${originalEmail.fromEmail}>\nDate: ${originalEmail.date}\nObjet: ${originalEmail.subject}\n\n${originalEmail.body.replace(/<[^>]*>/g, "")}`,
+            `\n\n--- Message transféré ---\nDe: ${originalEmail.from} <${originalEmail.fromEmail}>\nDate: ${originalEmail.date}\nObjet: ${originalEmail.subject}\n\n${originalEmail.body}`,
           );
           break;
       }

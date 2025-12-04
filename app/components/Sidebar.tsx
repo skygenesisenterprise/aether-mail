@@ -7,7 +7,6 @@ import {
   Trash2,
   Archive,
   Star,
-  Search,
   Plus,
   ChevronDown,
   ChevronRight,
@@ -196,23 +195,9 @@ export default function Sidebar({
           </button>
         </div>
 
-        <div className="px-4 pt-4 pb-4">
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Rechercher..."
-              className="w-full bg-muted text-card-foreground rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary placeholder-muted-foreground"
-            />
-          </div>
-        </div>
-
-        <nav className="flex-1 px-2">
+        <nav className="flex-1 px-2 pt-4">
           {/* Dossiers système */}
-          <div className="mb-4">
+          <div className="mb-6">
             {systemFolders.map((folder) => {
               const Icon = folder.icon;
               const isActive = selectedFolder === folder.id;

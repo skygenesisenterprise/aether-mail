@@ -1,25 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { mailService } from "../lib/services/mailService";
-
-export interface Email {
-  id: string;
-  from: string;
-  fromEmail: string;
-  to: string;
-  subject: string;
-  body: string;
-  preview: string;
-  date: string;
-  isRead: boolean;
-  isStarred: boolean;
-  hasAttachment: boolean;
-  folder: string;
-  attachments?: Array<{
-    name: string;
-    size: string;
-    type: string;
-  }>;
-}
+import type { Email } from "../types/email";
 
 export interface UseEmailsOptions {
   folder?: string;
