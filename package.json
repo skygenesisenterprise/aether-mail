@@ -121,7 +121,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.2",
+    "@biomejs/biome": "2.3.8",
     "@chromatic-com/storybook": "^3.2.7",
     "@eslint/js": "^9.39.1",
     "@prisma/client": "6.16.1",
