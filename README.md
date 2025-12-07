@@ -39,8 +39,6 @@ Tired of clunky, outdated email clients? **Aether Mail** is here to revolutioniz
 
 ## 🎬 Quick Preview
 
-<div align="center">
-
 ### 📧 Modern Email Management
 
 ```bash
@@ -50,8 +48,6 @@ cd aether-mail && pnpm install && pnpm dev
 ```
 
 **Visit http://localhost:4000 and transform your email workflow!**
-
-</div>
 
 ---
 
