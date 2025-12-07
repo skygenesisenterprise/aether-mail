@@ -1,7 +1,6 @@
 "use client";
 
-import type React from "react";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -32,6 +31,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useTheme } from "../contexts/ThemeContext";
+import { useAuth } from "../context/JwtAuthContext";
 import { useAppVersion } from "../hooks/useAppVersion";
 import { useGlobalShortcuts } from "../hooks/useKeyboardShortcuts";
 import AccountSpace from "./AccountSpace";
@@ -56,9 +56,47 @@ export default function Header({
   const [isAccountSpaceOpen, setIsAccountSpaceOpen] = useState(false);
   const [isAppSwitcherOpen, setIsAppSwitcherOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { user, isLoading: authLoading } = useAuth();
   const { version: appVersion, isLoading: isLoadingVersion } = useAppVersion();
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Récupérer les informations utilisateur depuis localStorage si le contexte est vide
+  const getUserInfo = () => {
+    if (user) {
+      return user;
+    }
+
+    // Fallback sur localStorage pour compatibilité avec login existant
+    if (typeof window !== "undefined") {
+      const mailEmail = localStorage.getItem("mailEmail");
+      const mailUserId = localStorage.getItem("mailUserId");
+      const storedUser = localStorage.getItem("user");
+
+      if (storedUser) {
+        try {
+          return JSON.parse(storedUser);
+        } catch (e) {
+          console.error("Failed to parse stored user:", e);
+        }
+      }
+
+      if (mailEmail && mailUserId) {
+        return {
+          id: mailUserId,
+          email: mailEmail,
+          fullName: mailEmail
+            .split("@")[0]
+            .replace(".", " ")
+            .replace(/\b\w/g, (l) => l.toUpperCase()),
+        };
+      }
+    }
+
+    return null;
+  };
+
+  const currentUser = getUserInfo();
 
   // Activer les raccourcis clavier globaux
   useGlobalShortcuts();
@@ -130,6 +168,21 @@ export default function Header({
       default:
         return "Thème sombre";
     }
+  };
+
+  const getUserInitials = (name?: string, email?: string) => {
+    if (name) {
+      return name
+        .split(" ")
+        .map((word) => word[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    if (email) {
+      return email.slice(0, 2).toUpperCase();
+    }
+    return "U";
   };
 
   const accountOptions = [
@@ -301,32 +354,122 @@ export default function Header({
                   >
                     <Avatar className="h-10 w-10">
                       <AvatarImage
-                        src="/avatars/current-user.jpg"
-                        alt="Utilisateur"
+                        src={currentUser?.avatar || "/avatars/current-user.jpg"}
+                        alt={currentUser?.fullName || "Utilisateur"}
                       />
-                      <AvatarFallback>JD</AvatarFallback>
+                      <AvatarFallback>
+                        {getUserInitials(
+                          currentUser?.fullName,
+                          currentUser?.email,
+                        )}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium">John Doe</p>
-                      <p className="w-[200px] truncate text-sm text-muted-foreground">
-                        john.doe@example.com
-                      </p>
+                <DropdownMenuContent className="w-80" align="end" forceMount>
+                  {/* Header du profil avec photo et informations principales */}
+                  <div className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage
+                          src={
+                            currentUser?.avatar || "/avatars/current-user.jpg"
+                          }
+                          alt={currentUser?.fullName || "Utilisateur"}
+                        />
+                        <AvatarFallback className="text-sm font-medium">
+                          {getUserInitials(
+                            currentUser?.fullName,
+                            currentUser?.email,
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {currentUser?.fullName || "Utilisateur"}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {currentUser?.email || "email@example.com"}
+                        </p>
+                        {currentUser?.position && (
+                          <p className="text-xs text-muted-foreground">
+                            {currentUser.position}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
+
                   <DropdownMenuSeparator />
-                  {accountOptions.map((option) => {
-                    const Icon = option.icon;
-                    return (
-                      <DropdownMenuItem key={option.id} onClick={option.action}>
-                        <Icon className="mr-2 h-4 w-4" />
-                        <span>{option.name}</span>
-                      </DropdownMenuItem>
-                    );
-                  })}
+
+                  {/* Section Espace compte */}
+                  <div className="px-2 py-1">
+                    <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Compte
+                    </p>
+                    <DropdownMenuItem
+                      onClick={() => setIsAccountSpaceOpen(true)}
+                      className="cursor-pointer"
+                    >
+                      <User className="mr-3 h-4 w-4" />
+                      <span>Espace compte</span>
+                    </DropdownMenuItem>
+                  </div>
+
+                  <DropdownMenuSeparator />
+
+                  {/* Section Apparence */}
+                  <div className="px-2 py-1">
+                    <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Apparence
+                    </p>
+                    <DropdownMenuItem
+                      onClick={toggleTheme}
+                      className="cursor-pointer"
+                    >
+                      {React.createElement(getThemeIcon(), {
+                        className: "mr-3 h-4 w-4",
+                      })}
+                      <span>{getThemeLabel()}</span>
+                    </DropdownMenuItem>
+                  </div>
+
+                  <DropdownMenuSeparator />
+
+                  {/* Section Support */}
+                  <div className="px-2 py-1">
+                    <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Support
+                    </p>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        window.open(
+                          "https://support.skygenesisenterprise.com",
+                          "_blank",
+                        )
+                      }
+                      className="cursor-pointer"
+                    >
+                      <HelpCircle className="mr-3 h-4 w-4" />
+                      <span>Aide</span>
+                    </DropdownMenuItem>
+                  </div>
+
+                  <DropdownMenuSeparator />
+
+                  {/* Section Déconnexion */}
+                  <div className="px-2 py-1">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        handleLogout();
+                        setIsAccountMenuOpen(false);
+                      }}
+                      className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                      <LogOut className="mr-3 h-4 w-4" />
+                      <span>Déconnexion</span>
+                    </DropdownMenuItem>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -338,15 +481,19 @@ export default function Header({
       {isAccountSpaceOpen && (
         <AccountSpace
           userProfile={{
-            id: "1",
-            name: "Utilisateur",
-            email: "user@example.com",
+            id: currentUser?.id || "1",
+            name: currentUser?.fullName || "Utilisateur",
+            email: currentUser?.email || "user@example.com",
             status: "online",
-            role: "Utilisateur",
-            department: "General",
-            location: "France",
-            joinDate: "Aujourd'hui",
-            lastLogin: "Maintenant",
+            role: currentUser?.role || "Utilisateur",
+            department: currentUser?.department || "General",
+            location: currentUser?.location || "France",
+            joinDate: currentUser?.createdAt
+              ? new Date(currentUser.createdAt).toLocaleDateString()
+              : "Aujourd'hui",
+            lastLogin: currentUser?.lastLoginAt
+              ? new Date(currentUser.lastLoginAt).toLocaleString()
+              : "Maintenant",
           }}
           onProfileUpdate={(profile: any) => {
             console.log("Profile updated:", profile);

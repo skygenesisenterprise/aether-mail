@@ -41,9 +41,14 @@
     "start:frontend": "next start",
     "start": "pnpm start:backend & pnpm start:frontend",
     "electron": "pnpm build:electron:main && NODE_ENV=development electron electron/dist/main.js",
-    "electron:dev": "concurrently \"pnpm dev:frontend\" \"pnpm dev:backend\" \"wait-on http://localhost:4000 && pnpm electron\"",
-    "build:electron:main": "tsc electron/main.ts --outDir electron/dist --module commonjs --target es2018 --esModuleInterop",
+    "electron:start": "pnpm electron",
+    "build:electron:main": "tsc electron/*.ts --outDir electron/dist --module es2020 --target es2018 --esModuleInterop --moduleResolution node",
     "build:electron": "pnpm build:frontend && pnpm build:electron:main && electron-builder --config electron-builder.json",
+    "electron:dev": "concurrently \"pnpm dev:frontend\" \"pnpm dev:backend\" \"wait-on http://localhost:3000 && pnpm electron\"",
+    "electron:build": "pnpm build:electron",
+    "electron:build:win": "pnpm build:electron -- --win",
+    "electron:build:mac": "pnpm build:electron -- --mac",
+    "electron:build:linux": "pnpm build:electron -- --linux",
     "docker:dev": "docker-compose -f docker-compose.dev.yml up",
     "docker:dev:build": "docker-compose -f docker-compose.dev.yml build",
     "docker:dev:rebuild": "docker-compose -f docker-compose.dev.yml build --no-cache",
@@ -70,7 +75,9 @@
     "prepare": "husky install",
     "build:storybook": "storybook build",
     "build:tor": "bash scripts/build-tor.sh",
-    "build:web-server": "bash scripts/web-deploy.sh"
+    "build:web-server": "bash scripts/web-deploy.sh",
+    "build:desktop": "bash scripts/build-desktop.sh",
+    "build:desktop:win": "scripts\\build-desktop.bat"
   },
   "dependencies": {
     "@better-auth/utils": "^0.3.0",
