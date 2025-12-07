@@ -18,6 +18,8 @@ import {
   Users,
   CheckSquare,
   HardDrive,
+  Grid3x3,
+  FileText,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -31,7 +33,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAppVersion } from "../hooks/useAppVersion";
-import { mailService } from "../lib/services/mailService";
+import { useGlobalShortcuts } from "../hooks/useKeyboardShortcuts";
 import AccountSpace from "./AccountSpace";
 
 interface HeaderProps {
@@ -52,10 +54,14 @@ export default function Header({
   const [searchQuery, setSearchQuery] = useState("");
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isAccountSpaceOpen, setIsAccountSpaceOpen] = useState(false);
+  const [isAppSwitcherOpen, setIsAppSwitcherOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { version: appVersion, isLoading: isLoadingVersion } = useAppVersion();
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Activer les raccourcis clavier globaux
+  useGlobalShortcuts();
 
   // Fermer le menu quand on clique à l'extérieur
   useEffect(() => {
@@ -159,12 +165,111 @@ export default function Header({
     },
   ];
 
+  const appSwitcherOptions = [
+    {
+      id: "mail",
+      name: "Mail",
+      icon: Mail,
+      path: "/",
+    },
+    {
+      id: "calendar",
+      name: "Calendar",
+      icon: Calendar,
+      path: "/calendar",
+    },
+    {
+      id: "contacts",
+      name: "Contacts",
+      icon: Users,
+      path: "/contacts",
+    },
+    {
+      id: "notes",
+      name: "Notes",
+      icon: FileText,
+      path: "/notes",
+    },
+    {
+      id: "tasks",
+      name: "Tasks",
+      icon: CheckSquare,
+      path: "/tasks",
+    },
+    {
+      id: "drive",
+      name: "Drive",
+      icon: HardDrive,
+      path: "/drive",
+    },
+    {
+      id: "people",
+      name: "People",
+      icon: User,
+      path: "/people",
+    },
+    {
+      id: "settings",
+      name: "Settings",
+      icon: Settings,
+      path: "/settings",
+    },
+    {
+      id: "help",
+      name: "Help",
+      icon: HelpCircle,
+      path: "/help",
+    },
+  ];
+
   return (
     <>
       <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-full items-center justify-between px-6">
-          {/* Espace vide à gauche pour équilibrer */}
-          <div className="w-64"></div>
+          {/* App Switcher à gauche */}
+          <div className="flex items-center gap-4">
+            <DropdownMenu
+              open={isAppSwitcherOpen}
+              onOpenChange={setIsAppSwitcherOpen}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="h-10 px-3 flex items-center gap-2 hover:bg-muted"
+                  title="App Switcher"
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-64 p-2"
+                align="start"
+                forceMount
+              >
+                <div className="grid grid-cols-3 gap-2">
+                  {appSwitcherOptions.map((app) => {
+                    const Icon = app.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={app.id}
+                        onClick={() => router.push(app.path)}
+                        className="flex items-center justify-center p-4 h-16 w-16 cursor-pointer hover:bg-muted"
+                        title={app.name}
+                      >
+                        <Icon className="h-6 w-6" />
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Espace Aether Mail indépendant */}
+            <div className="h-10 px-3 flex items-center border-l border-border gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              <span className="font-medium text-lg">Aether Mail</span>
+            </div>
+          </div>
 
           {/* Barre de recherche centrée */}
           {showSearch && (

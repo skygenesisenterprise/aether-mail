@@ -272,14 +272,43 @@ class MailService {
   async markEmailAsRead(
     emailId: string,
     isRead: boolean,
+    folder?: string,
+    uid?: number,
   ): Promise<MailServiceResponse> {
     try {
+      // Récupérer les informations de l'email depuis le cache si nécessaire
+      let emailFolder = folder;
+      let emailUid = uid;
+
+      if (!emailFolder || !emailUid) {
+        // Essayer de récupérer les informations depuis le cache local
+        const cachedEmails = JSON.parse(
+          localStorage.getItem("cachedEmails") || "{}",
+        );
+        const email = cachedEmails[emailId];
+        if (email) {
+          emailFolder = email.folder || "INBOX";
+          emailUid = email.uid;
+        }
+      }
+
+      if (!emailFolder || !emailUid) {
+        return {
+          success: false,
+          error: "Informations de l'email manquantes (uid et folder requis)",
+        };
+      }
+
       const response = await fetch(
         `${this.baseUrl}/mail/emails/${emailId}/read`,
         {
           method: "PATCH",
           headers: this.getAuthHeaders(),
-          body: JSON.stringify({ isRead }),
+          body: JSON.stringify({
+            isRead,
+            uid: emailUid,
+            folder: emailFolder,
+          }),
         },
       );
 

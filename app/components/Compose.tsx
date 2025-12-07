@@ -33,8 +33,10 @@ import {
   Archive,
   CheckCircle,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import type { Email } from "../types/email";
+import { mailService } from "../lib/services/mailService";
 
 type ComposeMode = "new" | "reply" | "replyAll" | "forward";
 
@@ -83,6 +85,9 @@ export default function Compose({
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [selectedText, setSelectedText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sendSuccess, setSendSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -239,51 +244,203 @@ export default function Compose({
     console.log("Brouillon sauvegardé:", draft);
   };
 
-  const sendEmail = () => {
-    // Validation basique
+  // Validation d'adresse email
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Conversion des pièces jointes en base64
+  const convertAttachmentsToBase64 = async (
+    files: File[],
+  ): Promise<
+    Array<{
+      name: string;
+      content: string;
+      type: string;
+    }>
+  > => {
+    const convertedAttachments = [];
+
+    for (const file of files) {
+      try {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            // Retirer le préfixe data:image/...;base64,
+            const base64Content = result.split(",")[1];
+            resolve(base64Content);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        convertedAttachments.push({
+          name: file.name,
+          content: base64,
+          type: file.type,
+        });
+      } catch (error) {
+        console.error(
+          `Erreur lors de la conversion du fichier ${file.name}:`,
+          error,
+        );
+        // Continuer avec les autres fichiers même si celui-ci échoue
+      }
+    }
+
+    return convertedAttachments;
+  };
+
+  // Conversion du texte formaté en HTML
+  const convertTextToHtml = (text: string): string => {
+    let html = text
+      // Convertir les sauts de ligne en <br>
+      .replace(/\n/g, "<br>")
+      // Convertir le markdown simple en HTML
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(/__(.*?)__/g, "<u>$1</u>")
+      .replace(/`(.*?)`/g, "<code>$1</code>")
+      .replace(/^## (.*$)/gm, "<h2>$1</h2>")
+      .replace(/^> (.*$)/gm, "<blockquote>$1</blockquote>")
+      .replace(/^\* (.*$)/gm, "<li>$1</li>")
+      .replace(/^1\. (.*$)/gm, "<li>$1</li>")
+      // Convertir les liens markdown
+      .replace(
+        /\[([^\]]+)\]\(([^)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
+      );
+
+    // Encadrer les listes avec <ul> ou <ol>
+    html = html.replace(/(<li>.*<\/li>)/gs, (match) => {
+      // Si c'est une liste numérotée, utiliser <ol>
+      if (/^\d+\./.test(match)) {
+        return `<ol>${match}</ol>`;
+      }
+      return `<ul>${match}</ul>`;
+    });
+
+    return html;
+  };
+
+  const sendEmail = async () => {
+    // Réinitialiser les états d'erreur et succès
+    setSendError(null);
+    setSendSuccess(false);
+
+    // Validation améliorée
     if (to.length === 0) {
-      alert("Veuillez ajouter au moins un destinataire");
+      setSendError("Veuillez ajouter au moins un destinataire");
       return;
     }
+
+    // Validation des adresses email
+    const allRecipients = [...to, ...cc, ...bcc];
+    const invalidEmails = allRecipients.filter((r) => !isValidEmail(r.email));
+    if (invalidEmails.length > 0) {
+      setSendError(
+        `Adresses email invalides: ${invalidEmails.map((r) => r.email).join(", ")}`,
+      );
+      return;
+    }
+
     if (!subject.trim()) {
-      alert("Veuillez ajouter un objet");
+      setSendError("Veuillez ajouter un objet");
       return;
     }
+
     if (!body.trim()) {
-      alert("Veuillez rédiger un message");
+      setSendError("Veuillez rédiger un message");
       return;
     }
 
-    const email = {
-      id: Date.now().toString(),
-      to: to.map((r) => r.email).join(", "),
-      cc: cc.map((r) => r.email).join(", "),
-      bcc: bcc.map((r) => r.email).join(", "),
-      subject,
-      body,
-      attachments: attachments.map((f) => ({
-        name: f.name,
-        size: f.size,
-        type: f.type,
-      })),
-      timestamp: new Date().toISOString(),
-    };
+    // Vérifier la taille totale des pièces jointes (max 25MB)
+    const totalSize = attachments.reduce((total, file) => total + file.size, 0);
+    const maxSize = 25 * 1024 * 1024; // 25MB
+    if (totalSize > maxSize) {
+      setSendError(
+        `La taille totale des pièces jointes ne peut pas dépasser 25MB. Actuel: ${(totalSize / 1024 / 1024).toFixed(2)}MB`,
+      );
+      return;
+    }
 
-    // Simuler l'envoi
-    console.log("Email envoyé:", email);
+    setIsSending(true);
 
-    // Sauvegarder dans les emails envoyés (pour la démo)
-    const sentEmails = JSON.parse(
-      localStorage.getItem("aether-mail-sent") || "[]",
-    );
-    sentEmails.push(email);
-    localStorage.setItem("aether-mail-sent", JSON.stringify(sentEmails));
+    try {
+      // Conversion des pièces jointes en base64
+      const convertedAttachments =
+        await convertAttachmentsToBase64(attachments);
 
-    // Afficher une confirmation
-    alert("Email envoyé avec succès !");
+      // Conversion du corps en HTML
+      const htmlBody = convertTextToHtml(body);
 
-    // Fermer la fenêtre de composition
-    onClose?.();
+      // Préparation de l'email pour l'API
+      const emailData = {
+        to: to.map((r) => r.email).join(", "),
+        cc: cc.length > 0 ? cc.map((r) => r.email).join(", ") : undefined,
+        bcc: bcc.length > 0 ? bcc.map((r) => r.email).join(", ") : undefined,
+        subject,
+        body: htmlBody, // Utiliser la version HTML comme corps principal
+        attachments:
+          convertedAttachments.length > 0 ? convertedAttachments : undefined,
+      };
+
+      console.log("Envoi de l'email:", emailData);
+
+      // Appel au service SMTP
+      const result = await mailService.sendEmail(emailData);
+
+      if (result.success) {
+        setSendSuccess(true);
+
+        // Sauvegarder dans les emails envoyés (pour l'historique local)
+        const sentEmails = JSON.parse(
+          localStorage.getItem("aether-mail-sent") || "[]",
+        );
+        const sentEmail = {
+          id: Date.now().toString(),
+          from: localStorage.getItem("mailEmail") || "Moi",
+          fromEmail: localStorage.getItem("mailEmail") || "me@example.com",
+          to: to.map((r) => r.email).join(", "),
+          cc: cc.map((r) => r.email).join(", "),
+          bcc: bcc.map((r) => r.email).join(", "),
+          subject,
+          body: htmlBody,
+          preview: body.substring(0, 100) + (body.length > 100 ? "..." : ""),
+          date: new Date().toLocaleString("fr-FR"),
+          originalDate: new Date().toISOString(),
+          isRead: true,
+          isStarred: false,
+          hasAttachment: attachments.length > 0,
+          folder: "sent",
+          attachments: attachments.map((f) => ({
+            name: f.name,
+            size: (f.size / 1024 / 1024).toFixed(2),
+            type: f.type,
+          })),
+        };
+        sentEmails.push(sentEmail);
+        localStorage.setItem("aether-mail-sent", JSON.stringify(sentEmails));
+
+        // Fermer la fenêtre après un court délai pour montrer le succès
+        setTimeout(() => {
+          onClose?.();
+        }, 1500);
+      } else {
+        setSendError(result.error || "Erreur lors de l'envoi de l'email");
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'envoi de l'email:", error);
+      setSendError(
+        error instanceof Error
+          ? error.message
+          : "Erreur réseau lors de l'envoi",
+      );
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // Calcul du nombre de mots

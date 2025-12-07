@@ -83,7 +83,7 @@ export default function SidebarNav({
   const baseClasses = cn(
     "flex",
     orientation === "vertical"
-      ? "flex-col space-y-2 p-2"
+      ? "flex-col space-y-2 p-1"
       : "flex-row space-x-1 p-1",
   );
 
@@ -107,7 +107,7 @@ export default function SidebarNav({
                 "bg-primary/10 text-primary border-l-2 border-primary",
               !isActive && "hover:bg-muted hover:text-foreground",
               orientation === "vertical"
-                ? "w-full justify-start"
+                ? "w-auto justify-center px-1"
                 : "justify-center",
             )}
             title={app.name}

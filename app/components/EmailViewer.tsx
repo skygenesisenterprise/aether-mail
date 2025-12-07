@@ -295,21 +295,6 @@ export default function EmailViewer({
               <h1 className="text-2xl font-bold text-card-foreground mb-2 leading-tight">
                 {enhancedEmail?.displaySubject || email.subject}
               </h1>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span>
-                  De:{" "}
-                  <span className="text-gray-300 font-medium">
-                    {enhancedEmail?.displayFrom || email.from}
-                  </span>
-                </span>
-                <span>•</span>
-                <span>
-                  À:{" "}
-                  <span className="text-gray-300">
-                    {enhancedEmail?.displayTo || email.to}
-                  </span>
-                </span>
-              </div>
             </div>
 
             <div className="flex items-center gap-1 ml-4">

@@ -83,48 +83,76 @@ export function useEmails({
   }, []);
 
   // Marquer un email comme lu
-  const markAsRead = useCallback(async (emailId: string) => {
-    try {
-      const result = await mailService.markEmailAsRead(emailId, true);
+  const markAsRead = useCallback(
+    async (emailId: string) => {
+      try {
+        const email = emails[emailId];
+        if (!email) {
+          throw new Error("Email non trouvé");
+        }
 
-      if (result.success) {
-        setEmails((prev) => ({
-          ...prev,
-          [emailId]: {
-            ...prev[emailId],
-            isRead: true,
-          },
-        }));
-      } else {
-        throw new Error(result.error || "Erreur lors du marquage comme lu");
+        const result = await mailService.markEmailAsRead(
+          emailId,
+          true,
+          email.folder,
+          email.uid,
+        );
+
+        if (result.success) {
+          setEmails((prev) => ({
+            ...prev,
+            [emailId]: {
+              ...prev[emailId],
+              isRead: true,
+            },
+          }));
+        } else {
+          throw new Error(result.error || "Erreur lors du marquage comme lu");
+        }
+      } catch (err) {
+        console.error("Erreur lors du marquage comme lu:", err);
+        throw err;
       }
-    } catch (err) {
-      console.error("Erreur lors du marquage comme lu:", err);
-      throw err;
-    }
-  }, []);
+    },
+    [emails],
+  );
 
   // Marquer un email comme non lu
-  const markAsUnread = useCallback(async (emailId: string) => {
-    try {
-      const result = await mailService.markEmailAsRead(emailId, false);
+  const markAsUnread = useCallback(
+    async (emailId: string) => {
+      try {
+        const email = emails[emailId];
+        if (!email) {
+          throw new Error("Email non trouvé");
+        }
 
-      if (result.success) {
-        setEmails((prev) => ({
-          ...prev,
-          [emailId]: {
-            ...prev[emailId],
-            isRead: false,
-          },
-        }));
-      } else {
-        throw new Error(result.error || "Erreur lors du marquage comme non lu");
+        const result = await mailService.markEmailAsRead(
+          emailId,
+          false,
+          email.folder,
+          email.uid,
+        );
+
+        if (result.success) {
+          setEmails((prev) => ({
+            ...prev,
+            [emailId]: {
+              ...prev[emailId],
+              isRead: false,
+            },
+          }));
+        } else {
+          throw new Error(
+            result.error || "Erreur lors du marquage comme non lu",
+          );
+        }
+      } catch (err) {
+        console.error("Erreur lors du marquage comme non lu:", err);
+        throw err;
       }
-    } catch (err) {
-      console.error("Erreur lors du marquage comme non lu:", err);
-      throw err;
-    }
-  }, []);
+    },
+    [emails],
+  );
 
   // Basculer l'étoile
   const toggleStar = useCallback(

@@ -9,6 +9,7 @@ export interface Attachment {
 
 export interface Email {
   id: string;
+  uid?: number; // UID unique pour l'IMAP
   from: string;
   fromEmail: string;
   to: string;
@@ -22,4 +23,7 @@ export interface Email {
   hasAttachment: boolean;
   folder: string;
   attachments?: Attachment[];
+  rawMime?: string; // Contenu MIME brut pour le traitement
+  cc?: string;
+  bcc?: string;
 }
