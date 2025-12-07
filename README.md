@@ -37,20 +37,6 @@ Tired of clunky, outdated email clients? **Aether Mail** is here to revolutioniz
 
 ---
 
-## 🎬 Quick Preview
-
-### 📧 Modern Email Management
-
-```bash
-# Experience the future of email in 30 seconds
-git clone https://github.com/skygenesisenterprise/aether-mail.git
-cd aether-mail && pnpm install && pnpm dev
-```
-
-**Visit http://localhost:4000 and transform your email workflow!**
-
----
-
 ## 🚀 Quick Start
 
 ### 🎯 One-Click Setup
