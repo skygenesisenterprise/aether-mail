@@ -107,7 +107,7 @@
     "inquirer": "^12.11.1",
     "joi": "^18.0.1",
     "jsonwebtoken": "^9.0.2",
-    "lucide-react": "^0.544.0",
+    "lucide-react": "^0.562.0",
     "mailparser": "^3.9.0",
     "multer": "^2.0.2",
     "next": "^16.0.7",
