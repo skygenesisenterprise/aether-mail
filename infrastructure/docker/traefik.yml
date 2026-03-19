@@ -1,0 +1,56 @@
+api:
+  dashboard: false
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  file:
+    filename: /traefik.yml
+    watch: true
+
+log:
+  level: INFO
+
+accessLog:
+  format: common
+
+http:
+  routers:
+    # Route pour le frontend Next.js - toutes les requêtes sauf /api
+    identity-frontend-dev:
+      rule: "Host(`localhost`) || Host(`identity.local`)"
+      entryPoints:
+        - web
+      service: identity-frontend-dev
+      priority: 10
+
+    # Route pour le backend Go - uniquement les chemins /api
+    identity-server-dev:
+      rule: "(Host(`localhost`) || Host(`identity.local`)) && PathPrefix(`/api`)"
+      entryPoints:
+        - web
+      service: identity-server-dev
+      priority: 20
+
+  services:
+    # Service frontend Next.js
+    identity-frontend-dev:
+      loadBalancer:
+        servers:
+          - url: "http://identity-frontend-dev:3001"
+        healthCheck:
+          path: "/login"
+          interval: "10s"
+          timeout: "5s"
+
+    # Service backend Go
+    identity-server-dev:
+      loadBalancer:
+        servers:
+          - url: "http://identity-server-dev:8080"
+        healthCheck:
+          path: "/api/v1/health"
+          interval: "10s"
+          timeout: "5s"

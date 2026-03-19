@@ -1,0 +1,33 @@
+# PostgreSQL 16 with Prisma for automatic migrations
+FROM postgres:16-alpine
+
+# Install Node.js and npm
+RUN apk add --no-cache nodejs npm
+
+# Install pnpm globally
+RUN npm install -g pnpm@10.28.1
+
+# Create directory for Prisma files
+WORKDIR /prisma
+
+# Copy Prisma configuration files
+COPY prisma/package*.json ./
+COPY prisma/schema.prisma ./
+COPY prisma/prisma.config.ts ./
+
+# Install dependencies only (prisma generate will run during init)
+RUN pnpm install
+
+# Copy the initialization script
+COPY infrastructure/docker/init-migrations.sh /docker-entrypoint-initdb.d/99-init-migrations.sh
+RUN chmod +x /docker-entrypoint-initdb.d/99-init-migrations.sh
+
+# Copy the seed script
+COPY prisma/seed.ts /prisma/seed.ts
+COPY prisma/package.json /prisma/package.json
+
+# Install seed dependencies
+RUN cd /prisma && pnpm install --prod
+
+# PostgreSQL will automatically execute scripts in /docker-entrypoint-initdb.d/
+# during the first startup (when data directory is empty)

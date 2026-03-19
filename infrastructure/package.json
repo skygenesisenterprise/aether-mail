@@ -1,0 +1,44 @@
+{
+  "package": "@giteria/infrastructure",
+  "version": "1.0.0",
+  "description": "Infrastructure and deployment configuration for Giteria",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build process for infrastructure'",
+    "deploy": "terraform apply",
+    "plan": "terraform plan",
+    "validate": "terraform validate",
+    "fmt": "terraform fmt",
+    "lint": "tflint",
+    "clean": "terraform clean",
+    "init": "terraform init",
+    "destroy": "terraform destroy"
+  },
+  "keywords": [
+    "infrastructure",
+    "terraform",
+    "aws",
+    "deployment"
+  ],
+  "author": "Sky Genesis Enterprise",
+  "license": "MIT",
+  "devDependencies": {
+    "@terraform-aws-providers/aws": "^5.0.0",
+    "terraform": "^1.6.0",
+    "tflint": "^0.50.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "terraform": ">=1.6.0"
+  },
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skygenesisenterprise/giteria.git",
+    "directory": "infrastructure"
+  },
+  "bugs": {
+    "url": "https://github.com/skygenesisenterprise/giteria/issues"
+  },
+  "homepage": "https://github.com/skygenesisenterprise/giteria/tree/main/infrastructure"
+}

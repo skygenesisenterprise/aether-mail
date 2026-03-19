@@ -1,0 +1,111 @@
+version: "3.9"
+
+services:
+  # Traefik Reverse Proxy - Seul service avec port expose publiquement (3001)
+  traefik:
+    image: traefik:v3.4
+    container_name: aether-traefik
+    ports:
+      - "3001:80"
+    volumes:
+      - ./traefik.yml:/traefik.yml:ro
+    command:
+      - "--api.dashboard=false"
+      - "--providers.file.filename=/traefik.yml"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    networks:
+      - identity-network
+    restart: unless-stopped
+
+  # Service pour l'application frontend Aether Identity (Next.js)
+  # Etend la configuration de app/infra/docker-compose.yml
+  identity-app:
+    extends:
+      file: ../../app/infra/docker-compose.yml
+      service: app
+    ports: []
+    labels: [] # Override pour supprimer les labels Traefik (configuration statique utilisée)
+    networks:
+      - identity-network
+
+  # Service pour le serveur Aether Identity (Go)
+  identity-server:
+    build:
+      context: ../../server
+      dockerfile: infra/Dockerfile
+    container_name: identity-server
+    expose:
+      - "8080"
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-secret-key-change-in-production}
+      - ACCESS_TOKEN_EXP=15
+      - REFRESH_TOKEN_EXP=720
+      - DATABASE_URL=postgresql://postgres:postgres@database:5432/aether_identity?sslmode=disable
+      - PORT=8080
+      - SYSTEM_KEY=${SYSTEM_KEY:-sk_system_default_key_change_in_production}
+      - CORS_ALLOWED_ORIGINS=http://localhost:3001
+      - DEFAULT_POST_LOGIN_PATH=/
+      - DEFAULT_POST_LOGOUT_PATH=/
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - ../../server:/app
+    restart: unless-stopped
+    healthcheck:
+      test:
+        ["CMD", "wget", "--spider", "-q", "http://localhost:8080/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - identity-network
+
+  # Service Database unique - PostgreSQL avec migrations Prisma automatiques
+  # Étend la configuration de @prisma/infra/docker-compose.yml mais
+  # utilise une image PostgreSQL personnalisée avec Prisma intégré
+  database:
+    extends:
+      file: ../../prisma/infra/docker-compose.yml
+      service: database
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.postgres
+    image: identity-database
+    container_name: identity-database
+    # Override pour utiliser PostgreSQL comme processus principal (pas la commande Prisma)
+    command: ["postgres", "-c", "listen_addresses=*"]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: aether_identity
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aether_identity?schema=public
+    expose:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - identity-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+# Reseau pour la communication entre les services
+networks:
+  identity-network:
+    driver: bridge
+    name: identity-network
+
+# Volumes pour persister les donnees
+volumes:
+  postgres_data:
+    driver: local
+  app_next:
+    driver: local
