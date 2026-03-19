@@ -1,0 +1,44 @@
+# Dockerfile.dev — Next.js Development (no Nginx)
+# Installe les dépendances pendant le build pour éviter l'installation à chaque démarrage
+
+FROM node:20-alpine
+
+# System dependencies (minimal)
+RUN apk add --no-cache \
+    libc6-compat \
+    bash \
+    curl
+
+# App directory
+WORKDIR /app
+
+# Use Corepack to pin pnpm (avoid global installs of pnpm/next/nodemon).
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
+
+# Copy package files first (for better caching)
+COPY package.json pnpm-lock.yaml* ./
+
+# Install dependencies during build
+# This ensures node_modules is populated in the image
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm config set store-dir /pnpm/store && \
+    pnpm install --no-frozen-lockfile
+
+# Copy the rest of the application
+COPY . .
+
+# Environment
+ENV NODE_ENV=development
+ENV PORT=3001
+ENV HOSTNAME=0.0.0.0
+ENV CHOKIDAR_USEPOLLING=true
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Expose internal port (for Traefik)
+EXPOSE 3001
+
+# Start the development server
+# Dependencies are already installed, so no need to install at runtime
+CMD ["pnpm", "dev"]

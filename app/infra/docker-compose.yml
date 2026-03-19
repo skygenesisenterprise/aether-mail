@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    container_name: identity-frontend
+    expose:
+      - "3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      HOSTNAME: 0.0.0.0
+    working_dir: /app
+    user: node
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.identity-app.rule=Host(`localhost`) || Host(`identity.local`)"
+      - "traefik.http.routers.identity-app.entrypoints=web"
+      - "traefik.http.services.identity-app.loadbalancer.server.port=3001"
+      - "traefik.http.routers.identity-app.priority=1"
+    networks:
+      - identity-network
+
+networks:
+  identity-network:
+    name: identity-network
+    driver: bridge

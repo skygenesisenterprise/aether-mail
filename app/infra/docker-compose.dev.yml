@@ -1,0 +1,40 @@
+services:
+  giteria-frontend-dev:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.dev
+    container_name: giteria-frontend-dev
+
+    # Mapping flexible du port : host_port par défaut = 3001, conteneur toujours 3000
+    ports:
+      - "3001:3001" # Accès via localhost:3001
+
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      HOSTNAME: 0.0.0.0
+      CHOKIDAR_USEPOLLING: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    working_dir: /app
+    user: root
+
+    volumes:
+      # Code de l’hôte dans le conteneur
+      - ..:/app:cached
+      # Masquer node_modules de l'hôte pour garder ceux du conteneur
+      - /app/node_modules
+      # Volumes persistants pour .next
+      - app_next:/app/.next
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  app_next:

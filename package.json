@@ -1,7 +1,7 @@
 {
-  "name": "giteria",
+  "name": "aether-mail",
   "version": "1.0.0",
-  "description": "Painless self-hosted all-in-one software development service, including Git hosting, code review, team collaboration, package registry and CI/CD",
+  "description": "Aether Mail is a lightweight, open-source email client built for privacy, speed, and seamless integration within the Aether Office ecosystem",
   "private": true,
   "type": "module",
   "workspaces": [

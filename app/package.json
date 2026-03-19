@@ -1,7 +1,7 @@
 {
-  "name": "@giteria/app",
+  "name": "@aether-mail/app",
   "version": "1.0.0",
-  "description": "Frontend application for Giteria",
+  "description": "Frontend application for Aether Mail",
   "private": true,
   "type": "module",
   "scripts": {

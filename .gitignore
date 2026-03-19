@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -9,18 +9,19 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-dist
-generated
+.pnpm-store/
+
+keys
 
 # testing
 /coverage
 
 # next.js
-/.next/
+.next/
 /out/
 
 # production
-/build
+/dist
 
 # misc
 .DS_Store
@@ -33,7 +34,8 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
+.env*.local
 
 # vercel
 .vercel
@@ -42,6 +44,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Added by cargo
-
-/target
+# Opencode 
+opencode.json
