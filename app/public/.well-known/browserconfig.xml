@@ -1,0 +1,17 @@
+# Browser Configuration File
+# This file configures browser-specific settings for Aether Mailer
+
+# Internet Explorer compatibility modes
+# X-Content-Type-Options: nosniff
+
+# Chrome Frame
+# X-UA-Compatible: IE=edge
+
+# Content Security Policy (basic)
+# Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;
+
+# Feature detection
+# Feature-Policy: camera 'none'; microphone 'none'; geolocation 'none'
+
+# Security headers handled by Next.js middleware
+# These are documented here for reference

@@ -1,0 +1,30 @@
+# Security.txt
+# Security policy and contact information for Aether Mailer
+
+# Contact information
+Contact: mailto:security@skygenesisenterprise.com
+Contact: https://skygenesisenterprise.com/security
+
+# Security policy
+Policy: https://skygenesisenterprise.com/security-policy
+
+# Acknowledgments
+Acknowledgments: https://skygenesisenterprise.com/security-acknowledgments
+
+# Encryption
+Encryption: https://skygenesisenterprise.com/encryption
+
+# Preferred disclosure languages
+Preferred-Languages: en, fr
+
+# Hiring
+Hiring: https://skygenesisenterprise.com/security-jobs
+
+# CSIRT compliance
+CSIRT: https://skygenesisenterprise.com/csirt
+
+# Policy expiration (1 year from now)
+Expires: 2025-12-19T23:59:59.000Z
+
+# Canonical URL
+Canonical: https://vault.skygenesisenterprise.com/.well-known/security.txt

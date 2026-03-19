@@ -1,0 +1,115 @@
+# Code Owners for Aether Mailer by Sky Genesis Enterprise
+# This file defines ownership rules for the repository
+# Format: <file pattern> <owner> [<owner> ...]
+
+# Global owners - can approve changes anywhere
+* @aether-mailer/core-team @aether-mailer/maintainers
+
+# Root configuration files
+/ @aether-mailer/core-team
+*.json @aether-mailer/core-team
+*.config.* @aether-mailer/core-team
+*.md @aether-mailer/core-team
+Makefile @aether-mailer/core-team
+.eslintrc* @aether-mailer/core-team
+.prettierrc* @aether-mailer/core-team
+.gitignore @aether-mailer/core-team
+.gitattributes @aether-mailer/core-team
+
+# Application code
+app/ @aether-mailer/frontend-team @aether-mailer/core-team
+components/ @aether-mailer/frontend-team @aether-mailer/core-team
+pages/ @aether-mailer/frontend-team @aether-mailer/core-team
+src/ @aether-mailer/frontend-team @aether-mailer/core-team
+*.tsx @aether-mailer/frontend-team
+*.ts @aether-mailer/frontend-team
+*.jsx @aether-mailer/frontend-team
+*.js @aether-mailer/frontend-team
+
+# Styling and assets
+styles/ @aether-mailer/frontend-team
+*.css @aether-mailer/frontend-team
+*.scss @aether-mailer/frontend-team
+*.less @aether-mailer/frontend-team
+public/ @aether-mailer/frontend-team
+assets/ @aether-mailer/frontend-team
+
+# Backend and server code
+server/ @aether-mailer/backend-team @aether-mailer/core-team
+api/ @aether-mailer/backend-team @aether-mailer/core-team
+cmd/ @aether-mailer/backend-team @aether-mailer/core-team
+services/ @aether-mailer/backend-team @aether-mailer/core-team
+routers/ @aether-mailer/backend-team @aether-mailer/core-team
+
+# Database and data layer
+prisma/ @aether-mailer/backend-team @aether-mailer/core-team
+migrations/ @aether-mailer/backend-team @aether-mailer/core-team
+seeds/ @aether-mailer/backend-team @aether-mailer/core-team
+
+# CLI tools
+cli/ @aether-mailer/cli-team @aether-mailer/core-team
+tools/ @aether-mailer/cli-team @aether-mailer/core-team
+
+# Package management
+package/ @aether-mailer/core-team
+pnpm-lock.yaml @aether-mailer/core-team
+yarn.lock @aether-mailer/core-team
+package-lock.json @aether-mailer/core-team
+
+# Docker and deployment
+docker/ @aether-mailer/devops-team @aether-mailer/core-team
+Dockerfile* @aether-mailer/devops-team @aether-mailer/core-team
+docker-compose* @aether-mailer/devops-team @aether-mailer/core-team
+.k8s/ @aether-mailer/devops-team @aether-mailer/core-team
+.helm/ @aether-mailer/devops-team @aether-mailer/core-team
+
+# CI/CD and automation
+.github/ @aether-mailer/devops-team @aether-mailer/core-team
+.gitlab-ci.yml @aether-mailer/devops-team @aether-mailer/core-team
+Jenkinsfile @aether-mailer/devops-team @aether-mailer/core-team
+.husky/ @aether-mailer/core-team
+
+# Documentation
+docs/ @aether-mailer/docs-team @aether-mailer/core-team
+README.md @aether-mailer/docs-team @aether-mailer/core-team
+CHANGELOG.md @aether-mailer/docs-team @aether-mailer/core-team
+CONTRIBUTING.md @aether-mailer/docs-team @aether-mailer/core-team
+
+# Testing
+tests/ @aether-mailer/qa-team @aether-mailer/core-team
+__tests__/ @aether-mailer/qa-team @aether-mailer/core-team
+*.test.* @aether-mailer/qa-team @aether-mailer/core-team
+*.spec.* @aether-mailer/qa-team @aether-mailer/core-team
+cypress/ @aether-mailer/qa-team @aether-mailer/core-team
+playwright/ @aether-mailer/qa-team @aether-mailer/core-team
+
+# Security and compliance
+SECURITY.md @aether-mailer/security-team @aether-mailer/core-team
+LICENSE @aether-mailer/legal-team @aether-mailer/core-team
+CODE_OF_CONDUCT.md @aether-mailer/core-team
+GOVERNANCE.md @aether-mailer/core-team
+
+# Storybook and design system
+.storybook/ @aether-mailer/frontend-team @aether-mailer/design-team
+.stories/ @aether-mailer/frontend-team @aether-mailer/design-team
+
+# Development environment
+.devcontainer/ @aether-mailer/devops-team @aether-mailer/core-team
+.vscode/ @aether-mailer/core-team
+.idea/ @aether-mailer/core-team
+
+# Build and distribution artifacts
+dist/ @aether-mailer/core-team
+build/ @aether-mailer/core-team
+out/ @aether-mailer/core-team
+.next/ @aether-mailer/core-team
+
+# Temporary and generated files
+*.log @aether-mailer/core-team
+*.tmp @aether-mailer/core-team
+.cache/ @aether-mailer/core-team
+node_modules/ @aether-mailer/core-team
+
+# Emergency fallback - if no specific owner is defined
+# This should be the last rule
+** @aether-mailer/core-team

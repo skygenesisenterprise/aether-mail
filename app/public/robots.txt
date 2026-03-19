@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+
+# Block common bot paths
+Disallow: /api/
+Disallow: /admin/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot
+Disallow: /troubleshoot/
+Disallow: /manage/
+Disallow: /logs/
+
+# Block development and debugging paths
+Disallow: /_next/
+Disallow: /__webpack_hmr/
+Disallow: /_error
+Disallow: /404
+
+# Allow API health endpoints for monitoring
+Allow: /health
+Allow: /api/v1/health
+
+# Crawl delay (optional)
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://vault.skygenesisenterprise.com/sitemap.xml

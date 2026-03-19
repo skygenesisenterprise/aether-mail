@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+build/
+dist/
+.next/
+out/
+*.tsbuildinfo
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Coverage reports
+coverage/
+
+# Generated files
+prisma/generated/
+*.generated.ts
+
+# Logs
+*.log
+
+# Husky
+.husky/_/
+
+# Cache directories
+.ruff_cache/
+.cache/

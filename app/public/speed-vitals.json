@@ -1,0 +1,26 @@
+{
+  "host": "mailer.skygenesisenterprise.com",
+  "priority": 1,
+  "enabled": true,
+  "retriesDelay": 30,
+  "siteId": "your-mailer-site-id",
+  "allowAllRequests": true,
+  "ignoreUrls": [
+    "/health",
+    "/api/v1/health",
+    "/_next/",
+    "/favicon.ico",
+    "/robots.txt"
+  ],
+  "budgets": [
+    {
+      "path": "/*",
+      "timings": [
+        {
+          "metric": "largest-contentful-paint",
+          "budget": 2000
+        }
+      ]
+    }
+  ]
+}
