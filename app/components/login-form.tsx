@@ -2,19 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [usernameOrEmail, setUsernameOrEmail] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const { login } = useAuth();
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +20,7 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      await login(usernameOrEmail, password);
+      await login(email, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -38,18 +36,18 @@ export function LoginForm() {
         )}
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="login_field" className="text-sm font-medium text-foreground">
-            Username or email address
+          <label htmlFor="email" className="text-sm font-medium text-foreground">
+            Email address
           </label>
           <input
-            id="login_field"
-            name="login"
-            type="text"
+            id="email"
+            name="email"
+            type="email"
             autoCapitalize="off"
             autoCorrect="off"
-            autoComplete="username"
-            value={usernameOrEmail}
-            onChange={(e) => setUsernameOrEmail(e.target.value)}
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             required
           />

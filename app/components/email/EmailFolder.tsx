@@ -16,39 +16,130 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { emailApi, type Folder } from "@/lib/api/email";
 
-interface Folder {
-  id: string;
-  name: string;
-  icon: React.ComponentType<{ className?: string }>;
-  count?: number;
-}
-
-const folders: Folder[] = [
-  { id: "inbox", name: "Inbox", icon: Inbox, count: 12 },
-  { id: "drafts", name: "Drafts", icon: File, count: 3 },
-  { id: "sent", name: "Sent", icon: Send },
-  { id: "trash", name: "Trash", icon: Trash2 },
-  { id: "archive", name: "Archive", icon: Archive },
-  { id: "junk", name: "Junk", icon: AlertCircle },
-  { id: "notes", name: "Notes", icon: FileText },
-  { id: "rss", name: "RSS Feed", icon: Rss },
-  { id: "conversations", name: "Conversation history", icon: MessageSquare },
-  { id: "research", name: "Research Paper", icon: BookOpen },
-];
-
-const favorites: Folder[] = [
-  { id: "fav-inbox", name: "Inbox", icon: Inbox, count: 12 },
-  { id: "fav-sent", name: "Sent", icon: Send },
-  { id: "fav-drafts", name: "Drafts", icon: File, count: 3 },
-];
+const folderIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  INBOX: Inbox,
+  Drafts: File,
+  Sent: Send,
+  Trash: Trash2,
+  Archive: Archive,
+  Junk: AlertCircle,
+  Notes: FileText,
+  RSS: Rss,
+  Conversations: MessageSquare,
+  Research: BookOpen,
+};
 
 interface EmailFolderProps {
   activeFolder?: string;
+  onFolderChange?: (folderId: string) => void;
 }
 
-export function EmailFolder({ activeFolder = "inbox" }: EmailFolderProps) {
-  const [favoritesOpen, setFavoritesOpen] = React.useState(true);
+const defaultFolders: Folder[] = [
+  {
+    id: "INBOX",
+    name: "Inbox",
+    path: "INBOX",
+    totalEmails: 12,
+    unreadEmails: 3,
+    isSelectable: true,
+    subscribed: true,
+  },
+  {
+    id: "Drafts",
+    name: "Drafts",
+    path: "Drafts",
+    totalEmails: 3,
+    unreadEmails: 0,
+    isSelectable: true,
+    subscribed: true,
+  },
+  {
+    id: "Sent",
+    name: "Sent",
+    path: "Sent",
+    totalEmails: 0,
+    unreadEmails: 0,
+    isSelectable: true,
+    subscribed: true,
+  },
+  {
+    id: "Trash",
+    name: "Trash",
+    path: "Trash",
+    totalEmails: 0,
+    unreadEmails: 0,
+    isSelectable: true,
+    subscribed: true,
+  },
+  {
+    id: "Archive",
+    name: "Archive",
+    path: "Archive",
+    totalEmails: 0,
+    unreadEmails: 0,
+    isSelectable: true,
+    subscribed: true,
+  },
+  {
+    id: "Junk",
+    name: "Junk",
+    path: "Junk",
+    totalEmails: 0,
+    unreadEmails: 0,
+    isSelectable: true,
+    subscribed: true,
+  },
+  {
+    id: "Notes",
+    name: "Notes",
+    path: "Notes",
+    totalEmails: 0,
+    unreadEmails: 0,
+    isSelectable: true,
+    subscribed: true,
+  },
+];
+
+const favorites: { id: string; name: string; icon: React.ComponentType<{ className?: string }> }[] =
+  [
+    { id: "INBOX", name: "Inbox", icon: Inbox },
+    { id: "Sent", name: "Sent", icon: Send },
+    { id: "Drafts", name: "Drafts", icon: File },
+  ];
+
+export function EmailFolder({ activeFolder = "INBOX", onFolderChange }: EmailFolderProps) {
+  const [favoritesOpen, setFavoritesOpen] = React.useState(false);
+  const [folders, setFolders] = React.useState<Folder[]>(defaultFolders);
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        const response = await emailApi.getFolders("default");
+        if (response.success && response.data?.folders) {
+          setFolders(response.data.folders);
+        }
+      } catch (err) {
+        console.error("Failed to fetch folders:", err);
+      }
+    };
+    fetchFolders();
+  }, []);
+
+  const handleFolderClick = (folderId: string) => {
+    onFolderChange?.(folderId);
+  };
+
+  const getFolderIcon = (folderName: string) => {
+    return folderIcons[folderName] || Inbox;
+  };
+
+  const getFolderCount = (folderId: string) => {
+    const folder = folders.find((f) => f.id === folderId);
+    return folder?.unreadEmails || 0;
+  };
 
   return (
     <div className="w-60 border-r bg-background h-full flex flex-col">
@@ -83,9 +174,11 @@ export function EmailFolder({ activeFolder = "inbox" }: EmailFolderProps) {
                   {favorites.map((folder) => {
                     const Icon = folder.icon;
                     const isActive = folder.id === activeFolder;
+                    const count = getFolderCount(folder.id);
                     return (
                       <button
                         key={folder.id}
+                        onClick={() => handleFolderClick(folder.id)}
                         className={cn(
                           "w-full flex items-center justify-between px-3 py-1.5 rounded-md text-sm transition-colors",
                           isActive
@@ -97,8 +190,8 @@ export function EmailFolder({ activeFolder = "inbox" }: EmailFolderProps) {
                           <Icon className="h-4 w-4 text-muted-foreground" />
                           <span>{folder.name}</span>
                         </span>
-                        {folder.count !== undefined && (
-                          <span className="text-xs text-muted-foreground">{folder.count}</span>
+                        {count > 0 && (
+                          <span className="text-xs text-muted-foreground">{count}</span>
                         )}
                       </button>
                     );
@@ -115,11 +208,12 @@ export function EmailFolder({ activeFolder = "inbox" }: EmailFolderProps) {
           </h3>
           <nav className="space-y-0.5">
             {folders.map((folder) => {
-              const Icon = folder.icon;
+              const Icon = getFolderIcon(folder.name);
               const isActive = folder.id === activeFolder;
               return (
                 <button
                   key={folder.id}
+                  onClick={() => handleFolderClick(folder.id)}
                   className={cn(
                     "w-full flex items-center justify-between px-3 py-1.5 rounded-md text-sm transition-colors",
                     isActive
@@ -131,6 +225,9 @@ export function EmailFolder({ activeFolder = "inbox" }: EmailFolderProps) {
                     <Icon className="h-4 w-4 text-muted-foreground" />
                     <span>{folder.name}</span>
                   </span>
+                  {folder.unreadEmails > 0 && (
+                    <span className="text-xs text-muted-foreground">{folder.unreadEmails}</span>
+                  )}
                 </button>
               );
             })}

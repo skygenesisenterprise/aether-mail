@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { DashboardLayout } from "@/components/DashboardLayout";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Header } from "./_components/Header";
 import { Sidebar } from "./_components/Sidebar";
 
@@ -16,14 +14,12 @@ export default function PlatformLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <DashboardLayout>
-      <div className="flex flex-col h-screen">
-        <Header />
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar />
-          <div className="flex-1 overflow-auto">{children}</div>
-        </div>
+    <div className="flex flex-col h-screen">
+      <Header />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <div className="flex-1 overflow-auto">{children}</div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

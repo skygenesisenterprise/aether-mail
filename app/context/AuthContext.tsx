@@ -2,15 +2,14 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { authEngine } from "@/lib/auth/IndexedDBAuthEngine";
-import type { User } from "@/lib/auth/types";
+import { authApi, type TokenResponse } from "@/lib/api/auth";
+import type { User } from "@/lib/api/types";
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (emailOrUsername: string, password: string) => Promise<void>;
-  register: (email: string, username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -25,9 +24,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuth = useCallback(async () => {
     setIsLoading(true);
     try {
-      const session = await authEngine.getSession();
-      if (session) {
-        setUser(session.user);
+      const storedUser = authApi.getStoredUser();
+      const token = localStorage.getItem("accessToken");
+
+      if (storedUser && token) {
+        setUser(storedUser);
       } else {
         setUser(null);
       }
@@ -42,33 +43,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, [checkAuth]);
 
-  const login = async (emailOrUsername: string, password: string) => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const result = await authEngine.login(emailOrUsername, password);
-      if (result.success && result.user && result.session) {
-        setUser(result.user);
-        router.push("/dashboard");
-      } else {
-        throw new Error(result.error || "Login failed");
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      const response = await authApi.login(email, password);
 
-  const register = async (email: string, username: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const result = await authEngine.register(email, username, password);
-      if (result.success && result.user && result.session) {
-        setUser(result.user);
-        router.push("/dashboard");
-      } else {
-        throw new Error(result.error || "Registration failed");
+      if (!response.success || !response.data) {
+        throw new Error(response.error || "Login failed");
       }
+
+      const { accessToken, refreshToken, user: userData } = response.data;
+
+      authApi.storeTokens(accessToken, refreshToken);
+      authApi.storeUser(userData);
+      setUser(userData);
+
+      router.push("/inbox");
     } catch (error) {
       throw error;
     } finally {
@@ -78,11 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await authEngine.logout();
-      setUser(null);
-      router.push("/login");
+      await authApi.logout();
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("Logout API error:", error);
+    } finally {
+      authApi.clearTokens();
+      authApi.clearUser();
       setUser(null);
       router.push("/login");
     }
@@ -95,7 +86,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         login,
-        register,
         logout,
         checkAuth,
       }}
