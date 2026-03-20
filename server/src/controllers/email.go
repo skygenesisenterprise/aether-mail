@@ -4,19 +4,23 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/skygenesisenterprise/aether-mail/server/src/models"
 	"github.com/skygenesisenterprise/aether-mail/server/src/services"
-
-	"github.com/gin-gonic/gin"
 )
 
 type EmailController struct {
 	stalwartService *services.StalwartService
+	searchService   *services.SearchService
+	tagService      *services.TagService
 }
 
 func NewEmailController(stalwart *services.StalwartService) *EmailController {
 	return &EmailController{
 		stalwartService: stalwart,
+		searchService:   services.NewSearchService(stalwart),
+		tagService:      services.NewTagService(stalwart),
 	}
 }
 
@@ -33,15 +37,30 @@ func (c *EmailController) GetEmails(ctx *gin.Context) {
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "50"))
 	offset, _ := strconv.Atoi(ctx.DefaultQuery("offset", "0"))
 	mailboxID := ctx.Query("mailbox")
+	isReadStr := ctx.Query("is_read")
+	isStarredStr := ctx.Query("is_starred")
 
 	query := &models.EmailQuery{
 		AccountID: accountID,
 		Limit:     limit,
 		Offset:    offset,
+		Sort: []models.SortOrder{
+			{Property: "date", IsAscending: false},
+		},
 	}
 
 	if mailboxID != "" {
-		query.InMailbox = []string{mailboxID}
+		query.MailboxIDs = []string{mailboxID}
+	}
+
+	if isReadStr != "" {
+		isRead := isReadStr == "true"
+		query.IsRead = &isRead
+	}
+
+	if isStarredStr != "" {
+		isStarred := isStarredStr == "true"
+		query.IsStarred = &isStarred
 	}
 
 	emailList, err := c.stalwartService.GetEmails(query)
@@ -86,17 +105,76 @@ func (c *EmailController) GetEmail(ctx *gin.Context) {
 	})
 }
 
-func (c *EmailController) SendEmail(ctx *gin.Context) {
-	var email models.Email
-	if err := ctx.ShouldBindJSON(&email); err != nil {
-		ctx.JSON(http.StatusBadRequest, models.EmailResponse{
-			Success: false,
-			Error:   "Invalid request body",
+func (c *EmailController) GetEmailRaw(ctx *gin.Context) {
+	accountID := ctx.Param("accountId")
+	emailID := ctx.Param("emailId")
+
+	if accountID == "" || emailID == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Account ID and Email ID are required",
 		})
 		return
 	}
 
-	sentEmail, err := c.stalwartService.SendEmail(&email)
+	rawEmail, err := c.stalwartService.GetEmailRaw(accountID, emailID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"error":   "Email not found",
+		})
+		return
+	}
+
+	ctx.Data(http.StatusOK, "message/rfc822", []byte(rawEmail))
+}
+
+func (c *EmailController) GetThread(ctx *gin.Context) {
+	accountID := ctx.Param("accountId")
+	threadID := ctx.Param("threadId")
+
+	if accountID == "" || threadID == "" {
+		ctx.JSON(http.StatusBadRequest, models.ThreadResponse{
+			Success: false,
+			Error:   "Account ID and Thread ID are required",
+		})
+		return
+	}
+
+	thread, err := c.stalwartService.GetThread(accountID, threadID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, models.ThreadResponse{
+			Success: false,
+			Error:   "Thread not found",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.ThreadResponse{
+		Success: true,
+		Data:    thread,
+	})
+}
+
+func (c *EmailController) SendEmail(ctx *gin.Context) {
+	var req models.SendEmailRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, models.EmailResponse{
+			Success: false,
+			Error:   "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	if len(req.To) == 0 {
+		ctx.JSON(http.StatusBadRequest, models.EmailResponse{
+			Success: false,
+			Error:   "At least one recipient is required",
+		})
+		return
+	}
+
+	sentEmail, err := c.stalwartService.SendEmail(&req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, models.EmailResponse{
 			Success: false,
@@ -112,16 +190,16 @@ func (c *EmailController) SendEmail(ctx *gin.Context) {
 }
 
 func (c *EmailController) CreateDraft(ctx *gin.Context) {
-	var email models.Email
-	if err := ctx.ShouldBindJSON(&email); err != nil {
+	var req models.SendEmailRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, models.EmailResponse{
 			Success: false,
-			Error:   "Invalid request body",
+			Error:   "Invalid request body: " + err.Error(),
 		})
 		return
 	}
 
-	draft, err := c.stalwartService.CreateDraft(&email)
+	draft, err := c.stalwartService.CreateDraft(&req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, models.EmailResponse{
 			Success: false,
@@ -136,8 +214,55 @@ func (c *EmailController) CreateDraft(ctx *gin.Context) {
 	})
 }
 
+func (c *EmailController) UpdateDraft(ctx *gin.Context) {
+	accountID := ctx.Param("accountId")
+	draftID := ctx.Param("draftId")
+
+	var req models.SendEmailRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, models.EmailResponse{
+			Success: false,
+			Error:   "Invalid request body",
+		})
+		return
+	}
+
+	draft, err := c.stalwartService.UpdateDraft(accountID, draftID, &req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, models.EmailResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.EmailResponse{
+		Success: true,
+		Data:    draft,
+	})
+}
+
+func (c *EmailController) DeleteDraft(ctx *gin.Context) {
+	accountID := ctx.Param("accountId")
+	draftID := ctx.Param("draftId")
+
+	err := c.stalwartService.DeleteDraft(accountID, draftID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Draft deleted successfully",
+	})
+}
+
 func (c *EmailController) DeleteEmails(ctx *gin.Context) {
-	var req models.FolderAction
+	var req models.EmailActionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -146,7 +271,8 @@ func (c *EmailController) DeleteEmails(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.stalwartService.DeleteEmails(&req); err != nil {
+	err := c.stalwartService.DeleteEmails(req.AccountID, req.EmailIDs)
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"error":   err.Error(),
@@ -161,7 +287,7 @@ func (c *EmailController) DeleteEmails(ctx *gin.Context) {
 }
 
 func (c *EmailController) MoveEmails(ctx *gin.Context) {
-	var req models.FolderAction
+	var req models.MoveEmailsRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -170,7 +296,8 @@ func (c *EmailController) MoveEmails(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.stalwartService.MoveEmails(&req); err != nil {
+	err := c.stalwartService.MoveEmails(&req)
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"error":   err.Error(),
@@ -181,5 +308,183 @@ func (c *EmailController) MoveEmails(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Emails moved successfully",
+	})
+}
+
+func (c *EmailController) MarkAsRead(ctx *gin.Context) {
+	var req models.EmailActionRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid request body",
+		})
+		return
+	}
+
+	err := c.stalwartService.MarkEmailsRead(req.AccountID, req.EmailIDs)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Emails marked as read",
+	})
+}
+
+func (c *EmailController) MarkAsUnread(ctx *gin.Context) {
+	var req models.EmailActionRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid request body",
+		})
+		return
+	}
+
+	err := c.stalwartService.MarkEmailsUnread(req.AccountID, req.EmailIDs)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Emails marked as unread",
+	})
+}
+
+func (c *EmailController) StarEmails(ctx *gin.Context) {
+	var req models.EmailActionRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid request body",
+		})
+		return
+	}
+
+	err := c.stalwartService.StarEmails(req.AccountID, req.EmailIDs)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Emails starred",
+	})
+}
+
+func (c *EmailController) UnstarEmails(ctx *gin.Context) {
+	var req models.EmailActionRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid request body",
+		})
+		return
+	}
+
+	err := c.stalwartService.UnstarEmails(req.AccountID, req.EmailIDs)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Emails unstarred",
+	})
+}
+
+func (c *EmailController) ArchiveEmails(ctx *gin.Context) {
+	var req models.EmailActionRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid request body",
+		})
+		return
+	}
+
+	err := c.stalwartService.ArchiveEmails(req.AccountID, req.EmailIDs)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Emails archived",
+	})
+}
+
+func (c *EmailController) Search(ctx *gin.Context) {
+	var req models.SearchQuery
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, models.SearchResponse{
+			Success: false,
+			Error:   "Invalid request body",
+		})
+		return
+	}
+
+	result, err := c.searchService.Search(&req)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, models.SearchResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.SearchResponse{
+		Success: true,
+		Data:    result,
+	})
+}
+
+func (c *EmailController) QuickSearch(ctx *gin.Context) {
+	accountID := ctx.Query("accountId")
+	query := ctx.Query("q")
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+
+	if accountID == "" || query == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Account ID and query are required",
+		})
+		return
+	}
+
+	result, err := c.searchService.QuickSearch(accountID, query, limit)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    result,
 	})
 }
