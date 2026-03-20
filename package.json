@@ -53,7 +53,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
-    "@prisma/client": "7.4.2",
+    "@prisma/client": "7.5.0",
     "@types/node": "^25.5.0",
     "concurrently": "^9.2.1",
     "eslint": "^10",
@@ -107,7 +107,7 @@
   "dependencies": {
     "@capacitor/core": "^8.2.0",
     "@loglayer/transport-pino": "^3.0.2",
-    "@prisma/client": "^7.4.2",
+    "@prisma/client": "^7.5.0",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "framer-motion": "^12.38.0",
