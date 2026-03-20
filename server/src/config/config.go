@@ -12,6 +12,7 @@ type Config struct {
 	CORS     CORSConfig
 	Server   ServerConfig
 	Log      LogConfig
+	Mail     MailConfig
 }
 
 type StalwartConfig struct {
@@ -46,10 +47,38 @@ type LogConfig struct {
 	Format string
 }
 
+type MailConfig struct {
+	DefaultProvider string
+	IMAP            IMAPConfig
+	SMTP            SMTPConfig
+	POP3            POP3Config
+}
+
+type IMAPConfig struct {
+	Host       string
+	Port       int
+	UseTLS     bool
+	SkipVerify bool
+}
+
+type SMTPConfig struct {
+	Host       string
+	Port       int
+	UseTLS     bool
+	SkipVerify bool
+}
+
+type POP3Config struct {
+	Host       string
+	Port       int
+	UseTLS     bool
+	SkipVerify bool
+}
+
 func Load() *Config {
 	return &Config{
 		Stalwart: StalwartConfig{
-			Host:       getEnv("STALWART_HOST", "localhost"),
+			Host:       getEnv("STALWART_HOST", "mail.skygenesisenterprise.net"),
 			HTTPPort:   getEnvInt("STALWART_HTTP_PORT", 8080),
 			JMAPPort:   getEnvInt("STALWART_JMAP_PORT", 8081),
 			IMAPPort:   getEnvInt("STALWART_IMAP_PORT", 993),
@@ -74,6 +103,27 @@ func Load() *Config {
 			Level:  getEnv("LOG_LEVEL", "info"),
 			File:   getEnv("LOG_FILE", "./src/logs/server.log"),
 			Format: getEnv("LOG_FORMAT", "json"),
+		},
+		Mail: MailConfig{
+			DefaultProvider: getEnv("MAIL_PROVIDER", "stalwart"),
+			IMAP: IMAPConfig{
+				Host:       getEnv("IMAP_HOST", "mail.skygenesisenterprise.net"),
+				Port:       getEnvInt("IMAP_PORT", 993),
+				UseTLS:     getEnvBool("IMAP_USE_TLS", true),
+				SkipVerify: getEnvBool("IMAP_SKIP_VERIFY", false),
+			},
+			SMTP: SMTPConfig{
+				Host:       getEnv("SMTP_HOST", "mail.skygenesisenterprise.net"),
+				Port:       getEnvInt("SMTP_PORT", 587),
+				UseTLS:     getEnvBool("SMTP_USE_TLS", true),
+				SkipVerify: getEnvBool("SMTP_SKIP_VERIFY", false),
+			},
+			POP3: POP3Config{
+				Host:       getEnv("POP3_HOST", "mail.skygenesisenterprise.net"),
+				Port:       getEnvInt("POP3_PORT", 995),
+				UseTLS:     getEnvBool("POP3_USE_TLS", true),
+				SkipVerify: getEnvBool("POP3_SKIP_VERIFY", false),
+			},
 		},
 	}
 }

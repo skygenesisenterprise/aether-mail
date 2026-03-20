@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/skygenesisenterprise/aether-mail/server/src/config"
 	"github.com/skygenesisenterprise/aether-mail/server/src/models"
 	"github.com/skygenesisenterprise/aether-mail/server/src/services"
 )
@@ -12,12 +14,16 @@ import (
 type AuthController struct {
 	stalwartService *services.StalwartService
 	jwtService      *services.JWTService
+	imapService     *services.IMAPService
+	mailConfig      *config.MailConfig
 }
 
-func NewAuthController(stalwart *services.StalwartService, jwt *services.JWTService) *AuthController {
+func NewAuthController(stalwart *services.StalwartService, jwt *services.JWTService, mailConfig *config.MailConfig) *AuthController {
 	return &AuthController{
 		stalwartService: stalwart,
 		jwtService:      jwt,
+		imapService:     services.NewIMAPService(),
+		mailConfig:      mailConfig,
 	}
 }
 
@@ -31,27 +37,61 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	tokenResp, err := c.stalwartService.Authenticate(req.Email, req.Password)
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, models.AuthResponse{
-			Success: false,
-			Error:   "Invalid credentials",
-		})
-		return
-	}
+	var user *models.User
+	var accessToken string
 
-	user := tokenResp.User
-	if user == nil {
-		ctx.JSON(http.StatusInternalServerError, models.AuthResponse{
-			Success: false,
-			Error:   "User data not available",
-		})
-		return
+	authMethod := c.mailConfig.DefaultProvider
+
+	switch authMethod {
+	case "imap":
+		if err := c.imapService.Connect(c.mailConfig.IMAP.Host, c.mailConfig.IMAP.Port, c.mailConfig.IMAP.UseTLS); err != nil {
+			ctx.JSON(http.StatusInternalServerError, models.AuthResponse{
+				Success: false,
+				Error:   fmt.Sprintf("Failed to connect to mail server: %s", err.Error()),
+			})
+			return
+		}
+		defer c.imapService.Disconnect()
+
+		if err := c.imapService.Authenticate(req.Email, req.Password); err != nil {
+			ctx.JSON(http.StatusUnauthorized, models.AuthResponse{
+				Success: false,
+				Error:   "Invalid credentials",
+			})
+			return
+		}
+
+		user = &models.User{
+			ID:    req.Email,
+			Email: req.Email,
+			Name:  extractNameFromEmail(req.Email),
+		}
+		accessToken = ""
+
+	default:
+		tokenResp, err := c.stalwartService.Authenticate(req.Email, req.Password)
+		if err != nil {
+			ctx.JSON(http.StatusUnauthorized, models.AuthResponse{
+				Success: false,
+				Error:   "Invalid credentials",
+			})
+			return
+		}
+
+		user = tokenResp.User
+		if user == nil {
+			ctx.JSON(http.StatusInternalServerError, models.AuthResponse{
+				Success: false,
+				Error:   "User data not available",
+			})
+			return
+		}
+		accessToken = tokenResp.AccessToken
 	}
 
 	customToken, err := c.jwtService.GenerateToken(
 		user.ID,
-		tokenResp.AccessToken,
+		accessToken,
 		user.Email,
 		user.Name,
 	)
@@ -82,6 +122,95 @@ func (c *AuthController) Login(ctx *gin.Context) {
 			User:         user,
 		},
 	})
+}
+
+func extractNameFromEmail(email string) string {
+	parts := splitEmail(email)
+	if len(parts) > 0 {
+		name := parts[0]
+		name = replaceUnderscoreHyphen(name)
+		return capitalizeWords(name)
+	}
+	return email
+}
+
+func splitEmail(email string) []string {
+	atIndex := -1
+	for i, c := range email {
+		if c == '@' {
+			atIndex = i
+			break
+		}
+	}
+	if atIndex == -1 {
+		return nil
+	}
+	return []string{email[:atIndex], email[atIndex+1:]}
+}
+
+func replaceUnderscoreHyphen(s string) string {
+	result := make([]byte, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] == '_' || s[i] == '-' {
+			result[i] = ' '
+		} else {
+			result[i] = s[i]
+		}
+	}
+	return string(result)
+}
+
+func capitalizeWords(s string) string {
+	words := make([]string, 0, len(s))
+	currentWord := ""
+
+	for _, c := range s {
+		if c == ' ' {
+			if currentWord != "" {
+				words = append(words, currentWord)
+				currentWord = ""
+			}
+		} else {
+			currentWord += string(c)
+		}
+	}
+	if currentWord != "" {
+		words = append(words, currentWord)
+	}
+
+	for i, word := range words {
+		runes := []rune(word)
+		if len(runes) > 0 {
+			runes[0] = toUpper(runes[0])
+			for j := 1; j < len(runes); j++ {
+				runes[j] = toLower(runes[j])
+			}
+			words[i] = string(runes)
+		}
+	}
+
+	result := ""
+	for i, word := range words {
+		if i > 0 {
+			result += " "
+		}
+		result += word
+	}
+	return result
+}
+
+func toUpper(r rune) rune {
+	if r >= 'a' && r <= 'z' {
+		return r - 32
+	}
+	return r
+}
+
+func toLower(r rune) rune {
+	if r >= 'A' && r <= 'Z' {
+		return r + 32
+	}
+	return r
 }
 
 func (c *AuthController) Logout(ctx *gin.Context) {
