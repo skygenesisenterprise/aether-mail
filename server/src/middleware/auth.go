@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -43,6 +44,11 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 
 		claims, err := m.jwtService.ValidateToken(parts[1])
 		if err != nil {
+			tokenPreview := parts[1]
+			if len(tokenPreview) > 50 {
+				tokenPreview = tokenPreview[:50]
+			}
+			fmt.Printf("[auth middleware] Token validation error: %v, token: %s...\n", err, tokenPreview)
 			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"error":   "Invalid or expired token",

@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -162,7 +163,7 @@ func getEnvDuration(key string, defaultValue time.Duration) time.Duration {
 
 func getEnvSlice(key string, defaultValue []string) []string {
 	if value := os.Getenv(key); value != "" {
-		return []string{value}
+		return strings.Split(value, ",")
 	}
 	return defaultValue
 }

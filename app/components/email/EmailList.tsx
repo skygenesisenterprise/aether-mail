@@ -5,6 +5,7 @@ import { Mail, Star, Paperclip, MoreHorizontal, RefreshCw, Trash2, MailOpen } fr
 import { cn } from "@/lib/utils";
 import { emailApi, type Email } from "@/lib/api/email";
 import { authApi } from "@/lib/api/auth";
+import { useAuth } from "@/context/AuthContext";
 
 interface EmailListProps {
   folderId?: string;
@@ -12,6 +13,7 @@ interface EmailListProps {
 }
 
 export function EmailList({ folderId = "INBOX", onEmailSelect }: EmailListProps) {
+  const { isAuthenticated } = useAuth();
   const [emails, setEmails] = React.useState<Email[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -22,6 +24,8 @@ export function EmailList({ folderId = "INBOX", onEmailSelect }: EmailListProps)
   const accountId = user?.id || "default";
 
   const fetchEmails = React.useCallback(async () => {
+    if (!isAuthenticated) return;
+
     setIsLoading(true);
     setError(null);
     try {
@@ -42,9 +46,10 @@ export function EmailList({ folderId = "INBOX", onEmailSelect }: EmailListProps)
   }, [accountId, folderId]);
 
   React.useEffect(() => {
+    if (!isAuthenticated) return;
     setSelectedEmails(new Set());
     fetchEmails();
-  }, [fetchEmails]);
+  }, [isAuthenticated, fetchEmails]);
 
   const sortedEmails = React.useMemo(() => {
     return [...emails].sort((a, b) => {
@@ -233,7 +238,7 @@ export function EmailList({ folderId = "INBOX", onEmailSelect }: EmailListProps)
                     <span className={cn("text-sm truncate", !email.isRead && "font-semibold")}>
                       {email.from.name || email.from.email}
                     </span>
-                    <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                    <span className="text-xs text-muted-foreground ml-2 shrink-0">
                       {formatDate(email.date)}
                     </span>
                   </div>
@@ -243,7 +248,7 @@ export function EmailList({ folderId = "INBOX", onEmailSelect }: EmailListProps)
                       {email.subject}
                     </p>
                     {email.attachments && email.attachments.length > 0 && (
-                      <Paperclip className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      <Paperclip className="h-3 w-3 text-muted-foreground shrink-0" />
                     )}
                   </div>
                 </div>

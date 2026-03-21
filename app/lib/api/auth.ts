@@ -21,8 +21,12 @@ class AuthApiService {
       },
     };
 
+    console.log("[Auth API] Request:", { url, method: options.method, body: options.body });
+
     const response = await fetch(url, config);
     const data = await response.json();
+
+    console.log("[Auth API] Response:", { status: response.status, data });
 
     if (!response.ok) {
       throw new Error(data.error || `Request failed with status ${response.status}`);
@@ -83,8 +87,16 @@ class AuthApiService {
 
   storeTokens(accessToken: string, refreshToken: string): void {
     if (typeof window === "undefined") return;
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
+    console.log(
+      "[AuthAPI] storeTokens called with:",
+      accessToken !== undefined ? "valid token" : "undefined/null"
+    );
+    if (accessToken !== undefined && accessToken !== null && accessToken !== "null") {
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken || "");
+    } else {
+      console.error("[AuthAPI] Invalid token value, not storing:", accessToken);
+    }
   }
 
   clearTokens(): void {

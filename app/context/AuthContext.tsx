@@ -54,9 +54,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { accessToken, refreshToken, user: userData } = response.data;
 
+      console.log("[AuthContext] Storing tokens, accessToken length:", accessToken?.length);
       authApi.storeTokens(accessToken, refreshToken);
       authApi.storeUser(userData);
       setUser(userData);
+
+      console.log(
+        "[AuthContext] Tokens stored, checking localStorage:",
+        localStorage.getItem("accessToken")?.substring(0, 20) + "..."
+      );
 
       router.push("/inbox");
     } catch (error) {

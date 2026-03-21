@@ -1,0 +1,20 @@
+FROM node:20-alpine
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+RUN apk add --no-cache wget ca-certificates
+RUN wget -q https://go.dev/dl/go1.25.4.linux-amd64.tar.gz -O /tmp/go.tar && \
+    tar -C /usr/local -xzf /tmp/go.tar && rm /tmp/go.tar
+ENV PATH="/usr/local/go/bin:${PATH}"
+RUN GOBIN=/usr/local/bin go install github.com/air-verse/air@latest
+
+WORKDIR /app
+
+COPY app/package.json app/pnpm-lock.yaml* ./
+RUN pnpm install
+
+COPY app/nginx.conf /app/nginx.conf
+
+RUN mkdir -p /app/tmp
+
+EXPOSE 3001 8080

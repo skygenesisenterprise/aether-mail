@@ -18,15 +18,39 @@ class EmailApiService {
 
   private getToken(): string | null {
     if (typeof window === "undefined") return null;
-    return localStorage.getItem("accessToken");
+    const token = localStorage.getItem("accessToken");
+    if (!token || token === "undefined" || token === "null") {
+      console.log("[Email API] No valid token found in localStorage");
+      return null;
+    }
+    console.log("[Email API] Token found, length:", token.length);
+    return token;
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     const token = this.getToken();
 
+    console.log(
+      "[Email API] Request to:",
+      endpoint,
+      "has token:",
+      !!token,
+      "token length:",
+      token?.length
+    );
+
+    if (!token) {
+      console.error("[Email API] No token available");
+      throw new Error("Not authenticated");
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const config: RequestInit = {
       ...options,
+      signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
         ...(token && { Authorization: `Bearer ${token}` }),
@@ -34,14 +58,21 @@ class EmailApiService {
       },
     };
 
-    const response = await fetch(url, config);
+    try {
+      const response = await fetch(url, config);
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: "Request failed" }));
-      throw new Error(errorData.error || `Request failed with status ${response.status}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(errorData.error || `Request failed with status ${response.status}`);
+      }
+
+      return response.json();
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.error("[Email API] Request failed:", err);
+      throw err;
     }
-
-    return response.json();
   }
 
   async getFolders(accountId: string): Promise<FolderListResponse> {

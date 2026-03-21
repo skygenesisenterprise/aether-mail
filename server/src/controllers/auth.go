@@ -71,6 +71,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	default:
 		tokenResp, err := c.stalwartService.Authenticate(req.Email, req.Password)
 		if err != nil {
+			fmt.Printf("[auth] Authentication error: %v\n", err)
 			ctx.JSON(http.StatusUnauthorized, models.AuthResponse{
 				Success: false,
 				Error:   "Invalid credentials",
@@ -96,12 +97,15 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		user.Name,
 	)
 	if err != nil {
+		fmt.Printf("[auth] Token generation error: %v\n", err)
 		ctx.JSON(http.StatusInternalServerError, models.AuthResponse{
 			Success: false,
 			Error:   "Failed to generate token",
 		})
 		return
 	}
+
+	fmt.Printf("[auth] Generated token: %s...\n", customToken[:50])
 
 	refreshToken, err := c.jwtService.GenerateRefreshToken(user.ID)
 	if err != nil {
@@ -122,6 +126,13 @@ func (c *AuthController) Login(ctx *gin.Context) {
 			User:         user,
 		},
 	})
+
+	fmt.Printf("[auth] Returning token length: %d\n", len(customToken))
+	if len(customToken) > 50 {
+		fmt.Printf("[auth] Returning token: %s...\n", customToken[:50])
+	} else {
+		fmt.Printf("[auth] Returning token: %s\n", customToken)
+	}
 }
 
 func extractNameFromEmail(email string) string {

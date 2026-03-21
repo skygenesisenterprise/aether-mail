@@ -1,0 +1,22 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+      - "8080:8080"
+    volumes:
+      - ./app:/app
+      - ./server:/app/server
+      - ./.air.toml:/app/.air.toml
+      - ./go.mod:/app/go.mod
+      - ./go.sum:/app/go.sum
+      - ./.env:/app/.env
+      - aether-node-modules:/app/node_modules
+    working_dir: /app
+    command: sh -c "mkdir -p /app/tmp && pnpm dev & air -c .air.toml"
+    restart: unless-stopped
+
+volumes:
+  aether-node-modules:

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { emailApi, type Folder } from "@/lib/api/email";
+import { useAuth } from "@/context/AuthContext";
 
 const folderIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   INBOX: Inbox,
@@ -110,11 +111,28 @@ const favorites: { id: string; name: string; icon: React.ComponentType<{ classNa
   ];
 
 export function EmailFolder({ activeFolder = "INBOX", onFolderChange }: EmailFolderProps) {
-  const [favoritesOpen, setFavoritesOpen] = React.useState(false);
+  const { isAuthenticated, user } = useAuth();
   const [folders, setFolders] = React.useState<Folder[]>(defaultFolders);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [favoritesOpen, setFavoritesOpen] = React.useState(false);
+
+  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("accessToken");
 
   React.useEffect(() => {
+    console.log(
+      "[EmailFolder] isAuthenticated:",
+      isAuthenticated,
+      "user:",
+      !!user,
+      "hasToken:",
+      hasToken
+    );
+    if (!isAuthenticated || !user || !hasToken) {
+      console.log("[EmailFolder] Skipping fetch - not authenticated");
+      return;
+    }
+
+    console.log("[EmailFolder] Fetching folders...");
     const fetchFolders = async () => {
       try {
         const response = await emailApi.getFolders("default");
@@ -126,7 +144,7 @@ export function EmailFolder({ activeFolder = "INBOX", onFolderChange }: EmailFol
       }
     };
     fetchFolders();
-  }, []);
+  }, [isAuthenticated, user]);
 
   const handleFolderClick = (folderId: string) => {
     onFolderChange?.(folderId);

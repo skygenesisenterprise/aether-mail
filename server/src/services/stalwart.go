@@ -2,6 +2,7 @@ package services
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,6 +36,9 @@ func NewStalwartService(cfg *config.StalwartConfig) *StalwartService {
 				MaxIdleConns:        100,
 				MaxIdleConnsPerHost: 10,
 				IdleConnTimeout:     90 * time.Second,
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: cfg.SkipVerify,
+				},
 			},
 		},
 	}
