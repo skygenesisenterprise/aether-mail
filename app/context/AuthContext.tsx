@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { authApi, type TokenResponse } from "@/lib/api/auth";
 import type { User } from "@/lib/api/types";
@@ -19,23 +19,66 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
   const router = useRouter();
+  const hasCheckedAuth = useRef(false);
 
   const checkAuth = useCallback(async () => {
+    if (hasCheckedAuth.current) {
+      return;
+    }
+    hasCheckedAuth.current = true;
+
     setIsLoading(true);
     try {
-      const storedUser = authApi.getStoredUser();
       const token = localStorage.getItem("accessToken");
+      const storedUser = authApi.getStoredUser();
 
-      if (storedUser && token) {
-        setUser(storedUser);
+      console.log(
+        "[AuthContext] checkAuth - storedUser:",
+        !!storedUser,
+        "token:",
+        token ? `exists (${token?.length})` : "null"
+      );
+
+      if (token && token.length > 0 && token !== "undefined" && token !== "null") {
+        if (storedUser) {
+          console.log("[AuthContext] Setting user from stored data");
+          setUser(storedUser);
+        } else {
+          console.log("[AuthContext] Token exists but no stored user, fetching account");
+          try {
+            const accountResponse = await authApi.getAccount();
+            if (accountResponse.success && accountResponse.data?.user) {
+              authApi.storeUser(accountResponse.data.user);
+              setUser(accountResponse.data.user);
+            } else {
+              console.log("[AuthContext] Could not fetch account, clearing invalid session");
+              authApi.clearTokens();
+              authApi.clearUser();
+              setUser(null);
+            }
+          } catch (e) {
+            console.error("[AuthContext] Error fetching account:", e);
+            authApi.clearTokens();
+            authApi.clearUser();
+            setUser(null);
+          }
+        }
       } else {
+        console.log("[AuthContext] No valid token found");
+        authApi.clearTokens();
+        authApi.clearUser();
         setUser(null);
       }
-    } catch {
+    } catch (e) {
+      console.error("[AuthContext] checkAuth error:", e);
+      authApi.clearTokens();
+      authApi.clearUser();
       setUser(null);
     } finally {
       setIsLoading(false);
+      setIsAuthChecked(true);
     }
   }, []);
 
@@ -48,21 +91,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await authApi.login(email, password);
 
+      console.log("[AuthContext] Login response:", response);
+
       if (!response.success || !response.data) {
         throw new Error(response.error || "Login failed");
       }
 
       const { accessToken, refreshToken, user: userData } = response.data;
 
-      console.log("[AuthContext] Storing tokens, accessToken length:", accessToken?.length);
-      authApi.storeTokens(accessToken, refreshToken);
+      authApi.storeTokens(accessToken || "", refreshToken || "");
       authApi.storeUser(userData);
       setUser(userData);
 
-      console.log(
-        "[AuthContext] Tokens stored, checking localStorage:",
-        localStorage.getItem("accessToken")?.substring(0, 20) + "..."
-      );
+      console.log("[AuthContext] Login successful, user set");
 
       router.push("/inbox");
     } catch (error) {
@@ -81,24 +122,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authApi.clearTokens();
       authApi.clearUser();
       setUser(null);
+      hasCheckedAuth.current = false;
       router.push("/login");
     }
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        logout,
-        checkAuth,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    login,
+    logout,
+    checkAuth,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

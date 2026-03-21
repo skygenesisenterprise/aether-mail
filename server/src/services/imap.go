@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -219,6 +220,151 @@ func (s *IMAPService) ListMessages(sequence string, items []string) ([]*models.E
 	return emails, nil
 }
 
+func (s *IMAPService) ListMessagesByUID(limit, offset int) ([]*models.Email, error) {
+	if !s.isSelected {
+		return nil, fmt.Errorf("no mailbox selected")
+	}
+
+	tag := s.nextTag()
+	start := offset + 1
+	end := offset + limit
+	cmd := fmt.Sprintf("%s UID FETCH %d:%d (UID FLAGS ENVELOPE BODY.PEEK[HEADER])", tag, start, end)
+
+	if err := s.sendCommand(cmd); err != nil {
+		return nil, err
+	}
+
+	var emails []*models.Email
+	var currentEmailResp strings.Builder
+
+	for {
+		resp, err := s.readResponse()
+		if err != nil {
+			return nil, err
+		}
+
+		if strings.HasPrefix(resp, tag+" ") {
+			if currentEmailResp.Len() > 0 {
+				email := s.parseEmailResponse(currentEmailResp.String())
+				if email != nil {
+					if email.ID == "" {
+						email.ID = fmt.Sprintf("%d-%d", start, len(emails)+1)
+					}
+					emails = append(emails, email)
+				}
+			}
+			break
+		}
+
+		if strings.HasPrefix(resp, "* ") && strings.Contains(resp, "FETCH") {
+			if currentEmailResp.Len() > 0 {
+				email := s.parseEmailResponse(currentEmailResp.String())
+				if email != nil {
+					if email.ID == "" {
+						email.ID = fmt.Sprintf("%d-%d", start, len(emails)+1)
+					}
+					emails = append(emails, email)
+				}
+				currentEmailResp.Reset()
+			}
+			currentEmailResp.WriteString(resp)
+		} else if currentEmailResp.Len() > 0 {
+			if resp == ")" || strings.HasPrefix(resp, tag+" ") {
+				email := s.parseEmailResponse(currentEmailResp.String())
+				if email != nil {
+					if email.ID == "" {
+						email.ID = fmt.Sprintf("%d-%d", start, len(emails)+1)
+					}
+					emails = append(emails, email)
+				}
+				currentEmailResp.Reset()
+			} else {
+				currentEmailResp.WriteString("\r\n" + resp)
+			}
+		}
+	}
+
+	return emails, nil
+}
+
+func (s *IMAPService) FetchEmailByUID(uid int) (*models.Email, error) {
+	if !s.isSelected {
+		return nil, fmt.Errorf("no mailbox selected")
+	}
+
+	tag := s.nextTag()
+	cmd := fmt.Sprintf("%s UID FETCH %d (UID FLAGS ENVELOPE BODY.PEEK[HEADER] BODY.PEEK[TEXT])", tag, uid)
+
+	if err := s.sendCommand(cmd); err != nil {
+		return nil, err
+	}
+
+	var fullResponse strings.Builder
+	inBody := false
+
+	for {
+		resp, err := s.readResponse()
+		if err != nil {
+			return nil, err
+		}
+
+		if strings.HasPrefix(resp, tag+" ") {
+			break
+		}
+
+		if strings.HasPrefix(resp, "* ") {
+			if strings.Contains(resp, "FETCH") {
+				if fullResponse.Len() > 0 {
+					fullResponse.WriteString("\r\n")
+				}
+				fullResponse.WriteString(resp)
+				if strings.Contains(resp, "BODY[TEXT]") {
+					inBody = true
+				}
+			} else if inBody {
+				fullResponse.WriteString("\r\n" + resp)
+				if strings.HasPrefix(resp, ")") {
+					inBody = false
+				}
+			} else {
+				fullResponse.WriteString("\r\n" + resp)
+			}
+		} else if fullResponse.Len() > 0 {
+			if resp == ")" {
+				break
+			}
+			fullResponse.WriteString(resp)
+		}
+	}
+
+	if fullResponse.Len() == 0 {
+		return nil, fmt.Errorf("email not found")
+	}
+
+	email := s.parseEmailResponse(fullResponse.String())
+	if email != nil {
+		email.ID = fmt.Sprintf("%d", uid)
+	}
+
+	return email, nil
+}
+
+func (s *IMAPService) SearchBySubject(subject string) ([]int, error) {
+	return s.SearchMessages(fmt.Sprintf("SUBJECT \"%s\"", subject))
+}
+
+func (s *IMAPService) SearchByFrom(from string) ([]int, error) {
+	return s.SearchMessages(fmt.Sprintf("FROM \"%s\"", from))
+}
+
+func (s *IMAPService) GetMessageCount() (int, error) {
+	status, err := s.GetMailboxStatus(s.selectedMailbox)
+	if err != nil {
+		return 0, err
+	}
+	return int(status.TotalEmails), nil
+}
+
 func (s *IMAPService) FetchMessage(messageNum int, items []string) (*models.Email, error) {
 	emails, err := s.ListMessages(strconv.Itoa(messageNum), items)
 	if err != nil {
@@ -340,6 +486,30 @@ func (s *IMAPService) MarkMessagesSeen(sequence string) error {
 
 	if !strings.HasPrefix(resp, tag+" OK") {
 		return fmt.Errorf("mark seen failed: %s", resp)
+	}
+
+	return nil
+}
+
+func (s *IMAPService) UnmarkMessagesSeen(sequence string) error {
+	if !s.isSelected {
+		return fmt.Errorf("no mailbox selected")
+	}
+
+	tag := s.nextTag()
+	cmd := fmt.Sprintf("%s STORE %s -FLAGS (\\Seen)", tag, sequence)
+
+	if err := s.sendCommand(cmd); err != nil {
+		return err
+	}
+
+	resp, err := s.readResponse()
+	if err != nil {
+		return err
+	}
+
+	if !strings.HasPrefix(resp, tag+" OK") {
+		return fmt.Errorf("unmark seen failed: %s", resp)
 	}
 
 	return nil
@@ -713,6 +883,351 @@ func (s *IMAPService) parseFetchResponse(resp string) *models.Email {
 	}
 
 	return email
+}
+
+func (s *IMAPService) parseEmailResponse(resp string) *models.Email {
+	email := &models.Email{}
+
+	if strings.Contains(resp, "\\Seen") {
+		email.IsRead = true
+	}
+	if strings.Contains(resp, "\\Flagged") {
+		email.IsFlagged = true
+		email.IsStarred = true
+	}
+	if strings.Contains(resp, "\\Answered") {
+		email.Keywords = append(email.Keywords, "answered")
+	}
+	if strings.Contains(resp, "\\Draft") {
+		email.IsDraft = true
+	}
+	if strings.Contains(resp, "\\Deleted") {
+		email.IsDeleted = true
+	}
+
+	uidRegex := regexp.MustCompile(`UID\s+(\d+)`)
+	uidMatch := uidRegex.FindStringSubmatch(resp)
+	if len(uidMatch) > 1 {
+		email.ID = uidMatch[1]
+	}
+
+	msgIdMatch := regexp.MustCompile(`(?i)Message-ID:\s*[<]?([^<>]+)[>]?`).FindStringSubmatch(resp)
+	if len(msgIdMatch) > 1 && email.ID == "" {
+		email.ID = msgIdMatch[1]
+	}
+
+	envelopeRegex := regexp.MustCompile(`ENVELOPE\s*\((.+)\)`)
+	envelopeMatch := envelopeRegex.FindStringSubmatch(resp)
+	if len(envelopeMatch) > 1 {
+		s.parseEnvelope(envelopeMatch[1], email)
+	}
+
+	bodypartRegex := regexp.MustCompile(`BODY\[TEXT\]\s*\{(\d+)\}`)
+	bodypartMatch := bodypartRegex.FindStringSubmatch(resp)
+	if len(bodypartMatch) > 1 {
+		email.Body = bodypartMatch[2]
+	}
+
+	lines := strings.Split(resp, "\r\n")
+	inHeaders := true
+	var bodyLines []string
+	var currentHeader string
+
+	for _, line := range lines {
+		if strings.Contains(line, "BODY[HEADER]") || strings.Contains(line, "BODY[TEXT]") {
+			inHeaders = false
+			continue
+		}
+
+		if inHeaders {
+			if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
+				currentHeader += " " + strings.TrimSpace(line)
+			} else {
+				if currentHeader != "" {
+					s.parseHeaderLine(currentHeader, email)
+				}
+				currentHeader = line
+			}
+		} else {
+			if !strings.HasPrefix(line, ")") && !strings.HasPrefix(line, "* ") && !strings.HasPrefix(line, "A") {
+				bodyLines = append(bodyLines, line)
+			}
+		}
+	}
+
+	if currentHeader != "" {
+		s.parseHeaderLine(currentHeader, email)
+	}
+
+	if len(bodyLines) > 0 {
+		email.Body = strings.Join(bodyLines, "\n")
+		email.Body = strings.TrimSpace(email.Body)
+		if len(email.Body) > 200 {
+			email.Preview = email.Body[:200] + "..."
+		} else {
+			email.Preview = email.Body
+		}
+	}
+
+	if email.From == nil {
+		email.From = &models.EmailAddress{Name: "", Email: ""}
+	}
+	if email.To == nil {
+		email.To = []*models.EmailAddress{}
+	}
+
+	if email.Subject == "" {
+		email.Subject = "(No Subject)"
+	}
+
+	if email.Date.IsZero() {
+		email.Date = time.Now()
+	}
+
+	if email.ID == "" {
+		email.ID = fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+
+	return email
+}
+
+func (s *IMAPService) parseHeaderLine(header string, email *models.Email) {
+	header = strings.TrimSpace(header)
+	if header == "" {
+		return
+	}
+
+	colonIdx := strings.Index(header, ":")
+	if colonIdx == -1 {
+		return
+	}
+
+	field := strings.ToLower(strings.TrimSpace(header[:colonIdx]))
+	value := strings.TrimSpace(header[colonIdx+1:])
+
+	if value == "" || value == "NIL" {
+		return
+	}
+
+	switch field {
+	case "from":
+		if email.From == nil || email.From.Email == "" {
+			email.From = s.parseEmailAddress(value)
+		}
+	case "to":
+		if len(email.To) == 0 {
+			email.To = s.parseAddressList(value)
+		}
+	case "cc":
+		email.Cc = s.parseAddressList(value)
+	case "bcc":
+		email.Bcc = s.parseAddressList(value)
+	case "subject":
+		if email.Subject == "" || email.Subject == "(No Subject)" {
+			email.Subject = value
+		}
+	case "date":
+		if email.Date.IsZero() {
+			if t, err := time.Parse(time.RFC1123Z, value); err == nil {
+				email.Date = t
+			} else if t, err := time.Parse(time.RFC1123, value); err == nil {
+				email.Date = t
+			} else if t, err := time.Parse("Mon, 02 Jan 2006 15:04:05 -0700", value); err == nil {
+				email.Date = t
+			}
+		}
+	}
+}
+
+func (s *IMAPService) parseAddressList(addrStr string) []*models.EmailAddress {
+	var addresses []*models.EmailAddress
+
+	addrStr = strings.TrimSpace(addrStr)
+	if addrStr == "" || addrStr == "NIL" {
+		return addresses
+	}
+
+	recipients := strings.Split(addrStr, ",")
+	for _, recipient := range recipients {
+		addr := s.parseEmailAddress(strings.TrimSpace(recipient))
+		if addr != nil && addr.Email != "" {
+			addresses = append(addresses, addr)
+		}
+	}
+
+	return addresses
+}
+
+func (s *IMAPService) parseEnvelope(envStr string, email *models.Email) {
+	parts := s.splitEnvelopeParts(envStr)
+
+	if len(parts) < 3 {
+		return
+	}
+
+	dateStr := strings.Trim(parts[0], "\" ")
+	if dateStr != "NIL" && dateStr != "" {
+		dateStr = strings.ReplaceAll(dateStr, "\"", "")
+		if t, err := time.Parse("\"02 Jan 2006 15:04:05 -0700\"", dateStr); err == nil {
+			email.Date = t
+		} else if t, err := time.Parse("02 Jan 2006 15:04:05 -0700", dateStr); err == nil {
+			email.Date = t
+		}
+	}
+
+	subject := strings.Trim(parts[1], "\" ")
+	if subject != "NIL" && subject != "" {
+		email.Subject = subject
+	}
+
+	if len(parts) > 2 && parts[2] != "NIL" {
+		fromAddr := s.parseEnvelopeAddress(parts[2])
+		if fromAddr != nil {
+			email.From = fromAddr
+		}
+	}
+
+	if len(parts) > 3 && parts[3] != "NIL" {
+		toAddr := s.parseEnvelopeAddress(parts[3])
+		if toAddr != nil {
+			email.To = []*models.EmailAddress{toAddr}
+		}
+	}
+}
+
+func (s *IMAPService) splitEnvelopeParts(str string) []string {
+	var parts []string
+	var current strings.Builder
+	depth := 0
+	inQuote := false
+
+	for _, ch := range str {
+		if ch == '"' && (current.Len() == 0 || current.String()[current.Len()-1] != '\\') {
+			inQuote = !inQuote
+			current.WriteRune(ch)
+		} else if ch == '(' && !inQuote {
+			if depth > 0 {
+				current.WriteRune(ch)
+			}
+			depth++
+		} else if ch == ')' && !inQuote {
+			depth--
+			if depth == 0 && current.Len() > 0 {
+				parts = append(parts, current.String())
+				current.Reset()
+			} else if depth > 0 {
+				current.WriteRune(ch)
+			}
+		} else if ch == ' ' && depth == 0 && !inQuote && current.Len() > 0 {
+			parts = append(parts, current.String())
+			current.Reset()
+		} else {
+			current.WriteRune(ch)
+		}
+	}
+
+	if current.Len() > 0 {
+		parts = append(parts, current.String())
+	}
+
+	return parts
+}
+
+func (s *IMAPService) parseEnvelopeAddress(addrStr string) *models.EmailAddress {
+	addrStr = strings.TrimSpace(addrStr)
+	if addrStr == "" || addrStr == "NIL" {
+		return nil
+	}
+
+	addr := &models.EmailAddress{}
+
+	parts := s.splitEnvelopeParts(addrStr)
+	if len(parts) >= 3 {
+		name := strings.Trim(parts[0], "\" ")
+		mailbox := strings.Trim(parts[2], "\" ")
+		host := ""
+		if len(parts) > 3 {
+			host = strings.Trim(parts[3], "\" ")
+		}
+
+		if name != "NIL" && name != "" {
+			addr.Name = name
+		}
+		if mailbox != "NIL" && host != "NIL" {
+			addr.Email = mailbox + "@" + host
+			addr.Mailbox = mailbox
+			addr.Host = host
+		}
+	} else if strings.Contains(addrStr, "@") {
+		addr.Email = addrStr
+	}
+
+	return addr
+}
+
+func (s *IMAPService) parseEmailAddress(addrStr string) *models.EmailAddress {
+	addr := &models.EmailAddress{}
+
+	addrStr = strings.TrimSpace(addrStr)
+	if addrStr == "" || addrStr == "NIL" {
+		return addr
+	}
+
+	addrStr = strings.Trim(addrStr, "\"")
+
+	re := regexp.MustCompile(`^(?:"([^"]+)")?\s*<?([^<>@]+@[^<>@]+)>?$`)
+	matches := re.FindStringSubmatch(addrStr)
+
+	if len(matches) >= 3 {
+		if matches[1] != "" {
+			addr.Name = matches[1]
+		}
+		addr.Email = matches[2]
+	} else if strings.Contains(addrStr, "@") {
+		addr.Email = addrStr
+	}
+
+	return addr
+}
+
+func (s *IMAPService) parseAddressFromEnvelope(resp string) *models.EmailAddress {
+	addr := &models.EmailAddress{}
+
+	parts := strings.Split(resp, "(")
+	if len(parts) > 1 {
+		addrStr := parts[1]
+		if nameIdx := strings.Index(addrStr, "\""); nameIdx != -1 && nameIdx < 10 {
+			endQuote := strings.Index(addrStr[nameIdx+1:], "\"")
+			if endQuote != -1 {
+				addr.Name = addrStr[nameIdx+1 : nameIdx+1+endQuote]
+			}
+		}
+		if atIdx := strings.Index(addrStr, "@"); atIdx != -1 {
+			addr.Email = strings.TrimSpace(addrStr[:atIdx])
+			if hostIdx := strings.Index(addrStr[atIdx:], "@"); hostIdx != -1 {
+				rest := addrStr[atIdx+hostIdx:]
+				if spaceIdx := strings.Index(rest, " "); spaceIdx != -1 {
+					addr.Host = rest[1:spaceIdx]
+				} else {
+					addr.Host = strings.TrimSpace(rest[1:])
+				}
+			}
+		}
+	}
+
+	return addr
+}
+
+func (s *IMAPService) parseStringFromEnvelope(resp string) string {
+	parts := strings.Split(resp, "(")
+	if len(parts) < 2 {
+		return ""
+	}
+	closeIdx := strings.Index(parts[1], ")")
+	if closeIdx == -1 {
+		return strings.TrimSpace(parts[1])
+	}
+	return strings.TrimSpace(parts[1][:closeIdx])
 }
 
 func (s *IMAPService) parseQuotaResponse(resp string) *QuotaInfo {

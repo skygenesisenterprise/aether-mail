@@ -135,7 +135,9 @@ export function EmailFolder({ activeFolder = "INBOX", onFolderChange }: EmailFol
     console.log("[EmailFolder] Fetching folders...");
     const fetchFolders = async () => {
       try {
-        const response = await emailApi.getFolders("default");
+        const accountId = user?.id || user?.email || "default";
+        console.log("[EmailFolder] Using accountId:", accountId);
+        const response = await emailApi.getFolders(accountId);
         if (response.success && response.data?.folders) {
           setFolders(response.data.folders);
         }

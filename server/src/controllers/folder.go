@@ -1,21 +1,25 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
+	"github.com/skygenesisenterprise/aether-mail/server/src/config"
 	"github.com/skygenesisenterprise/aether-mail/server/src/models"
 	"github.com/skygenesisenterprise/aether-mail/server/src/services"
-
-	"github.com/gin-gonic/gin"
 )
 
 type FolderController struct {
 	stalwartService *services.StalwartService
+	mailConfig      *config.MailConfig
 }
 
-func NewFolderController(stalwart *services.StalwartService) *FolderController {
+func NewFolderController(stalwart *services.StalwartService, mailConfig *config.MailConfig) *FolderController {
 	return &FolderController{
 		stalwartService: stalwart,
+		mailConfig:      mailConfig,
 	}
 }
 
@@ -25,6 +29,45 @@ func (c *FolderController) GetFolders(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, models.FolderListResponse{
 			Success: false,
 			Error:   "Account ID is required",
+		})
+		return
+	}
+
+	if c.mailConfig != nil && c.mailConfig.DefaultProvider == "imap" {
+		sessionManager := services.GetSessionManager()
+		session, ok := sessionManager.GetSession(accountID)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, models.FolderListResponse{
+				Success: false,
+				Error:   "Session not found",
+			})
+			return
+		}
+
+		imapService := services.NewIMAPEmailService(
+			session.IMAPHost,
+			session.IMAPPort,
+			c.mailConfig.IMAP.UseTLS,
+			session.Email,
+			session.Password,
+		)
+
+		folders, err := imapService.GetFolders()
+		if err != nil {
+			fmt.Printf("[folder] IMAP GetFolders error: %v\n", err)
+			ctx.JSON(http.StatusInternalServerError, models.FolderListResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, models.FolderListResponse{
+			Success: true,
+			Data: &models.FolderList{
+				AccountID: accountID,
+				Folders:   folders,
+			},
 		})
 		return
 	}

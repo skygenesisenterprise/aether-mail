@@ -17,6 +17,7 @@ import (
 
 type StalwartService struct {
 	baseURL    string
+	jmapURL    string
 	httpClient *http.Client
 	authToken  string
 	accountID  string
@@ -28,8 +29,12 @@ func NewStalwartService(cfg *config.StalwartConfig) *StalwartService {
 		protocol = "https"
 	}
 
+	adminURL := fmt.Sprintf("%s://%s:%d", protocol, cfg.Host, cfg.HTTPPort)
+	jmapURL := fmt.Sprintf("%s://%s:%d", protocol, cfg.Host, cfg.JMAPPort)
+
 	return &StalwartService{
-		baseURL: fmt.Sprintf("%s://%s:%d", protocol, cfg.Host, cfg.HTTPPort),
+		baseURL: adminURL,
+		jmapURL: jmapURL,
 		httpClient: &http.Client{
 			Timeout: 60 * time.Second,
 			Transport: &http.Transport{
@@ -121,6 +126,68 @@ func (s *StalwartService) doFormRequest(method, endpoint string, data url.Values
 	}
 
 	return respBody, resp.StatusCode, nil
+}
+
+type JMAPMethod struct {
+	Name     string                 `json:"name"`
+	Args     map[string]interface{} `json:"args"`
+	MethodID string                 `json:"method_id,omitempty"`
+}
+
+type JMAPRequest struct {
+	Using       []string     `json:"using"`
+	MethodCalls []JMAPMethod `json:"methodCalls"`
+	AccountID   string       `json:"accountId,omitempty"`
+}
+
+type JMAPResponse struct {
+	MethodResponses [][]interface{} `json:"methodResponses"`
+	SessionState    string          `json:"sessionState"`
+}
+
+func (s *StalwartService) doJMAPRequest(methodCalls []JMAPMethod) ([]byte, error) {
+	jmapReq := JMAPRequest{
+		Using:       []string{"urn:ietf:params:jmap:core", "urn:ietf:params:jmap:mail"},
+		MethodCalls: methodCalls,
+	}
+
+	if s.accountID != "" {
+		jmapReq.AccountID = s.accountID
+	}
+
+	jsonData, err := json.Marshal(jmapReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal JMAP request: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", s.jmapURL+"/jmap", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create JMAP request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	if s.authToken != "" {
+		req.Header.Set("Authorization", "Bearer "+s.authToken)
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute JMAP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read JMAP response: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("JMAP request failed with status %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	return respBody, nil
 }
 
 type APIResponse struct {
@@ -255,17 +322,84 @@ func (s *StalwartService) GetIdentities(accountID string) ([]*models.Identity, e
 }
 
 func (s *StalwartService) GetFolders(accountID string) (*models.FolderList, error) {
-	respBody, _, err := s.doRequest("GET", fmt.Sprintf("/api/v1/accounts/%s/mailboxes", accountID), nil)
+	s.accountID = accountID
+
+	methodCalls := []JMAPMethod{
+		{
+			Name: "Mailbox/get",
+			Args: map[string]interface{}{
+				"accountId": accountID,
+				"ids":       nil,
+			},
+			MethodID: "0",
+		},
+	}
+
+	respBody, err := s.doJMAPRequest(methodCalls)
 	if err != nil {
 		return nil, err
 	}
 
-	var folderList models.FolderList
-	if err := s.parseResponse(respBody, &folderList); err != nil {
-		return nil, err
+	var jmapResp JMAPResponse
+	if err := json.Unmarshal(respBody, &jmapResp); err != nil {
+		return nil, fmt.Errorf("failed to parse JMAP response: %w", err)
 	}
 
-	return &folderList, nil
+	if len(jmapResp.MethodResponses) == 0 {
+		return nil, fmt.Errorf("empty JMAP response")
+	}
+
+	responseData := jmapResp.MethodResponses[0]
+	if len(responseData) < 2 {
+		return nil, fmt.Errorf("invalid JMAP response format")
+	}
+
+	folderList := &models.FolderList{
+		AccountID: accountID,
+	}
+
+	if args, ok := responseData[1].(map[string]interface{}); ok {
+		if list, ok := args["list"].([]interface{}); ok {
+			for _, mb := range list {
+				if mailbox, ok := mb.(map[string]interface{}); ok {
+					folder := &models.Folder{
+						ID:           getString(mailbox["id"]),
+						Name:         getString(mailbox["name"]),
+						ParentID:     getString(mailbox["parentId"]),
+						IsSubscribed: getBool(mailbox["isSubscribed"]),
+						Path:         getString(mailbox["name"]),
+						IsSelectable: true,
+					}
+					folderList.Folders = append(folderList.Folders, folder)
+				}
+			}
+		}
+		if total, ok := args["total"].(float64); ok {
+			folderList.Total = int(total)
+		}
+	}
+
+	return folderList, nil
+}
+
+func getString(v interface{}) string {
+	if v == nil {
+		return ""
+	}
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
+}
+
+func getBool(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+	if b, ok := v.(bool); ok {
+		return b
+	}
+	return false
 }
 
 func (s *StalwartService) GetFolder(accountID, mailboxID string) (*models.Folder, error) {
@@ -326,17 +460,230 @@ func (s *StalwartService) SubscribeFolder(accountID, mailboxID string, subscribe
 }
 
 func (s *StalwartService) GetEmails(query *models.EmailQuery) (*models.EmailList, error) {
-	respBody, _, err := s.doRequest("POST", "/api/v1/emails/query", query)
+	s.accountID = query.AccountID
+
+	filter := map[string]interface{}{}
+	if len(query.MailboxIDs) > 0 {
+		filter["mailboxIds"] = query.MailboxIDs
+	}
+	if query.IsRead != nil {
+		filter["isRead"] = *query.IsRead
+	}
+	if query.IsStarred != nil {
+		filter["isFlagged"] = *query.IsStarred
+	}
+
+	emailQueryArgs := map[string]interface{}{
+		"accountId": query.AccountID,
+		"limit":     query.Limit,
+		"filter":    filter,
+	}
+
+	if query.Offset > 0 {
+		emailQueryArgs["position"] = query.Offset
+	}
+
+	if len(query.Sort) > 0 {
+		sort := []map[string]interface{}{}
+		for _, s := range query.Sort {
+			sort = append(sort, map[string]interface{}{
+				"property":    s.Property,
+				"isAscending": s.IsAscending,
+				"collation":   "U",
+			})
+		}
+		emailQueryArgs["sort"] = sort
+	}
+
+	methodCalls := []JMAPMethod{
+		{
+			Name:     "Email/query",
+			Args:     emailQueryArgs,
+			MethodID: "0",
+		},
+	}
+
+	respBody, err := s.doJMAPRequest(methodCalls)
 	if err != nil {
 		return nil, err
 	}
 
-	var emailList models.EmailList
-	if err := s.parseResponse(respBody, &emailList); err != nil {
+	var jmapResp JMAPResponse
+	if err := json.Unmarshal(respBody, &jmapResp); err != nil {
+		return nil, fmt.Errorf("failed to parse JMAP response: %w", err)
+	}
+
+	if len(jmapResp.MethodResponses) == 0 {
+		return nil, fmt.Errorf("empty JMAP response")
+	}
+
+	responseData := jmapResp.MethodResponses[0]
+	if len(responseData) < 2 {
+		return nil, fmt.Errorf("invalid JMAP response format")
+	}
+
+	var emailIDs []string
+	var total int
+
+	if args, ok := responseData[1].(map[string]interface{}); ok {
+		if ids, ok := args["ids"].([]interface{}); ok {
+			for _, id := range ids {
+				if idStr, ok := id.(string); ok {
+					emailIDs = append(emailIDs, idStr)
+				}
+			}
+		}
+		if t, ok := args["total"].(float64); ok {
+			total = int(t)
+		}
+	}
+
+	if len(emailIDs) == 0 {
+		return &models.EmailList{
+			AccountID:   query.AccountID,
+			Emails:      []*models.Email{},
+			TotalEmails: 0,
+		}, nil
+	}
+
+	emailGetArgs := map[string]interface{}{
+		"accountId": query.AccountID,
+		"ids":       emailIDs,
+		"properties": []string{
+			"id", "subject", "from", "to", "cc", "bcc",
+			"preview", "textBody", "htmlBody", "hasAttachments",
+			"keywords", "receivedAt", "sentAt", "mailboxIds",
+			"threadId", "size", "headers",
+		},
+	}
+
+	methodCalls = []JMAPMethod{
+		{
+			Name:     "Email/get",
+			Args:     emailGetArgs,
+			MethodID: "1",
+		},
+	}
+
+	respBody, err = s.doJMAPRequest(methodCalls)
+	if err != nil {
 		return nil, err
 	}
 
-	return &emailList, nil
+	if err := json.Unmarshal(respBody, &jmapResp); err != nil {
+		return nil, fmt.Errorf("failed to parse Email/get response: %w", err)
+	}
+
+	if len(jmapResp.MethodResponses) == 0 {
+		return nil, fmt.Errorf("empty Email/get response")
+	}
+
+	emailList := &models.EmailList{
+		AccountID:   query.AccountID,
+		TotalEmails: int64(total),
+	}
+
+	responseData = jmapResp.MethodResponses[0]
+	if len(responseData) >= 2 {
+		if args, ok := responseData[1].(map[string]interface{}); ok {
+			if list, ok := args["list"].([]interface{}); ok {
+				for _, e := range list {
+					if emailData, ok := e.(map[string]interface{}); ok {
+						email := s.parseJMAPEmail(emailData)
+						emailList.Emails = append(emailList.Emails, email)
+					}
+				}
+			}
+		}
+	}
+
+	return emailList, nil
+}
+
+func (s *StalwartService) parseJMAPEmail(data map[string]interface{}) *models.Email {
+	email := &models.Email{
+		ID: getString(data["id"]),
+	}
+
+	if subject, ok := data["subject"].(string); ok {
+		email.Subject = subject
+	}
+
+	if fromList, ok := data["from"].([]interface{}); ok && len(fromList) > 0 {
+		if from, ok := fromList[0].(map[string]interface{}); ok {
+			email.From = &models.EmailAddress{
+				Name:  getString(from["name"]),
+				Email: getString(from["email"]),
+			}
+		}
+	}
+
+	if toList, ok := data["to"].([]interface{}); ok {
+		for _, t := range toList {
+			if to, ok := t.(map[string]interface{}); ok {
+				email.To = append(email.To, &models.EmailAddress{
+					Name:  getString(to["name"]),
+					Email: getString(to["email"]),
+				})
+			}
+		}
+	}
+
+	if ccList, ok := data["cc"].([]interface{}); ok {
+		for _, c := range ccList {
+			if cc, ok := c.(map[string]interface{}); ok {
+				email.Cc = append(email.Cc, &models.EmailAddress{
+					Name:  getString(cc["name"]),
+					Email: getString(cc["email"]),
+				})
+			}
+		}
+	}
+
+	if bccList, ok := data["bcc"].([]interface{}); ok {
+		for _, b := range bccList {
+			if bcc, ok := b.(map[string]interface{}); ok {
+				email.Bcc = append(email.Bcc, &models.EmailAddress{
+					Name:  getString(bcc["name"]),
+					Email: getString(bcc["email"]),
+				})
+			}
+		}
+	}
+
+	if preview, ok := data["preview"].(string); ok {
+		email.Preview = preview
+	}
+
+	email.HasAttachments = getBool(data["hasAttachments"])
+
+	if keywords, ok := data["keywords"].(map[string]interface{}); ok {
+		email.IsRead = keywords["$seen"] == true
+		email.IsStarred = keywords["$flagged"] == true
+	}
+
+	if receivedAt, ok := data["receivedAt"].(string); ok {
+		if t, err := time.Parse(time.RFC3339, receivedAt); err == nil {
+			email.Date = t
+		}
+	}
+
+	if threadId, ok := data["threadId"].(string); ok {
+		email.ThreadID = threadId
+	}
+
+	if size, ok := data["size"].(float64); ok {
+		email.Size = int64(size)
+	}
+
+	if mailboxIds, ok := data["mailboxIds"].(map[string]interface{}); ok {
+		for mbxId := range mailboxIds {
+			email.MailboxID = mbxId
+			break
+		}
+	}
+
+	return email
 }
 
 func (s *StalwartService) GetEmail(accountID, emailID string) (*models.Email, error) {

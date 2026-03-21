@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/skygenesisenterprise/aether-mail/server/src/config"
 	"github.com/skygenesisenterprise/aether-mail/server/src/models"
 	"github.com/skygenesisenterprise/aether-mail/server/src/services"
 )
@@ -14,13 +16,15 @@ type EmailController struct {
 	stalwartService *services.StalwartService
 	searchService   *services.SearchService
 	tagService      *services.TagService
+	mailConfig      *config.MailConfig
 }
 
-func NewEmailController(stalwart *services.StalwartService) *EmailController {
+func NewEmailController(stalwart *services.StalwartService, mailConfig *config.MailConfig) *EmailController {
 	return &EmailController{
 		stalwartService: stalwart,
 		searchService:   services.NewSearchService(stalwart),
 		tagService:      services.NewTagService(stalwart),
+		mailConfig:      mailConfig,
 	}
 }
 
@@ -36,9 +40,45 @@ func (c *EmailController) GetEmails(ctx *gin.Context) {
 
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "50"))
 	offset, _ := strconv.Atoi(ctx.DefaultQuery("offset", "0"))
-	mailboxID := ctx.Query("mailbox")
+	mailboxID := ctx.DefaultQuery("mailbox", "INBOX")
 	isReadStr := ctx.Query("is_read")
 	isStarredStr := ctx.Query("is_starred")
+
+	if c.mailConfig != nil && c.mailConfig.DefaultProvider == "imap" {
+		sessionManager := services.GetSessionManager()
+		session, ok := sessionManager.GetSession(accountID)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, models.EmailListResponse{
+				Success: false,
+				Error:   "Session not found",
+			})
+			return
+		}
+
+		imapService := services.NewIMAPEmailService(
+			session.IMAPHost,
+			session.IMAPPort,
+			c.mailConfig.IMAP.UseTLS,
+			session.Email,
+			session.Password,
+		)
+
+		emailList, err := imapService.GetEmails(mailboxID, limit, offset)
+		if err != nil {
+			fmt.Printf("[email] IMAP GetEmails error: %v\n", err)
+			ctx.JSON(http.StatusInternalServerError, models.EmailListResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, models.EmailListResponse{
+			Success: true,
+			Data:    emailList,
+		})
+		return
+	}
 
 	query := &models.EmailQuery{
 		AccountID: accountID,
@@ -81,11 +121,57 @@ func (c *EmailController) GetEmails(ctx *gin.Context) {
 func (c *EmailController) GetEmail(ctx *gin.Context) {
 	accountID := ctx.Param("accountId")
 	emailID := ctx.Param("emailId")
+	mailboxID := ctx.DefaultQuery("mailbox", "INBOX")
 
 	if accountID == "" || emailID == "" {
 		ctx.JSON(http.StatusBadRequest, models.EmailResponse{
 			Success: false,
 			Error:   "Account ID and Email ID are required",
+		})
+		return
+	}
+
+	if c.mailConfig != nil && c.mailConfig.DefaultProvider == "imap" {
+		sessionManager := services.GetSessionManager()
+		session, ok := sessionManager.GetSession(accountID)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, models.EmailResponse{
+				Success: false,
+				Error:   "Session not found",
+			})
+			return
+		}
+
+		imapService := services.NewIMAPEmailService(
+			session.IMAPHost,
+			session.IMAPPort,
+			c.mailConfig.IMAP.UseTLS,
+			session.Email,
+			session.Password,
+		)
+
+		uid, err := strconv.Atoi(emailID)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, models.EmailResponse{
+				Success: false,
+				Error:   "Invalid email ID format",
+			})
+			return
+		}
+
+		email, err := imapService.GetEmail(mailboxID, uid)
+		if err != nil {
+			fmt.Printf("[email] IMAP GetEmail error: %v\n", err)
+			ctx.JSON(http.StatusNotFound, models.EmailResponse{
+				Success: false,
+				Error:   "Email not found",
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, models.EmailResponse{
+			Success: true,
+			Data:    email,
 		})
 		return
 	}
@@ -316,7 +402,43 @@ func (c *EmailController) MarkAsRead(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"error":   "Invalid request body",
+			"error":   "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	if c.mailConfig != nil && c.mailConfig.DefaultProvider == "imap" {
+		sessionManager := services.GetSessionManager()
+		session, ok := sessionManager.GetSession(req.AccountID)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"error":   "Session not found",
+			})
+			return
+		}
+
+		imapService := services.NewIMAPEmailService(
+			session.IMAPHost,
+			session.IMAPPort,
+			c.mailConfig.IMAP.UseTLS,
+			session.Email,
+			session.Password,
+		)
+
+		err := imapService.MarkAsRead(req.EmailIDs)
+		if err != nil {
+			fmt.Printf("[email] IMAP MarkAsRead error: %v\n", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Emails marked as read",
 		})
 		return
 	}
@@ -341,7 +463,43 @@ func (c *EmailController) MarkAsUnread(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
-			"error":   "Invalid request body",
+			"error":   "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	if c.mailConfig != nil && c.mailConfig.DefaultProvider == "imap" {
+		sessionManager := services.GetSessionManager()
+		session, ok := sessionManager.GetSession(req.AccountID)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"error":   "Session not found",
+			})
+			return
+		}
+
+		imapService := services.NewIMAPEmailService(
+			session.IMAPHost,
+			session.IMAPPort,
+			c.mailConfig.IMAP.UseTLS,
+			session.Email,
+			session.Password,
+		)
+
+		err := imapService.MarkAsUnread(req.EmailIDs)
+		if err != nil {
+			fmt.Printf("[email] IMAP MarkAsUnread error: %v\n", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Emails marked as unread",
 		})
 		return
 	}

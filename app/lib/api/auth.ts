@@ -88,14 +88,30 @@ class AuthApiService {
   storeTokens(accessToken: string, refreshToken: string): void {
     if (typeof window === "undefined") return;
     console.log(
-      "[AuthAPI] storeTokens called with:",
-      accessToken !== undefined ? "valid token" : "undefined/null"
+      "[AuthAPI] storeTokens called with accessToken length:",
+      accessToken?.length,
+      "refreshToken:",
+      refreshToken ? "exists" : "null"
     );
-    if (accessToken !== undefined && accessToken !== null && accessToken !== "null") {
+
+    if (
+      accessToken &&
+      accessToken !== "undefined" &&
+      accessToken !== "null" &&
+      accessToken.length > 0
+    ) {
+      console.log("[AuthAPI] Storing tokens in localStorage, token length:", accessToken.length);
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken || "");
+      const stored = localStorage.getItem("accessToken");
+      console.log("[AuthAPI] Tokens stored successfully, verified:", stored?.substring(0, 20));
     } else {
-      console.error("[AuthAPI] Invalid token value, not storing:", accessToken);
+      console.error(
+        "[AuthAPI] Invalid token value, not storing:",
+        accessToken,
+        "length:",
+        accessToken?.length
+      );
     }
   }
 

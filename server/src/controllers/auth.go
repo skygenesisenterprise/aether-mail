@@ -66,7 +66,20 @@ func (c *AuthController) Login(ctx *gin.Context) {
 			Email: req.Email,
 			Name:  extractNameFromEmail(req.Email),
 		}
-		accessToken = ""
+		accessToken = "imap-auth"
+
+		sessionManager := services.GetSessionManager()
+		sessionManager.SetSession(user.ID, &services.Session{
+			UserID:   user.ID,
+			Email:    user.Email,
+			Password: req.Password,
+			IMAPHost: c.mailConfig.IMAP.Host,
+			IMAPPort: c.mailConfig.IMAP.Port,
+			SMTPHost: c.mailConfig.SMTP.Host,
+			SMTPPort: c.mailConfig.SMTP.Port,
+		})
+
+		fmt.Printf("[auth] IMAP authentication successful for user: %s\n", user.Email)
 
 	default:
 		tokenResp, err := c.stalwartService.Authenticate(req.Email, req.Password)

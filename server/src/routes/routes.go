@@ -28,8 +28,8 @@ func NewRouter(
 ) *Router {
 	return &Router{
 		authController:    controllers.NewAuthController(stalwartService, jwtService, mailConfig),
-		emailController:   controllers.NewEmailController(stalwartService),
-		folderController:  controllers.NewFolderController(stalwartService),
+		emailController:   controllers.NewEmailController(stalwartService, mailConfig),
+		folderController:  controllers.NewFolderController(stalwartService, mailConfig),
 		contactController: controllers.NewContactController(stalwartService),
 		imapController:    controllers.NewIMAPController(stalwartService),
 		smtpController:    controllers.NewSMTPController(),

@@ -50,10 +50,10 @@ type Credentials struct {
 }
 
 type TokenResponse struct {
-	AccessToken  string   `json:"access_token"`
-	RefreshToken string   `json:"refresh_token,omitempty"`
-	TokenType    string   `json:"token_type"`
-	ExpiresIn    int64    `json:"expires_in"`
+	AccessToken  string   `json:"accessToken"`
+	RefreshToken string   `json:"refreshToken,omitempty"`
+	TokenType    string   `json:"tokenType"`
+	ExpiresIn    int64    `json:"expiresIn"`
 	User         *User    `json:"user,omitempty"`
 	Account      *Account `json:"account,omitempty"`
 }

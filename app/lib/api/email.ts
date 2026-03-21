@@ -46,7 +46,10 @@ class EmailApiService {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => {
+      console.log("[Email API] Request timeout after 30s");
+      controller.abort();
+    }, 30000);
 
     const config: RequestInit = {
       ...options,

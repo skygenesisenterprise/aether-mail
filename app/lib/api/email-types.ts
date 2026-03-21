@@ -9,6 +9,14 @@ export interface Email {
     name: string;
     email: string;
   }[];
+  cc?: {
+    name: string;
+    email: string;
+  }[];
+  bcc?: {
+    name: string;
+    email: string;
+  }[];
   date: string;
   preview: string;
   body: string;
