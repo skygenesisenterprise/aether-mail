@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@capacitor/core':
-        specifier: ^8.2.0
-        version: 8.2.0
+        specifier: ^8.3.0
+        version: 8.3.0
       '@loglayer/transport-pino':
         specifier: ^3.0.2
         version: 3.0.2(pino@10.3.1)
@@ -242,8 +242,8 @@ importers:
         version: 4.3.6
     devDependencies:
       '@capacitor/core':
-        specifier: ^8.2.0
-        version: 8.2.0
+        specifier: ^8.3.0
+        version: 8.3.0
       '@tailwindcss/postcss':
         specifier: ^4.2.1
         version: 4.2.2
@@ -428,8 +428,8 @@ packages:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  /@capacitor/core@8.2.0:
-    resolution: {integrity: sha512-oKaoNeNtH2iIZMDFVrb1atoyRECDGHcfLMunJ5KWN8DtvpVBeeA4c41e20NTuhMxw1cSYbpq2PV2hb+/9CJxlQ==}
+  /@capacitor/core@8.3.0:
+    resolution: {integrity: sha512-S4ajn4G/fS3VJj8salxqH/3LO5PPWv1VxGKQ27OCajnDcLJjEg9VXwgMPnlypgkIOqCJ2fmQLtk8GT+BlI9/rw==}
     dependencies:
       tslib: 2.8.1
 

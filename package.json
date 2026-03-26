@@ -105,7 +105,7 @@
     ]
   },
   "dependencies": {
-    "@capacitor/core": "^8.2.0",
+    "@capacitor/core": "^8.3.0",
     "@loglayer/transport-pino": "^3.0.2",
     "@prisma/client": "^7.4.2",
     "@radix-ui/react-slot": "^1.2.4",
