@@ -15,8 +15,8 @@ importers:
         specifier: ^3.0.2
         version: 3.0.2(pino@10.3.1)
       '@prisma/client':
-        specifier: ^7.4.2
-        version: 7.4.2(prisma@7.5.0)(typescript@5.9.3)
+        specifier: ^7.5.0
+        version: 7.5.0(prisma@7.5.0)(typescript@5.9.3)
       '@radix-ui/react-slot':
         specifier: ^1.2.4
         version: 1.2.4(@types/react@19.2.14)(react@19.2.4)
@@ -70,8 +70,8 @@ importers:
         specifier: ^3.0.2
         version: 3.0.2(pino@10.3.1)
       '@prisma/client':
-        specifier: 7.4.2
-        version: 7.4.2(prisma@7.5.0)(typescript@5.9.3)
+        specifier: 7.5.0
+        version: 7.5.0(prisma@7.5.0)(typescript@5.9.3)
       '@radix-ui/react-accordion':
         specifier: 1.2.12
         version: 1.2.12(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.2.4)(react@19.2.4)
@@ -1264,12 +1264,12 @@ packages:
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
     dev: false
 
-  /@prisma/client-runtime-utils@7.4.2:
-    resolution: {integrity: sha512-cID+rzOEb38VyMsx5LwJMEY4NGIrWCNpKu/0ImbeooQ2Px7TI+kOt7cm0NelxUzF2V41UVVXAmYjANZQtCu1/Q==}
+  /@prisma/client-runtime-utils@7.5.0:
+    resolution: {integrity: sha512-KnJ2b4Si/pcWEtK68uM+h0h1oh80CZt2suhLTVuLaSKg4n58Q9jBF/A42Kw6Ma+aThy1yAhfDeTC0JvEmeZnFQ==}
     dev: false
 
-  /@prisma/client@7.4.2(prisma@7.5.0)(typescript@5.9.3):
-    resolution: {integrity: sha512-ts2mu+cQHriAhSxngO3StcYubBGTWDtu/4juZhXCUKOwgh26l+s4KD3vT2kMUzFyrYnll9u/3qWrtzRv9CGWzA==}
+  /@prisma/client@7.5.0(prisma@7.5.0)(typescript@5.9.3):
+    resolution: {integrity: sha512-h4hF9ctp+kSRs7ENHGsFQmHAgHcfkOCxbYt6Ti9Xi8x7D+kP4tTi9x51UKmiTH/OqdyJAO+8V+r+JA5AWdav7w==}
     engines: {node: ^20.19 || ^22.12 || >=24.0}
     peerDependencies:
       prisma: '*'
@@ -1280,7 +1280,7 @@ packages:
       typescript:
         optional: true
     dependencies:
-      '@prisma/client-runtime-utils': 7.4.2
+      '@prisma/client-runtime-utils': 7.5.0
       prisma: 7.5.0(@types/react@19.2.14)(react-dom@19.2.4)(react@19.2.4)(typescript@5.9.3)
       typescript: 5.9.3
     dev: false
