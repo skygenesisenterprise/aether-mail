@@ -4,14 +4,13 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Mails,
-  Calendar,
+  Mail,
+  CalendarDays,
   Users,
-  File,
   HardDrive,
   Settings,
   CheckSquare,
-  Bot,
+  MessageSquareMore,
   Rss,
   Building2,
 } from 'lucide-react';
@@ -31,14 +30,14 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { title: 'Mails', href: '/inbox', icon: Mails },
-  { title: 'Calendar', href: '/calendar', icon: Calendar },
+  { title: 'Mail', href: '/inbox', icon: Mail },
+  { title: 'Calendar', href: '/calendar', icon: CalendarDays },
+  { title: 'Copilot', href: '/copilot', icon: MessageSquareMore },
   { title: 'Contacts', href: '/contacts', icon: Users },
   { title: 'Todo', href: '/todo', icon: CheckSquare },
-  { title: 'Drive', href: '/drive', icon: HardDrive },
-  { title: 'Newsletter', href: '/newsletter', icon: Rss },
-  { title: 'Copilot', href: '/copilot', icon: Bot },
+  { title: 'Flux RSS', href: '/newsletter', icon: Rss },
   { title: 'Organization', href: '/organization', icon: Building2 },
+  { title: 'Drive', href: '/drive', icon: HardDrive },
 ];
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}

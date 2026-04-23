@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import {
   Select,
   SelectContent,
@@ -23,6 +24,8 @@ export function AccountSwitcher({ isCollapsed, accounts = [] }: AccountSwitcherP
     accounts[0]?.email || ""
   );
 
+  const selected = accounts.find((account) => account.email === selectedAccount);
+
   return (
     <Select defaultValue={selectedAccount} onValueChange={setSelectedAccount}>
       <SelectTrigger
@@ -34,21 +37,38 @@ export function AccountSwitcher({ isCollapsed, accounts = [] }: AccountSwitcherP
         aria-label="Select account"
       >
         <SelectValue placeholder="Select an account">
-          {accounts.find((account) => account.email === selectedAccount)?.icon}
-          <span className={cn("ml-2", isCollapsed && "hidden")}>
-            {accounts.find((account) => account.email === selectedAccount)?.label}
-          </span>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15 }}
+            className="flex items-center gap-2"
+          >
+            {selected?.icon}
+            <span className={cn("ml-2", isCollapsed && "hidden")}>
+              {selected?.label}
+            </span>
+          </motion.div>
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {accounts.map((account) => (
-          <SelectItem key={account.email} value={account.email}>
-            <div className="flex items-center gap-3 [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 [&_svg]:text-foreground">
-              {account.icon}
-              {account.email}
-            </div>
-          </SelectItem>
-        ))}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {accounts.map((account) => (
+            <SelectItem key={account.email} value={account.email}>
+              <motion.div
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-3 [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 [&_svg]:text-foreground"
+              >
+                {account.icon}
+                {account.email}
+              </motion.div>
+            </SelectItem>
+          ))}
+        </motion.div>
       </SelectContent>
     </Select>
   );

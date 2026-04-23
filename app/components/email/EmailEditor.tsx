@@ -34,7 +34,7 @@ export function EmailEditor({ onClose }: EmailEditorProps) {
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="flex items-center justify-between px-4 py-2 border-b">
-        <h2 className="font-semibold">Nouveau Email</h2>
+        <h2 className="font-semibold">New Email</h2>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
@@ -60,7 +60,7 @@ export function EmailEditor({ onClose }: EmailEditorProps) {
           placeholder="Write your message..."
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          className="min-h-[300px] w-full resize-none"
+          className="min-h-75 w-full resize-none"
         />
       </div>
 

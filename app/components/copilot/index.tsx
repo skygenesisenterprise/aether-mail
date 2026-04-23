@@ -1,0 +1,1 @@
+export { CopilotView } from './CopilotView';

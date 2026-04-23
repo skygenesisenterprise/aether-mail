@@ -241,7 +241,7 @@ export function Mail({
                 <MailIcon className="h-12 w-12 mb-4 opacity-50" />
                 <p className="text-sm font-medium">Select an item to read</p>
               </div>
-              <Footer className="py-2 text-xs text-center text-muted-foreground border-t" />
+              <Footer className="py-2 text-xs text-center text-muted-foreground" />
             </div>
           )}
         </ResizablePanel>

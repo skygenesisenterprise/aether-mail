@@ -6,7 +6,7 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 const isProduction = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["mailer.skygenesisenterprise.com", "192.168.1.3"],
+  allowedDevOrigins: ["mail.skygenesisenterprise.com", "192.168.1.3"],
 
   reactStrictMode: true,
   poweredByHeader: false,
@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
 
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "mailer.skygenesisenterprise.com", pathname: "/**" },
+      { protocol: "https", hostname: "mail.skygenesisenterprise.com", pathname: "/**" },
       { protocol: "https", hostname: "api.dicebear.com", pathname: "/**" },
       { protocol: "https", hostname: "avatars.githubusercontent.com", pathname: "/**" },
       { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
