@@ -2,11 +2,14 @@
 
 import { AuthProvider } from "@/context/AuthContext";
 import { LicenseProvider } from "@/context/LicenseContext";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <LicenseProvider>
-      <AuthProvider>{children}</AuthProvider>
-    </LicenseProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <LicenseProvider>
+        <AuthProvider>{children}</AuthProvider>
+      </LicenseProvider>
+    </ThemeProvider>
   );
 }

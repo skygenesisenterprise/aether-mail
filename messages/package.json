@@ -1,0 +1,66 @@
+{
+  "name": "@aether-mailer/messages",
+  "version": "0.1.0",
+  "description": "Internationalization (i18n) message files for Aether Mailer",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "test": "echo \"No tests configured yet\" && exit 0",
+    "extract-keys": "i18next-scanner",
+    "validate-translations": "node scripts/validate-translations.js",
+    "sync-translations": "node scripts/sync-translations.js",
+    "format-translations": "node scripts/format-translations.js",
+    "check-missing": "node scripts/check-missing.js",
+    "compile-translations": "node scripts/compile-translations.js"
+  },
+  "keywords": [
+    "aether-mailer",
+    "i18n",
+    "internationalization",
+    "localization",
+    "translations",
+    "messages"
+  ],
+  "author": "Sky Genesis Enterprise",
+  "license": "MIT",
+  "dependencies": {
+    "i18next": "^26.0.6",
+    "react-i18next": "^16.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25",
+    "@types/i18next": "^13.0.0",
+    "i18next-scanner": "^4.6.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "eslint": "^9"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/**/*",
+    "messages/**/*",
+    "README.md"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./messages": "./messages/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skygenesisenterprise/aether-mailer.git",
+    "directory": "messages"
+  },
+  "bugs": {
+    "url": "https://github.com/skygenesisenterprise/aether-mailer/issues"
+  },
+  "homepage": "https://github.com/skygenesisenterprise/aether-mailer/tree/main/messages#readme"
+}

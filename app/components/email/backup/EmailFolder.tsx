@@ -14,8 +14,10 @@ import {
   MessageSquare,
   BookOpen,
   ChevronDown,
+  PenSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { emailApi, type Folder } from "@/lib/api/email";
 import { useAuth } from "@/context/AuthContext";
 
@@ -35,6 +37,7 @@ const folderIcons: Record<string, React.ComponentType<{ className?: string }>> =
 interface EmailFolderProps {
   activeFolder?: string;
   onFolderChange?: (folderId: string) => void;
+  onNewEmail?: () => void;
 }
 
 const defaultFolders: Folder[] = [
@@ -110,7 +113,7 @@ const favorites: { id: string; name: string; icon: React.ComponentType<{ classNa
     { id: "Drafts", name: "Drafts", icon: File },
   ];
 
-export function EmailFolder({ activeFolder = "INBOX", onFolderChange }: EmailFolderProps) {
+export function EmailFolder({ activeFolder = "INBOX", onFolderChange, onNewEmail }: EmailFolderProps) {
   const { isAuthenticated, user } = useAuth();
   const [folders, setFolders] = React.useState<Folder[]>(defaultFolders);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -163,6 +166,13 @@ export function EmailFolder({ activeFolder = "INBOX", onFolderChange }: EmailFol
 
   return (
     <div className="w-60 border-r bg-background h-full flex flex-col">
+      <div className="p-2">
+        <Button className="w-full" size="sm" onClick={onNewEmail}>
+          <PenSquare className="h-4 w-4 mr-2" />
+          New Email
+        </Button>
+      </div>
+
       <div className="flex-1 overflow-y-auto px-2 pb-4">
         <div className="mb-4">
           <button
