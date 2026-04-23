@@ -1,12 +1,43 @@
 import type { Metadata } from "next";
-import "@/styles/globals.css";
+import { Inter, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { Providers } from "@/context/Providers";
-import { DashboardLayout } from "@/components/DashboardLayout";
+import "@/styles/globals.css";
+
+const fontSans = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const fontMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 
 export const metadata: Metadata = {
-  title: "Aether Mail | The Ultimate Email Client for Aether Office",
+  title: {
+    template: "%s | Sky Genesis Enterprise",
+    default: "Aether Mail | Sky Genesis Enterprise",
+  },
   description:
-    "Aether Mail - A lightweight, open-source email client built for privacy, speed, and seamless integration within the Aether Office ecosystem.",
+    "An lightweight, open-source email client built for privacy, speed, and seamless integration within the Aether Office ecosystem",
+  icons: {
+    icon: [
+      {
+        url: "/enterprise-touch-icon.png",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/enterprise-touch-icon.png",
+        media: "(prefers-color-scheme: dark)",
+      },
+      {
+        url: "/enterprise-touch-icon.png",
+        type: "image/svg+xml",
+      },
+    ],
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({
@@ -15,11 +46,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
-      <body className="font-sans antialiased">
-        <Providers>
-          <DashboardLayout>{children}</DashboardLayout>
-        </Providers>
+    <html suppressHydrationWarning>
+      <body
+        suppressHydrationWarning
+        className={`${fontSans.variable} ${fontMono.variable} antialiased`}
+      >
+        <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );

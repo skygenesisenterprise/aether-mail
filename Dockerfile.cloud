@@ -1,0 +1,106 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# Stage 1 — Go Builder (API Server)
+# ══════════════════════════════════════════════════════════════════════════════
+FROM golang:1.25-alpine AS go-builder
+
+RUN apk add --no-cache gcc musl-dev
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY server/ ./server/
+
+RUN CGO_ENABLED=1 GOOS=linux \
+    go build -ldflags="-s -w" -o /app/server/etheriatimes-api ./server/
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Stage 2 — Node.js / pnpm (Next.js Build)
+# ══════════════════════════════════════════════════════════════════════════════
+FROM node:25-alpine AS node-builder
+
+WORKDIR /app
+
+RUN npm install -g corepack --force && corepack enable && corepack prepare pnpm@9.15.4 --activate
+
+COPY app/package.json app/pnpm-lock.yaml* ./
+
+RUN pnpm install
+
+# ── Build Next.js ─────────────────────────────────────────────────────────────
+COPY app/ ./app/
+RUN cd /app/app && node ../node_modules/next/dist/bin/next build
+
+# ── Prisma ─────────────────────────────────────────────────────────────────────
+COPY server/prisma/ /app/prisma/
+RUN cd /app/prisma && npm install --silent && npx prisma generate
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Stage final — Image de production (Single Container)
+# ══════════════════════════════════════════════════════════════════════════════
+FROM alpine:3.23
+
+# ── Base Dependencies ─────────────────────────────────────────────────────────
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    curl \
+    bash \
+    git \
+    wget \
+    build-base \
+    libc6-compat \
+    docker-cli \
+    postgresql \
+    postgresql-client \
+    openssl
+# ── PostgreSQL (Embedded) ───────────────────────────────────────────────────
+RUN apk add --no-cache postgresql16 postgresql16-client && \
+    mkdir -p /var/lib/postgresql/data /var/lib/postgresql/logs && \
+    chown -R postgres:postgres /var/lib/postgresql
+
+# ── Node.js ───────────────────────────────────────────────────────────────────────
+RUN apk add --no-cache nodejs npm
+
+# ── pnpm (pour Next.js) ───────────────────────────────────────────────────────
+RUN npm install -g pnpm@9.15.4
+
+# ── Go Runtime (pour le serveur API) ───────────────────────────────────────────
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+        x86_64)  GOARCH="amd64" ;; \
+        aarch64) GOARCH="arm64" ;; \
+        *) echo "Unsupported arch: $ARCH" && exit 1 ;; \
+    esac && \
+    wget -q "https://go.dev/dl/go1.24.2.linux-${GOARCH}.tar.gz" -O /tmp/go.tar.gz \
+    && tar -C /usr/local -xzf /tmp/go.tar.gz \
+    && rm /tmp/go.tar.gz
+
+ENV PATH="/usr/local/go/bin:/go/bin:/root/go/bin:/go/bin:/usr/local/bin:/usr/bin:/bin:${PATH}"
+ENV GOPATH="/go"
+
+WORKDIR /app
+
+# ── Next.js Production Build ───────────────────────────────────────────────────
+COPY --from=node-builder /app/app/.next/standalone/app ./
+COPY --from=node-builder /app/app/.next/static ./.next/static
+COPY --from=node-builder /app/app/public ./public
+COPY --from=node-builder /app/app/i18n ./i18n
+COPY --from=node-builder /app/app/messages ./messages
+
+# ── Node Modules & Prisma ───────────────────────────────────────────────────────
+COPY --from=node-builder /app/node_modules ./node_modules
+COPY --from=node-builder /app/prisma/      ./prisma/
+
+# ── Go API Server Binary ───────────────────────────────────────────────────────
+COPY --from=go-builder /app/server/etheriatimes-api ./server/etheriatimes-api
+
+# ── Entry Point ────────────────────────────────────────────────────────────────
+COPY entrypoint-cloud.sh /entrypoint-cloud.sh
+COPY scripts/ /app/scripts/
+RUN chmod +x /entrypoint-cloud.sh /app/scripts/wait-for-db.sh
+
+EXPOSE 3000
+
+ENTRYPOINT ["/entrypoint-cloud.sh"]

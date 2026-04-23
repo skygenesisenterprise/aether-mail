@@ -1,20 +1,112 @@
-FROM node:20-alpine
+# ══════════════════════════════════════════════════════════════════════════════
+# Stage 1 — Go + Air
+# ══════════════════════════════════════════════════════════════════════════════
+FROM golang:1.25-alpine AS go-builder
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-RUN apk add --no-cache wget ca-certificates
-RUN wget -q https://go.dev/dl/go1.25.4.linux-amd64.tar.gz -O /tmp/go.tar && \
-    tar -C /usr/local -xzf /tmp/go.tar && rm /tmp/go.tar
-ENV PATH="/usr/local/go/bin:${PATH}"
-RUN GOBIN=/usr/local/bin go install github.com/air-verse/air@latest
+RUN apk add --no-cache gcc musl-dev
 
 WORKDIR /app
 
+COPY go.mod go.sum ./
+RUN go mod download
+
+RUN go install github.com/air-verse/air@latest
+
+COPY server/ ./server/
+
+RUN mkdir -p /app/tmp && go build -o /app/tmp/aether-server ./server/
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Stage 2 — Node.js / pnpm
+# ══════════════════════════════════════════════════════════════════════════════
+FROM node:25-alpine AS node-builder
+
+WORKDIR /app/app
+
+RUN npm install -g corepack --force && corepack enable && corepack prepare pnpm@9.15.4 --activate
+
 COPY app/package.json app/pnpm-lock.yaml* ./
-RUN pnpm install
 
-COPY app/nginx.conf /app/nginx.conf
+RUN pnpm install --ignore-scripts
 
-RUN mkdir -p /app/tmp
+# ══════════════════════════════════════════════════════════════════════════════
+# Stage final
+# ══════════════════════════════════════════════════════════════════════════════
+FROM node:25-alpine
 
-EXPOSE 3001 8080
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    curl \
+    bash \
+    git \
+    wget \
+    build-base \
+    libc6-compat \
+    docker-cli \
+    postgresql \
+    postgresql-client \
+    openssl
+
+# ── Go (requis par Air pour recompiler à chaud) ───────────────────────────────
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+        x86_64)  GOARCH="amd64" ;; \
+        aarch64) GOARCH="arm64" ;; \
+        *) echo "Unsupported arch: $ARCH" && exit 1 ;; \
+    esac && \
+    wget -q "https://go.dev/dl/go1.24.2.linux-${GOARCH}.tar.gz" -O /tmp/go.tar.gz \
+    && tar -C /usr/local -xzf /tmp/go.tar.gz \
+    && rm /tmp/go.tar.gz
+
+ENV PATH="/usr/local/go/bin:/go/bin:/root/go/bin:/root/.local/share/corepack:/usr/local/bin:/usr/bin:/bin:${PATH}"
+ENV GOPATH="/go"
+ENV PATH="${PATH}:/root/.local/share/corepack"
+
+# ── pnpm (requis pour lancer next dev) ───────────────────────────────────────
+RUN npm install -g corepack --force && corepack enable && corepack prepare pnpm@9.15.4 --activate && \
+    ln -sf /root/.local/share/corepack/pnpm /usr/local/bin/pnpm
+
+WORKDIR /app
+
+# ── Binaires Go ───────────────────────────────────────────────────────────────
+COPY --from=go-builder /go/bin/air /go/bin/air
+COPY --from=go-builder /usr/local/go /usr/local/go
+COPY --from=go-builder /app/server/ ./server/
+COPY --from=go-builder /app/tmp/aether-server /app/tmp/aether-server
+
+# ── node_modules au bon endroit : /app/app/node_modules ──────────────────────
+COPY --from=node-builder /app/app/node_modules ./app/node_modules/
+
+# ── Sources Next.js (écrasées par le volume mount en dev) ────────────────────
+COPY app/package.json         ./app/
+COPY app/pnpm-lock.yaml       ./app/
+COPY app/tsconfig.json        ./app/
+COPY app/next.config.ts       ./app/
+COPY app/postcss.config.mjs   ./app/
+COPY app/components.json      ./app/
+COPY app/eslint.config.mjs    ./app/
+COPY app/proxy.ts             ./app/
+COPY app/app/                 ./app/app/
+COPY app/components/          ./app/components/
+COPY app/config/              ./app/config/
+COPY app/context/             ./app/context/
+COPY app/hooks/               ./app/hooks/
+COPY app/i18n/                ./app/i18n/
+COPY app/lib/                 ./app/lib/
+COPY app/public/              ./app/public/
+COPY app/styles/              ./app/styles/
+COPY app/messages/            ./app/messages/
+COPY server/prisma/           ./prisma/
+COPY scripts/                 ./app/scripts/
+
+# ── Config dev ────────────────────────────────────────────────────────────────
+COPY .air.toml   ./
+COPY .env.example ./.env
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 3000
+
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,0 +1,19 @@
+{
+  "name": "@aether-mail/prisma",
+  "version": "1.0.0",
+  "description": "Prisma schema and database layer for Aether Mailer Database Layer.",
+  "private": true,
+  "main": "schema.prisma",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed",
+    "db:push": "prisma db push",
+    "db:reset": "prisma migrate reset --force"
+  },
+  "devDependencies": {
+    "@prisma/client": "^6.0.0",
+    "prisma": "^6.0.0"
+  }
+}

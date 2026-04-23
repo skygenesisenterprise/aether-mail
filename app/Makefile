@@ -21,12 +21,12 @@ MODE ?= dev
 DOCKER_COMPOSE_FILE := infra/docker-compose.$(MODE).yml
 
 # Nom du conteneur
-CONTAINER_NAME := giteria-frontend-$(MODE)
+CONTAINER_NAME := aether-identity-frontend-$(MODE)
 
 .PHONY: help
 help: ## Afficher l'aide pour les commandes disponibles
 	@echo "${GREEN}========================================${RESET}"
-	@echo "${GREEN}Makefile pour Giteria - Application Next.js${RESET}"
+	@echo "${GREEN}Makefile pour Aether Identity - Application Next.js${RESET}"
 	@echo "${GREEN}========================================${RESET}"
 	@echo ""
 	@echo "${BLUE}📋 Mode actuel: $(MODE)${RESET}"
@@ -116,7 +116,7 @@ up: ## Lancer le conteneur en mode $(MODE)
 	@cd $(APP_DIR) && $(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) up -d --build
 	@echo "${GREEN}✅ Conteneur démarré: $(CONTAINER_NAME)${RESET}"
 	@echo "${GREEN}🌐 Accès à l'application:${RESET}"
-	@echo "   - http://localhost:3001 (Next.js direct)"
+	@echo "   - http://localhost:3000 (Next.js direct)"
 	@echo ""
 	@echo "${GREEN}📝 Pour suivre les logs: make logs-follow${RESET}"
 
@@ -174,12 +174,12 @@ ports: ## Vérifier les ports utilisés
 	@echo "${BLUE}Ports utilisés par Docker:${RESET}"
 	@docker ps --format "{{.Names}}: {{.Ports}}"
 	@echo ""
-	@echo "${BLUE}Processus utilisant le port 3001:${RESET}"
-	@lsof -i :3001 || echo "${GREEN}✅ Port 3001 disponible${RESET}"
+	@echo "${BLUE}Processus utilisant le port 3000:${RESET}"
+	@lsof -i :3000 || echo "${GREEN}✅ Port 3000 disponible${RESET}"
 	@echo ""
 	@echo "${YELLOW}Si le port est utilisé, vous pouvez le libérer avec:${RESET}"
-	@echo "  ${GREEN}fuser -k 3001/tcp${RESET} (Linux)"
-	@echo "  ${GREEN}lsof -i :3001 | grep -v PID | awk '{print $$2}' | xargs kill -9${RESET}"
+	@echo "  ${GREEN}fuser -k 3000/tcp${RESET} (Linux)"
+	@echo "  ${GREEN}lsof -i :3000 | grep -v PID | awk '{print $$2}' | xargs kill -9${RESET}"
 
 .PHONY: exec
 exec: ## Exécuter une commande dans le conteneur

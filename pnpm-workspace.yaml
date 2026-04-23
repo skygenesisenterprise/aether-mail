@@ -4,11 +4,11 @@ packages:
   - "tests"
   - "options"
   - "package/snap"
-  - "prisma"
+  - "server/prisma"
   - "package/node"
   - "package/github"
   - "package/vscode"
-  - "package/cli/web"
+  - "package/cli"
   - "docs"
 
 ignoredBuiltDependencies:

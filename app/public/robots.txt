@@ -1,28 +1,44 @@
 User-agent: *
 Allow: /
 
-# Block common bot paths
-Disallow: /api/
-Disallow: /admin/
+# Block platform/dashboard routes
+Disallow: /dashboard/
+Disallow: /platform/
+Disallow: /agents/
+Disallow: /activity/
+Disallow: /monitoring/
+Disallow: /extension/
+Disallow: /marketplace/
+
+# Block auth routes
 Disallow: /login
 Disallow: /register
-Disallow: /forgot
+Disallow: /authorize
+
+# Block API and internal routes
+Disallow: /api/
+Disallow: /admin/
 Disallow: /troubleshoot/
-Disallow: /manage/
 Disallow: /logs/
 
-# Block development and debugging paths
+# Block development paths
 Disallow: /_next/
 Disallow: /__webpack_hmr/
 Disallow: /_error
 Disallow: /404
 
-# Allow API health endpoints for monitoring
+# Block private routes
+Disallow: /account
+Disallow: /settings
+Disallow: /manage
+Disallow: /reports
+
+# Allow monitoring endpoints
 Allow: /health
 Allow: /api/v1/health
 
-# Crawl delay (optional)
+# Crawl delay
 Crawl-delay: 1
 
-# Sitemap location
-Sitemap: https://vault.skygenesisenterprise.com/sitemap.xml
+# Sitemap
+Sitemap: https://identity.skygenesisenterprise.com/sitemap.xml

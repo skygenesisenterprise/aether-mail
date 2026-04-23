@@ -1,28 +1,16 @@
-import type { Metadata } from "next";
-import { Header } from "./_components/Header";
-import { Sidebar } from "./_components/Sidebar";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { Sidebar } from "@/components/email/Sidebar";
+import { Header } from "@/components/email/Header";
+// import { ProtectedRoute } from "@/components/ProtectedRoute";
 
-export const metadata: Metadata = {
-  title: "Aether Mail | The Ultimate Email Client for Aether Office",
-  description:
-    "Aether Mail - A lightweight, open-source email client built for privacy, speed, and seamless integration within the Aether Office ecosystem.",
-};
-
-export default function PlatformLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ProtectedRoute>
-      <div className="flex flex-col h-screen">
-        <Header />
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar />
-          <div className="flex-1 overflow-auto">{children}</div>
-        </div>
-      </div>
-    </ProtectedRoute>
+    <SidebarProvider>
+      <Sidebar />
+      <SidebarInset className="flex flex-col h-screen overflow-hidden">
+        <Header className="sticky top-0 z-50 flex-none" />
+        <main className="flex-1 overflow-auto">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

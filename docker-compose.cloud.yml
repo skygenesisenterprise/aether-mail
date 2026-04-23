@@ -1,0 +1,45 @@
+services:
+  aethermail:
+    build:
+      context: .
+      dockerfile: Dockerfile.cloud
+    image: aethermail:latest
+    container_name: aethermail
+    restart: unless-stopped
+    expose:
+      - "3000"
+      - "8080"
+      - "5432"
+    environment:
+      NODE_ENV: production
+      ENVIRONMENT: production
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: aether
+      DB_NAME: etheria_account
+      DB_PASSWORD: ${DB_PASSWORD:-password}
+      DATABASE_URL: postgresql://aether:${DB_PASSWORD:-password}@localhost:5432/etheria_account
+      JWT_SECRET: ${JWT_SECRET:-default-secret-change-in-production}
+      SERVER_PORT: 8080
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_ENVIRONMENT: production
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+      GIN_MODE: release
+      USE_EMBEDDED_DB: "true"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    entrypoint: ["/entrypoint-cloud.sh"]
+
+volumes:
+  postgres_data:

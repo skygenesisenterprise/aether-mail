@@ -10,6 +10,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithOAuth: (provider: "github" | "google") => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -103,14 +104,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authApi.storeUser(userData);
       setUser(userData);
 
-      console.log("[AuthContext] Login successful, user set");
+      console.log("[AuthContext] Login successful, user set, redirecting...");
 
-      router.push("/inbox");
+      const isAdmin = email.toLowerCase().endsWith("@etheriatimes.com");
+      const redirectTo = isAdmin ? "/dashboard" : "/user";
+      console.log("[AuthContext] Redirecting to:", redirectTo);
+      router.push(redirectTo);
     } catch (error) {
+      console.error("[AuthContext] Login error:", error);
       throw error;
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loginWithOAuth = async (provider: "github" | "google") => {
+    const clientId = process.env.NEXT_PUBLIC_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/oauth/callback`;
+    const scope = "openid profile email";
+
+    const state = Math.random().toString(36).substring(2);
+    sessionStorage.setItem("oauth_state", state);
+
+    const authUrl = new URL(`${process.env.NEXT_PUBLIC_IDENTITY_API_URL}/oauth/authorize`);
+    authUrl.searchParams.set("client_id", clientId || "");
+    authUrl.searchParams.set("redirect_uri", redirectUri);
+    authUrl.searchParams.set("response_type", "code");
+    authUrl.searchParams.set("scope", scope);
+    authUrl.searchParams.set("state", state);
+    authUrl.searchParams.set("provider", provider);
+
+    window.location.href = authUrl.toString();
   };
 
   const logout = async () => {
@@ -132,6 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!user,
     isLoading,
     login,
+    loginWithOAuth,
     logout,
     checkAuth,
   };

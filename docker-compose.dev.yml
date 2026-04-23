@@ -1,22 +1,46 @@
 services:
-  dev:
+  aethermail:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    ports:
-      - "3001:3001"
-      - "8080:8080"
-    volumes:
-      - ./app:/app
-      - ./server:/app/server
-      - ./.air.toml:/app/.air.toml
-      - ./go.mod:/app/go.mod
-      - ./go.sum:/app/go.sum
-      - ./.env:/app/.env
-      - aether-node-modules:/app/node_modules
-    working_dir: /app
-    command: sh -c "mkdir -p /app/tmp && pnpm dev & air -c .air.toml"
+    image: aethermail:latest
+    container_name: aethermail
     restart: unless-stopped
+    ports:
+      - "3000:3000"
+    expose:
+      - "8080"
+      - "5432"
+    environment:
+      NODE_ENV: development
+      ENVIRONMENT: development
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: aether
+      DB_NAME: etheria_account
+      DB_PASSWORD: ${DB_PASSWORD:-password}
+      DATABASE_URL: postgresql://aether:${DB_PASSWORD:-password}@localhost:5432/etheria_account
+      JWT_SECRET: ${JWT_SECRET:-default-secret-change-in-production}
+      SERVER_PORT: 8080
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_ENVIRONMENT: development
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+      GIN_MODE: debug
+      USE_EMBEDDED_DB: "true"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    entrypoint: ["/entrypoint.sh"]
 
 volumes:
-  aether-node-modules:
+  postgres_data:
