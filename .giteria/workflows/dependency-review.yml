@@ -1,0 +1,24 @@
+name: "Dependency Review"
+on: [pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v6
+
+      - name: "Dependency Review"
+        uses: actions/dependency-review-action@v4
+        with:
+          # Possible values: "critical", "high", "moderate", "low"
+          fail-on-severity: high
+          # Comment this out to only report issues
+          # fail-on-scopes: runtime, development
+          # Use this to deny specific licenses
+          # deny-licenses: AGPL-1.0-or-later, AGPL-3.0-or-later
+          # Use this to allow specific licenses
+          # allow-licenses: MIT, Apache-2.0

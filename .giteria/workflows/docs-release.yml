@@ -1,0 +1,250 @@
+name: Aether Identity Docs Release
+
+on:
+  push:
+    paths:
+      - "docs/**"
+      - ".github/workflows/docs-release.yml"
+    tags:
+      - "v*.*.*-docs"
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build (e.g., 1.0.0)"
+        required: true
+        type: string
+
+jobs:
+  sync-to-wiki:
+    name: Sync Documentation to Wiki
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync docs to Wiki
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ github.repository }}
+        run: |
+          # Clone the wiki repository
+          git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_NAME}.wiki.git" wiki
+
+          # Create Home page from README if it exists and has content
+          if [ -s docs/README.md ]; then
+            cp docs/README.md wiki/Home.md
+            echo "" >> wiki/Home.md
+            echo "---" >> wiki/Home.md
+            echo "_Last updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_" >> wiki/Home.md
+          else
+            # Create default Home page
+            cat > wiki/Home.md << 'EOF'
+          # Aether Identity Documentation
+
+          Welcome to the Aether Identity documentation wiki.
+
+          ## Getting Started
+
+          Aether Identity is an enterprise-grade OAuth2/OIDC authentication and secure account management solution.
+
+          ## Quick Links
+
+          - [[Deployment Guide|Deployment]]
+          - [GitHub Repository](https://github.com/${REPO_NAME})
+          - [Issues](https://github.com/${REPO_NAME}/issues)
+
+          ---
+          _Last updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_
+          EOF
+          fi
+
+          # Copy all markdown files from docs root
+          for file in docs/*.md; do
+            if [ -f "$file" ] && [ -s "$file" ]; then
+              filename=$(basename "$file")
+              if [ "$filename" != "README.md" ]; then
+                pagename="${filename%.md}"
+                cp "$file" "wiki/${pagename}.md"
+                echo "" >> "wiki/${pagename}.md"
+                echo "---" >> "wiki/${pagename}.md"
+                echo "_Last updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_" >> "wiki/${pagename}.md"
+              fi
+            fi
+          done
+
+          # Copy markdown files from docs/pages/ (convert .mdx to .md)
+          if [ -d docs/pages ]; then
+            for file in docs/pages/*.{md,mdx}; do
+              if [ -f "$file" ] && [ -s "$file" ]; then
+                filename=$(basename "$file")
+                pagename="${filename%.*}"
+                # Skip index files (already handled by Home)
+                if [ "$pagename" != "index" ]; then
+                  cp "$file" "wiki/${pagename}.md"
+                  echo "" >> "wiki/${pagename}.md"
+                  echo "---" >> "wiki/${pagename}.md"
+                  echo "_Last updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_" >> "wiki/${pagename}.md"
+                fi
+              fi
+            done
+          fi
+
+          # Create Deployment section if it doesn't exist
+          if [ ! -f wiki/Deployment.md ] && [ ! -f docs/deployment.md ] && [ ! -f docs/pages/deployment.mdx ]; then
+            cat > wiki/Deployment.md << 'EOF'
+          # Deployment Guide
+
+          This section provides deployment instructions for Aether Identity.
+
+          ## Table of Contents
+
+          - [Quick Start](#quick-start)
+          - [Docker Deployment](#docker-deployment)
+          - [Kubernetes Deployment](#kubernetes-deployment)
+          - [Environment Variables](#environment-variables)
+
+          ## Quick Start
+
+          The quickest way to get started with Aether Identity is using Docker Compose:
+
+          ```bash
+          # Clone the repository
+          git clone https://github.com/skygenesisenterprise/aether-identity.git
+          cd aether-identity
+
+          # Start with Docker Compose
+          docker-compose up -d
+          ```
+
+          ## Docker Deployment
+
+          ### Using Docker Compose
+
+          ```yaml
+          version: '3.8'
+          services:
+            aether-identity:
+              image: ghcr.io/skygenesisenterprise/aether-identity:latest
+              ports:
+                - "3000:3000"
+              environment:
+                - NODE_ENV=production
+                - DATABASE_URL=postgresql://user:pass@db:5432/aether
+          ```
+
+          ## Kubernetes Deployment
+
+          ### Using Helm
+
+          ```bash
+          helm repo add aether https://charts.skygenesisenterprise.io
+          helm install aether-identity aether/aether-identity
+          ```
+
+          ## Environment Variables
+
+          | Variable | Description | Required |
+          |----------|-------------|----------|
+          | `DATABASE_URL` | PostgreSQL connection string | Yes |
+          | `JWT_SECRET` | Secret key for JWT signing | Yes |
+          | `NODE_ENV` | Environment mode | No |
+
+          ---
+          _Last updated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_
+          EOF
+          fi
+
+          # Create a sidebar navigation for the wiki
+          cat > wiki/_Sidebar.md << EOF
+          ## Navigation
+
+          - [[Home]]
+          - [[Deployment]]
+
+          ## External Links
+
+          - [Repository](https://github.com/${REPO_NAME})
+          - [Issues](https://github.com/${REPO_NAME}/issues)
+          - [Discussions](https://github.com/${REPO_NAME}/discussions)
+          EOF
+
+          # Commit and push changes
+          cd wiki
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to sync to wiki"
+          else
+            git commit -m "Sync documentation from main branch - $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            git push
+            echo "Documentation synced to wiki successfully"
+          fi
+
+  build-docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Check for package.json
+        id: check_package
+        run: |
+          if [ -f docs/package.json ]; then
+            echo "has_package=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_package=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install dependencies
+        if: steps.check_package.outputs.has_package == 'true'
+        run: |
+          cd docs
+          pnpm install --no-frozen-lockfile
+
+      - name: Build documentation
+        if: steps.check_package.outputs.has_package == 'true'
+        run: |
+          cd docs
+          pnpm build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/out
+
+  deploy-docs:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: build-docs
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,6 +1,6 @@
 # Support
 
-Thank you for using **Aether Mailer** — an open-source email client developed and maintained by [Sky Genesis Enterprise](https://skygenesisenterprise.com).
+Thank you for using **Giteria** — an open-source git management platform developed and maintained by [Sky Genesis Enterprise](https://skygenesisenterprise.com).
 
 We’re committed to providing a great experience, and there are several ways you can get support depending on your needs:
 
@@ -8,7 +8,7 @@ We’re committed to providing a great experience, and there are several ways yo
 
 ## 🆓 Community Support
 
-If you're using the open-source version of Aether Mailer and need help with:
+If you're using the open-source version of Aether Calendar and need help with:
 
 - Installation
 - Configuration
@@ -17,8 +17,8 @@ If you're using the open-source version of Aether Mailer and need help with:
 
 Please use one of the following channels:
 
-- 💬 [GitHub Discussions](https://github.com/skygenesisenterprise/aether-mailer/discussions)
-- 🐞 [GitHub Issues](https://github.com/skygenesisenterprise/aether-mailer/issues) – for bug reports only
+- 💬 [GitHub Discussions](https://github.com/skygenesisenterprise/giteria/discussions)
+- 🐞 [GitHub Issues](https://github.com/skygenesisenterprise/giteria/issues) – for bug reports only
 - 📚 [Documentation](https://wiki.skygenesisenterprise.com)
 
 Our community and contributors will do their best to assist.
@@ -27,7 +27,7 @@ Our community and contributors will do their best to assist.
 
 ## 💼 Commercial Support
 
-If you are using Aether Mailer in a professional or production environment and require:
+If you are using Aether Mail in a professional or production environment and require:
 
 - Priority bug fixes
 - Custom integrations
@@ -53,7 +53,7 @@ Instead, report it responsibly to our security team:
 
 ## 🙏 Contributing
 
-Want to help improve Aether Mailer?  
+Want to help improve Giteria?  
 Check out our [CONTRIBUTING.md](./CONTRIBUTING.md) guide for how to get started.
 
 Thanks for supporting open-source!

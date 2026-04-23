@@ -1,0 +1,90 @@
+name: Aether Vault PHP Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*-php"
+
+jobs:
+  build:
+    name: Build & Test PHP SDK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick
+          coverage: none
+
+      - name: Validate composer.json
+        working-directory: ./package/php
+        run: composer validate --strict
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: package/php/vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/package/php/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
+
+      - name: Install dependencies
+        working-directory: ./package/php
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run tests
+        working-directory: ./package/php
+        run: composer test
+        continue-on-error: true
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Generate Release Notes
+        id: release_notes
+        working-directory: ./package/php
+        run: |
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "# Aether Vault PHP SDK ${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "## 📦 Package Information" >> $GITHUB_OUTPUT
+          echo "- **Package**: \`aether-vault/php-sdk\`" >> $GITHUB_OUTPUT
+          echo "- **Version**: ${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          echo "- **PHP**: >= 8.1" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "## 🚀 Installation" >> $GITHUB_OUTPUT
+          echo '```bash' >> $GITHUB_OUTPUT
+          echo 'composer config repositories.aether-vault composer https://github.com/${{ github.repository_owner }}' >> $GITHUB_OUTPUT
+          echo 'composer require aether-vault/php-sdk' >> $GITHUB_OUTPUT
+          echo '```' >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "## 📚 Documentation" >> $GITHUB_OUTPUT
+          echo "- [README](https://github.com/${{ github.repository }}/blob/main/package/php/README.md)" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "**Note**: Automated release from tag." >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Aether Vault PHP SDK ${{ github.ref_name }}
+          body: ${{ steps.release_notes.outputs.notes }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,143 @@
+name: Aether Identity Node Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*-node"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        working-directory: package/node
+        run: pnpm install --frozen-lockfile
+
+      - name: Build package
+        working-directory: package/node
+        run: pnpm build
+
+      - name: Lint code
+        working-directory: package/node
+        run: pnpm lint
+
+  publish-npm:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Configure npmjs authentication
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Prepare npm publish
+        working-directory: package/node
+        run: |
+          jq '.name = "aether-identity"' package.json > package.tmp.json
+          mv package.tmp.json package.json
+
+      - name: Publish to npm
+        working-directory: package/node
+        run: pnpm publish --access public --no-git-checks --registry https://registry.npmjs.org/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Revert package.json
+        working-directory: package/node
+        run: git checkout package.json
+
+  publish-gpr:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com/
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Prepare GitHub Packages publish
+        working-directory: package/node
+        run: |
+          jq '.name = "@skygenesisenterprise/aether-identity"' package.json > package.tmp.json
+          mv package.tmp.json package.json
+
+      - name: Configure GitHub Packages authentication
+        run: |
+          echo "@skygenesisenterprise:registry=https://npm.pkg.github.com/" > ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+
+      - name: Install dependencies
+        working-directory: package/node
+        run: pnpm install --frozen-lockfile
+
+      - name: Publish to GitHub Packages
+        working-directory: package/node
+        run: pnpm publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Revert package.json
+        working-directory: package/node
+        run: git checkout package.json
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          printf '%s\n' "# Aether Identity Node.js SDK $VERSION" "" "## Package Information" "- Package Name npmjs: aether-identity" "- Package Name GitHub: @skygenesisenterprise/aether-identity" "- Version: $VERSION" "- Registry: npm and GitHub Packages" "" "## Installation" "" "### From npm" "\`\`\`bash" "npm install aether-identity" "\`\`\`" "" "### From GitHub Packages" "\`\`\`bash" "npm install @skygenesisenterprise/aether-identity" "\`\`\`" "" "## Quick Start" "\`\`\`typescript" "import { CreateIdentityClient } from 'aether-identity';" "" "const client = new CreateIdentityClient({" "  endpoint: 'https://your-identity-endpoint'," "  token: 'your-token'" "});" "\`\`\`" "" "## Features" "- OAuth2/OIDC support" "- Multi-factor authentication" "- Identity and access management" "- Secure account management" "- TypeScript support" "- Node.js 18+ compatible" "" "## Documentation" "- README: https://github.com/skygenesisenterprise/aether-identity/blob/main/package/node/README.md" "- API Documentation: https://github.com/skygenesisenterprise/aether-identity/tree/main/package/node/docs" "- Examples: https://github.com/skygenesisenterprise/aether-identity/tree/main/package/node/examples" "" "## Bug Reports & Feature Requests" "Please report issues on GitHub Issues: https://github.com/skygenesisenterprise/aether-identity/issues" "" "---" "Note: Automated release." > release_notes.md
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Aether Identity Node.js SDK ${{ github.ref_name }}
+          body: ${{ steps.release_notes.outputs.release_notes }}
+          draft: false
+          prerelease: false
+          files: |
+            package/node/dist/**
+            package/node/README.md
+            package/node/LICENSE

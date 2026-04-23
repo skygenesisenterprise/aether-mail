@@ -1,0 +1,99 @@
+name: Aether Identity VSCode Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*-vscode"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        working-directory: package/vscode
+        run: pnpm install --frozen-lockfile
+
+      - name: Compile extension
+        working-directory: package/vscode
+        run: pnpm compile
+
+      - name: Lint code
+        working-directory: package/vscode
+        run: pnpm lint
+
+      - name: Package Extension
+        working-directory: package/vscode
+        run: |
+          npm install -g @vscode/vsce
+          vsce package --out aether-identity-vscode.vsix
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: vscode-extension
+          path: package/vscode/aether-identity-vscode.vsix
+
+  publish-marketplace:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: vscode-extension
+          path: package/vscode
+
+      - name: Install VSCE
+        run: npm install -g @vscode/vsce
+
+      - name: Publish to VSCode Marketplace
+        working-directory: package/vscode
+        run: vsce publish --packagePath aether-identity-vscode.vsix -p ${{ secrets.VSCE_PAT }}
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          printf '%s\n' "# Aether Identity VSCode Extension $VERSION" "" "## Extension Information" "- Extension Name: Aether Identity for VS Code" "- Publisher: skygenesisenterprise" "- Version: $VERSION" "- Marketplace: Visual Studio Code Marketplace" "" "## Installation" "" "### From VSCode Marketplace" "1. Open VS Code" "2. Go to Extensions (Ctrl+Shift+X)" "3. Search for 'Aether Identity'" "4. Click Install" "" "### From VSIX" "\`\`\`bash" "code --install-extension aether-identity-vscode.vsix" "\`\`\`" "" "## Features" "- Enterprise OAuth2/OIDC authentication" "- Secure account management within VS Code" "- Multi-factor authentication support" "- Automatic token refresh" "- Status bar integration" "- Configuration management" "" "## Commands" "- \`Aether Identity: Sign In with Aether\` - Authenticate with your Aether Identity server" "- \`Aether Identity: Sign Out\` - Sign out and clear credentials" "- \`Aether Identity: Refresh Token\` - Manually refresh authentication token" "- \`Aether Identity: Get Authentication Status\` - Check current authentication status" "" "## Configuration" "Configure the extension in VS Code settings:" "- \`aether.serverUrl\` - Aether Identity server URL" "- \`aether.clientId\` - OAuth2 client ID" "- \`aether.redirectUri\` - OAuth2 redirect URI" "- \`aether.autoRefresh\` - Automatically refresh tokens" "- \`aether.refreshThreshold\` - Time before token expiry to refresh" "" "## Documentation" "- README: https://github.com/skygenesisenterprise/aether-identity/blob/main/package/vscode/README.md" "- Repository: https://github.com/skygenesisenterprise/aether-identity" "" "## Bug Reports & Feature Requests" "Please report issues on GitHub Issues: https://github.com/skygenesisenterprise/aether-identity/issues" "" "---" "Note: Automated release." > release_notes.md
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Aether Identity VSCode Extension ${{ github.ref_name }}
+          body: ${{ steps.release_notes.outputs.release_notes }}
+          draft: false
+          prerelease: false
+          files: |
+            package/vscode/aether-identity-vscode.vsix
+            package/vscode/README.md
+            package/vscode/LICENSE

@@ -1,96 +1,75 @@
 # Changelog
 
-## 2025-05-15
+All notable changes to this project will be documented in this file.
 
-- **Branche** : feature/github
-- **Message** : Mise en place d'un script pr.mjs pour faciliter les PRs 
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 2025-05-15
+## [Unreleased]
 
-- **Branche** : feature/readme
-- **Message** : Mise à jour du Readme et du script pr.mjs 
+### Added
+- New features and additions
+- Breaking changes (if any)
 
-## 2025-05-15
+### Changed
+- Changes in existing functionality
+- Non-breaking improvements
 
-- **Branche** : feature/electron
-- **Message** : Mise à jour de l'integration electron 
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+### Deprecated
+- Features that will be removed in future versions
 
-## 2025-05-15
+### Removed
+- Features removed in this version
 
-- **Branche** : feature/interface
-- **Message** : Mise à jour des pages login, recover et register 
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+### Fixed
+- Bug fixes and corrections
 
-## 2025-05-17
+### Security
+- Security-related fixes and improvements
 
-- **Branche** : feature/backend
-- **Message** : Mise à jour de la partie backend
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+## [1.0.0] - 2024-12-11
 
-## 2025-05-17
+### Added
+- Initial release of aether-mailer
+- Next.js 16 with React 19 integration
+- TypeScript strict mode support
+- Tailwind CSS v4 with CSS variables for theming
+- Dark mode support
+- Google Fonts integration (Geist Sans/Mono)
+- ESLint configuration with Next.js rules
+- Development environment setup
+- Docker support
+- GitHub Actions CI/CD pipeline
+- Documentation structure
+- Code ownership configuration
 
-- **Branche** : feature/add-rust 
-- **Message** : Mise en place de Rust et Update backend 
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+### Security
+- Initial security setup
+- Dependency vulnerability scanning
+- Secure development practices
 
-## 2025-05-17
+---
 
-- **Branche** : feature/backend
-- **Message** : Correction des bugs de démarrage backend
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+## How to Update This Changelog
 
-## 2025-05-17
+1. Add new entries under the `[Unreleased]` section
+2. When releasing a new version:
+   - Create a new version section with the date
+   - Move items from `[Unreleased]` to the new version section
+   - Update the version number following semantic versioning
+   - Add a new empty `[Unreleased]` section
 
-- **Branche** : feature/api
-- **Message** : Correction de bugs backend 
-- **Dernière modification par** : liamvnastoria <liam.dispa@skygenesisenterprise.com>
+## Version Guidelines
 
-## 2025-05-24
+- **Major version (X.0.0)**: Breaking changes that require migration
+- **Minor version (0.X.0)**: New features, backward-compatible changes
+- **Patch version (0.0.X)**: Bug fixes, security updates, documentation
 
-- **Branche** : fix/backend
-- **Message** : Correction backend 
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
+## Types of Changes
 
-## 2025-05-24
-
-- **Branche** : fix/api
-- **Message** : Correction du backend API
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
-
-## 2025-05-25
-
-- **Branche** : feature/docs
-- **Message** : Mise en place de la base de la docs technique 
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
-
-## 2025-05-25
-
-- **Branche** : fix/api
-- **Message** : Correction du crash de backend 
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
-
-## 2025-05-25
-
-- **Branche** : feature/backend
-- **Message** : Ajout de nouvelle feature backend 
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
-
-## 2025-06-30
-
-- **Branche** : feature/login
-- **Message** : Mise à jour de la page de login
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
-
-## 2025-08-12
-
-- **Branche** : feature/tor
-- **Message** : Ajout de script bash pour déploiement d'un serveur tor
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
-
-## 2025-08-12
-
-- **Branche** : feature/config
-- **Message** : Mise en place de la config du déploiment du serveur web publique
-- **Dernière modification par** : Liam Von Astoria <liam.dispa@skygenesisenterprise.com>
-
+- **Added**: New features, functionality, capabilities
+- **Changed**: Existing functionality modifications
+- **Deprecated**: Features marked for future removal
+- **Removed**: Features removed in this version
+- **Fixed**: Bug corrections, error fixes
+- **Security**: Security improvements, vulnerability fixes

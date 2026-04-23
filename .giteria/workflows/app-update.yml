@@ -1,0 +1,269 @@
+name: Aether Identity Web App Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to deploy (e.g., 1.0.0)"
+        required: true
+        default: "1.0.0"
+      environment:
+        description: "Deployment environment"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+      deploy_target:
+        description: "Deploy to server?"
+        required: true
+        default: true
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: skygenesisenterprise/aether-identity-web
+  NODE_VERSION: "20"
+
+jobs:
+  build-and-push:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      image_digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Print trigger information
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Deploy: ${{ github.event.inputs.deploy_target }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          TAG="v${VERSION}-app"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Run lint
+        working-directory: app
+        run: pnpm lint
+
+      - name: Run type check
+        working-directory: app
+        run: pnpm typecheck
+
+      - name: Build Next.js application
+        working-directory: app
+        run: pnpm build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=v${{ steps.version.outputs.version }}
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          file: ./app/infra/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+          format: "sarif"
+          output: "trivy-results.sarif"
+          exit-code: "0"
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: [build-and-push, security-scan]
+    if: github.event.inputs.deploy_target == 'true'
+    environment:
+      name: ${{ github.event.inputs.environment }}
+      url: ${{ vars.APP_URL }}
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || '22' }}
+          script: |
+            echo "🚀 Starting deployment of version ${{ needs.build-and-push.outputs.version }}"
+
+            # Navigate to project directory
+            cd ${{ secrets.DEPLOY_PATH || '/opt/aether-identity' }}
+
+            # Pull latest docker-compose and config
+            git pull origin main
+
+            # Login to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull the new image
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+
+            # Update the docker-compose to use the specific version
+            export IMAGE_TAG=${{ needs.build-and-push.outputs.version }}
+
+            # Stop and remove old container
+            docker-compose -f infrastructure/docker/docker-compose.yml stop identity-app || true
+            docker-compose -f infrastructure/docker/docker-compose.yml rm -f identity-app || true
+
+            # Start with new image
+            docker-compose -f infrastructure/docker/docker-compose.yml up -d identity-app
+
+            # Wait for health check
+            echo "⏳ Waiting for health check..."
+            sleep 10
+
+            # Verify deployment
+            if docker-compose -f infrastructure/docker/docker-compose.yml ps | grep -q "healthy"; then
+              echo "✅ Deployment successful!"
+              
+              # Cleanup old images (keep last 3)
+              docker images ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} --format "{{.ID}} {{.Tag}}" | \
+                grep -v "${{ needs.build-and-push.outputs.version }}" | \
+                grep -v "latest" | \
+                tail -n +4 | \
+                awk '{print $1}' | \
+                xargs -r docker rmi || true
+            else
+              echo "❌ Health check failed!"
+              docker-compose -f infrastructure/docker/docker-compose.yml logs identity-app --tail=50
+              exit 1
+            fi
+
+            echo "🎉 Deployment complete!"
+
+  notify-success:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy]
+    if: success() && github.event.inputs.deploy_target == 'true'
+
+    steps:
+      - name: Create deployment success comment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const version = '${{ needs.build-and-push.outputs.version }}';
+            const environment = '${{ github.event.inputs.environment }}';
+            const sha = '${{ github.sha }}';
+
+            const body = `## ✅ Deployment Successful
+
+            **Version:** v${version}  
+            **Environment:** ${environment}  
+            **Commit:** ${sha.substring(0, 7)}  
+            **Deployed at:** ${new Date().toISOString()}
+
+            The web application has been successfully deployed.`;
+
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: sha,
+              body: body
+            });
+
+  notify-failure:
+    name: Notify Failure
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy]
+    if: failure() && github.event.inputs.deploy_target == 'true'
+
+    steps:
+      - name: Create deployment failure issue
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const version = '${{ needs.build-and-push.outputs.version }}';
+            const environment = '${{ github.event.inputs.environment }}';
+            const runId = '${{ github.run_id }}';
+
+            const body = `## ❌ Deployment Failed
+
+            **Version:** v${version}  
+            **Environment:** ${environment}  
+            **Workflow Run:** https://github.com/${{ github.repository }}/actions/runs/${runId}
+
+            The automated deployment failed. Please check the workflow logs for details.`;
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Deployment Failed: v${version} to ${environment}`,
+              body: body,
+              labels: ['deployment', 'bug', 'automated']
+            });

@@ -1,0 +1,737 @@
+name: Aether Identity OS Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*-os"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g., 1.0.0)"
+        required: true
+        default: "1.0.0"
+
+env:
+  GO_VERSION: "1.25.5"
+  REGISTRY: ghcr.io
+  IMAGE_NAME: skygenesisenterprise/aether-identity-os
+  DEBIAN_VERSION: "12"
+
+jobs:
+  debug:
+    name: Debug Trigger Information
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print trigger information
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Ref name: ${{ github.ref_name }}"
+          echo "Ref type: ${{ github.ref_type }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Is tag: ${{ startsWith(github.ref, 'refs/tags/') }}"
+          echo "Ends with -identity-os: ${{ endsWith(github.ref, '-identity-os') }}"
+          echo "Should run: ${{ startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-identity-os') || github.event_name == 'workflow_dispatch' }}"
+
+  build-binaries:
+    name: Build Aether Identity Binaries
+    runs-on: ubuntu-latest
+    needs: debug
+    if: startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-identity-os') || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Manual release version: $VERSION"
+          else
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+            VERSION="${VERSION%-identity-os}"
+            echo "Tag version: $VERSION"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Cache Go modules
+        uses: actions/cache@v5
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      # Build aether-console from cmd/
+      - name: Build aether-console
+        working-directory: ./cmd
+        run: |
+          echo "🏗️  Building aether-console..."
+          go mod download
+
+          # Build for multiple platforms
+          platforms=("linux/amd64" "linux/arm64")
+          for platform in "${platforms[@]}"; do
+            IFS='/' read -r GOOS GOARCH <<< "$platform"
+            output_dir="../dist/${GOOS}-${GOARCH}"
+            mkdir -p "$output_dir"
+            
+            echo "Building aether-console for $GOOS/$GOARCH..."
+            GOOS=$GOOS GOARCH=$GOARCH go build \
+              -ldflags="-s -w -X main.version=${{ steps.version.outputs.version }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              -o "${output_dir}/aether-console" \
+              ./main.go
+          done
+          echo "✅ aether-console built successfully"
+
+      # Build identity CLI from package/cli/
+      - name: Build identity CLI
+        working-directory: ./package/cli
+        run: |
+          echo "🏗️  Building identity CLI..."
+          go mod download
+
+          # Build for multiple platforms
+          platforms=("linux/amd64" "linux/arm64")
+          for platform in "${platforms[@]}"; do
+            IFS='/' read -r GOOS GOARCH <<< "$platform"
+            output_dir="../../dist/${GOOS}-${GOARCH}"
+            mkdir -p "$output_dir"
+            
+            echo "Building identity CLI for $GOOS/$GOARCH..."
+            GOOS=$GOOS GOARCH=$GOARCH go build \
+              -ldflags="-s -w -X github.com/skygenesisenterprise/aether-identity/package/cli/cmd.Version=${{ steps.version.outputs.version }} -X github.com/skygenesisenterprise/aether-identity/package/cli/cmd.BuildTime=$(date -u '+%Y-%m-%d_%H:%M:%S') -X github.com/skygenesisenterprise/aether-identity/package/cli/cmd.GitCommit=${{ github.sha }}" \
+              -o "${output_dir}/identity" \
+              .
+          done
+          echo "✅ identity CLI built successfully"
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v6
+        with:
+          name: aether-identity-binaries
+          path: dist/
+          retention-days: 30
+
+  build-os-image:
+    name: Build Debian 12 OS Image
+    runs-on: ubuntu-latest
+    needs: [debug, build-binaries]
+    if: startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-identity-os') || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Manual release version: $VERSION"
+          else
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+            VERSION="${VERSION%-identity-os}"
+            echo "Tag version: $VERSION"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v${VERSION}-identity-os" >> $GITHUB_OUTPUT
+
+      - name: Download binaries
+        uses: actions/download-artifact@v7
+        with:
+          name: aether-identity-binaries
+          path: dist/
+
+      - name: Make binaries executable
+        run: |
+          chmod -R +x dist/*/
+          ls -la dist/*/
+
+      # Log in to GitHub Container Registry
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Create Dockerfile for Debian 12 based OS image
+      - name: Create OS Dockerfile
+        run: |
+          cat > Dockerfile.identity-os << 'EOF'
+          # Aether Identity OS - Based on Debian 12 (Bookworm)
+          FROM debian:12-slim
+
+          # Set environment variables
+          ENV DEBIAN_FRONTEND=noninteractive
+          ENV AETHER_VERSION=${VERSION}
+          ENV PATH="/opt/aether/bin:${PATH}"
+
+          # Install required system packages
+          RUN apt-get update && apt-get install -y --no-install-recommends \
+              ca-certificates \
+              curl \
+              wget \
+              iproute2 \
+              iputils-ping \
+              net-tools \
+              openssh-client \
+              openssh-server \
+              systemd \
+              systemd-sysv \
+              sudo \
+              vim \
+              nano \
+              htop \
+              tree \
+              jq \
+              git \
+              gnupg \
+              lsb-release \
+              software-properties-common \
+              apt-transport-https \
+              docker.io \
+              docker-compose \
+              && rm -rf /var/lib/apt/lists/* \
+              && apt-get clean
+
+          # Create aether directories
+          RUN mkdir -p /opt/aether/bin \
+              /opt/aether/etc \
+              /opt/aether/var \
+              /opt/aether/lib \
+              /var/lib/aether \
+              /etc/aether
+
+          # Copy binaries based on architecture
+          ARG TARGETARCH
+          COPY dist/linux-${TARGETARCH}/aether-console /opt/aether/bin/
+          COPY dist/linux-${TARGETARCH}/identity /opt/aether/bin/
+
+          # Ensure binaries are executable
+          RUN chmod +x /opt/aether/bin/aether-console /opt/aether/bin/identity
+
+          # Create symlinks in /usr/local/bin
+          RUN ln -sf /opt/aether/bin/aether-console /usr/local/bin/aether-console \
+              && ln -sf /opt/aether/bin/identity /usr/local/bin/identity
+
+          # Copy docker-compose configuration
+          COPY infrastructure/docker/docker-compose.dev.yml /opt/aether/etc/docker-compose.yml
+          COPY infrastructure/docker/traefik.yml /opt/aether/etc/traefik.yml
+
+          # Copy additional configs
+          COPY cmd/configs/ /opt/aether/etc/configs/ 2>/dev/null || true
+
+          # Create systemd service for aether-console
+          RUN cat > /etc/systemd/system/aether-console.service << 'EOFSERVICE'
+          [Unit]
+          Description=Aether Identity Console
+          After=network.target
+
+          [Service]
+          Type=simple
+          ExecStart=/opt/aether/bin/aether-console
+          Restart=always
+          RestartSec=5
+          StandardOutput=journal
+          StandardError=journal
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+          EOFSERVICE
+
+          # Create systemd service for identity services
+          RUN cat > /etc/systemd/system/aether-identity.service << 'EOFSERVICE'
+          [Unit]
+          Description=Aether Identity Services
+          After=docker.service network.target
+          Requires=docker.service
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          WorkingDirectory=/opt/aether/etc
+          ExecStart=/usr/bin/docker-compose -f /opt/aether/etc/docker-compose.yml up -d
+          ExecStop=/usr/bin/docker-compose -f /opt/aether/etc/docker-compose.yml down
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+          EOFSERVICE
+
+          # Enable services
+          RUN systemctl enable aether-console.service || true \
+              && systemctl enable aether-identity.service || true
+
+          # Create welcome message
+          RUN cat > /etc/update-motd.d/99-aether << 'EOFMOTD'
+          #!/bin/bash
+          echo ""
+          echo "================================================"
+          echo "         Aether Identity OS"
+          echo "================================================"
+          echo " Version: $(cat /opt/aether/etc/version 2>/dev/null || echo 'unknown')"
+          echo ""
+          echo " Commands available:"
+          echo "   aether-console  - Launch interactive console"
+          echo "   identity        - CLI tool for identity management"
+          echo ""
+          echo " Services:"
+          echo "   systemctl status aether-console"
+          echo "   systemctl status aether-identity"
+          echo ""
+          echo " Docker Compose:"
+          echo "   cd /opt/aether/etc && docker-compose ps"
+          echo "================================================"
+          EOFMOTD
+          RUN chmod +x /etc/update-motd.d/99-aether
+
+          # Store version
+          RUN echo "${VERSION}" > /opt/aether/etc/version
+
+          # Set default shell
+          SHELL ["/bin/bash", "-c"]
+
+          # Expose ports used by docker-compose services
+          EXPOSE 3001 8080 5432 22
+
+          # Use systemd as init
+          CMD ["/sbin/init"]
+          EOF
+
+          # Replace version placeholder
+          sed -i "s/\${VERSION}/${{ steps.version.outputs.version }}/g" Dockerfile.identity-os
+          cat Dockerfile.identity-os
+
+      # Build and push multi-arch OS image
+      - name: Build and push OS image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.identity-os
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      # Extract Docker metadata
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest
+
+  create-vm-images:
+    name: Create VM Images
+    runs-on: ubuntu-latest
+    needs: [build-os-image]
+    if: startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-identity-os') || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Manual release version: $VERSION"
+          else
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+            VERSION="${VERSION%-identity-os}"
+            echo "Tag version: $VERSION"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Create VM disk images from the Docker image
+      - name: Create VM disk images
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p vm-images
+
+          # Create raw disk images using docker-export and conversion
+          for arch in amd64 arm64; do
+            echo "Creating VM image for ${arch}..."
+            
+            # Pull the image for the specific architecture
+            docker pull --platform linux/${arch} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION} || true
+            
+            # Create a container and export filesystem
+            container_id=$(docker create --platform linux/${arch} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION} 2>/dev/null || echo "")
+            
+            if [ -n "$container_id" ]; then
+              # Export filesystem
+              docker export "$container_id" -o "vm-filesystem-${arch}.tar"
+              docker rm "$container_id"
+              
+              # Create QCOW2 image (for KVM/QEMU)
+              qemu-img create -f qcow2 "vm-images/aether-identity-os-${VERSION}-${arch}.qcow2" 10G
+              
+              # Create VMDK (for VMware)
+              qemu-img create -f vmdk "vm-images/aether-identity-os-${VERSION}-${arch}.vmdk" 10G
+              
+              # Create VHD (for Hyper-V)
+              qemu-img create -f vpc "vm-images/aether-identity-os-${VERSION}-${arch}.vhd" 10G
+              
+              echo "✅ VM images created for ${arch}"
+            else
+              echo "⚠️  Could not create VM image for ${arch}"
+            fi
+          done
+
+          ls -lah vm-images/
+
+      - name: Compress VM images
+        run: |
+          cd vm-images
+          for file in *.qcow2 *.vmdk *.vhd; do
+            if [ -f "$file" ]; then
+              echo "Compressing $file..."
+              gzip -9 "$file" &
+            fi
+          done
+          wait
+          ls -lah
+
+      - name: Upload VM images
+        uses: actions/upload-artifact@v6
+        with:
+          name: vm-images
+          path: vm-images/
+          retention-days: 30
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-binaries, build-os-image, create-vm-images]
+    if: startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-identity-os') || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            TAG="v${VERSION}-identity-os"
+            echo "Manual release version: $VERSION"
+          else
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+            VERSION="${VERSION%-identity-os}"
+            echo "Tag version: $VERSION"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Download binaries
+        uses: actions/download-artifact@v7
+        with:
+          name: aether-identity-binaries
+          path: dist/
+
+      - name: Download VM images
+        uses: actions/download-artifact@v7
+        with:
+          name: vm-images
+          path: vm-images/
+
+      - name: Create release archives
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p release
+
+          # Create archives for each platform
+          for platform_dir in dist/linux-*; do
+            if [ -d "$platform_dir" ]; then
+              platform=$(basename "$platform_dir")
+              archive_name="aether-identity-os-${VERSION}-${platform}"
+              
+              # Create archive directory
+              mkdir -p "release/${archive_name}"
+              
+              # Copy binaries
+              cp "${platform_dir}/aether-console" "release/${archive_name}/"
+              cp "${platform_dir}/identity" "release/${archive_name}/"
+              
+              # Copy configs
+              cp -r infrastructure/docker/docker-compose.dev.yml "release/${archive_name}/docker-compose.yml"
+              cp -r infrastructure/docker/traefik.yml "release/${archive_name}/" 2>/dev/null || true
+              
+              # Create install script
+              cat > "release/${archive_name}/install.sh" << 'EOFSCRIPT'
+          #!/bin/bash
+          set -e
+
+          INSTALL_DIR="${INSTALL_DIR:-/opt/aether}"
+          BIN_DIR="${INSTALL_DIR}/bin"
+
+          echo "Installing Aether Identity OS components..."
+
+          # Create directories
+          sudo mkdir -p "$BIN_DIR" "${INSTALL_DIR}/etc"
+
+          # Install binaries
+          sudo cp aether-console identity "$BIN_DIR/"
+          sudo chmod +x "${BIN_DIR}/"*
+
+          # Create symlinks
+          sudo ln -sf "${BIN_DIR}/aether-console" /usr/local/bin/aether-console
+          sudo ln -sf "${BIN_DIR}/identity" /usr/local/bin/identity
+
+          # Install configs
+          sudo cp docker-compose.yml traefik.yml "${INSTALL_DIR}/etc/" 2>/dev/null || true
+
+          echo "✅ Installation complete!"
+          echo ""
+          echo "Binaries installed to: $BIN_DIR"
+          echo "Run 'aether-console' to start the console"
+          echo "Run 'identity --help' for CLI usage"
+          EOFSCRIPT
+              chmod +x "release/${archive_name}/install.sh"
+              
+              # Create README
+              cat > "release/${archive_name}/README.md" << EOFREADME
+          # Aether Identity OS v${VERSION}
+
+          Platform: ${platform}
+
+          ## Components
+
+          - **aether-console**: Interactive system console (OPNsense-style)
+          - **identity**: CLI tool for identity management
+          - **docker-compose.yml**: Docker Compose configuration for services
+
+          ## Quick Start
+
+          ### Installation
+
+          ```bash
+          ./install.sh
+          ```
+
+          Or manually:
+
+          ```bash
+          sudo mkdir -p /opt/aether/bin
+          sudo cp aether-console identity /opt/aether/bin/
+          sudo chmod +x /opt/aether/bin/*
+          sudo ln -s /opt/aether/bin/aether-console /usr/local/bin/
+          sudo ln -s /opt/aether/bin/identity /usr/local/bin/
+          ```
+
+          ## Usage
+
+          ### Interactive Console
+          ```bash
+          aether-console
+          ```
+
+          ### CLI Tool
+          ```bash
+          identity --help
+          identity login
+          identity status
+          ```
+
+          ### Docker Services
+          ```bash
+          cd /opt/aether/etc
+          docker-compose up -d
+          ```
+
+          ## File Locations
+
+          - Binaries: `/opt/aether/bin/`
+          - Configs: `/opt/aether/etc/`
+          EOFREADME
+              
+              # Create tar.gz archive
+              cd release
+              tar -czf "${archive_name}.tar.gz" "${archive_name}"
+              cd ..
+              
+              # Create zip archive
+              cd release
+              zip -r "${archive_name}.zip" "${archive_name}"
+              cd ..
+              
+              echo "✅ Created ${archive_name}.tar.gz and ${archive_name}.zip"
+            fi
+          done
+
+          # Copy VM images to release
+          cp vm-images/* release/ 2>/dev/null || true
+
+          # Generate checksums
+          cd release
+          sha256sum *.tar.gz *.zip *.gz 2>/dev/null | tee checksums.txt
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Aether Identity OS v${{ steps.version.outputs.version }}
+          body: |
+            ## Aether Identity OS v${{ steps.version.outputs.version }}
+
+            A complete Debian 12-based operating system image for Aether Identity.
+
+            ### 🐳 Docker Image
+
+            ```bash
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+            docker run -it --privileged ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+            ```
+
+            ### 📦 Components
+
+            - **aether-console**: Interactive system console (OPNsense-style interface)
+            - **identity**: CLI tool for identity management and orchestration
+            - **Docker Compose**: Pre-configured with Traefik, PostgreSQL, and services
+
+            ### 💾 VM Images
+
+            Pre-built VM images are available:
+            - QCOW2 (KVM/QEMU)
+            - VMDK (VMware)
+            - VHD (Hyper-V)
+
+            ### 📥 Binary Archives
+
+            Platform-specific archives contain:
+            - Compiled binaries (aether-console, identity)
+            - Docker Compose configuration
+            - Installation script
+
+            ### 🚀 Quick Start
+
+            #### Using Docker:
+            ```bash
+            docker run -d \
+              --name aether-identity-os \
+              --privileged \
+              -p 3001:3001 \
+              -p 8080:8080 \
+              -p 22:22 \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+            ```
+
+            #### Using Binary:
+            ```bash
+            tar -xzf aether-identity-os-${{ steps.version.outputs.version }}-linux-amd64.tar.gz
+            cd aether-identity-os-${{ steps.version.outputs.version }}-linux-amd64
+            sudo ./install.sh
+            aether-console
+            ```
+
+            ### 🔧 System Requirements
+
+            - **RAM**: 2GB minimum, 4GB recommended
+            - **Disk**: 10GB minimum
+            - **Network**: Internet access for Docker images
+
+            ### 📋 Services Included
+
+            - **Traefik**: Reverse proxy (port 3001)
+            - **Identity Frontend**: Next.js application
+            - **Identity Server**: Go backend API (port 8080)
+            - **PostgreSQL**: Database with Prisma migrations
+
+            ### 🔐 Default Access
+
+            - Console: Available via SSH on port 22
+            - Web Interface: http://localhost:3001
+            - API: http://localhost:8080
+
+            ### 📝 Configuration
+
+            Configuration files are located at:
+            - `/opt/aether/etc/docker-compose.yml`
+            - `/opt/aether/etc/traefik.yml`
+            - `/etc/aether/`
+
+            ### 🆘 Support
+
+            - 📖 [Documentation](https://docs.aether-identity.io)
+            - 🐛 [Report Issues](https://github.com/skygenesisenterprise/aether-identity/issues)
+            - 💬 [Discussions](https://github.com/skygenesisenterprise/aether-identity/discussions)
+
+            ---
+
+            **Full Changelog**: https://github.com/skygenesisenterprise/aether-identity/compare/${{ steps.version.outputs.tag }}...HEAD
+          draft: false
+          prerelease: false
+          files: |
+            release/*.tar.gz
+            release/*.zip
+            release/*.gz
+            release/checksums.txt
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [build-os-image]
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-os-image.outputs.version }}
+          format: "sarif"
+          output: "trivy-results.sarif"
+          exit-code: "0"
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"

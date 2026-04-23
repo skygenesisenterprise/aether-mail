@@ -1,0 +1,182 @@
+name: Aether Vault CLI Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*-cli"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.25.5"
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$GITHUB_REF_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build for multiple platforms
+        run: |
+          cd package/cli
+          make clean
+
+          # Build variables
+          BINARY_NAME=vault
+          BUILD_DIR=bin
+          VERSION=${{ steps.version.outputs.version }}
+          BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
+          GIT_COMMIT=${{ github.sha }}
+          LDFLAGS="-ldflags=-X github.com/skygenesisenterprise/aether-vault/package/cli/cmd.Version=$VERSION -X github.com/skygenesisenterprise/aether-vault/package/cli/cmd.BuildTime=$BUILD_TIME -X github.com/skygenesisenterprise/aether-vault/package/cli/cmd.GitCommit=$GIT_COMMIT"
+
+          mkdir -p $BUILD_DIR
+
+          # Linux AMD64
+          GOOS=linux GOARCH=amd64 go build $LDFLAGS -o $BUILD_DIR/vault-linux-amd64 .
+
+          # Linux ARM64
+          GOOS=linux GOARCH=arm64 go build $LDFLAGS -o $BUILD_DIR/vault-linux-arm64 .
+
+          # macOS AMD64
+          GOOS=darwin GOARCH=amd64 go build $LDFLAGS -o $BUILD_DIR/vault-darwin-amd64 .
+
+          # macOS ARM64
+          GOOS=darwin GOARCH=arm64 go build $LDFLAGS -o $BUILD_DIR/vault-darwin-arm64 .
+
+          # Windows AMD64
+          GOOS=windows GOARCH=amd64 go build $LDFLAGS -o $BUILD_DIR/vault-windows-amd64.exe .
+
+          # Create release artifacts
+          mkdir -p release
+          cd $BUILD_DIR
+
+          # Create tar.gz archives for Unix systems
+          tar -czf ../release/vault-linux-amd64.tar.gz vault-linux-amd64
+          tar -czf ../release/vault-linux-arm64.tar.gz vault-linux-arm64
+          tar -czf ../release/vault-darwin-amd64.tar.gz vault-darwin-amd64
+          tar -czf ../release/vault-darwin-arm64.tar.gz vault-darwin-arm64
+
+          # Create zip for Windows
+          zip ../release/vault-windows-amd64.zip vault-windows-amd64.exe
+
+          cd ../..
+          ls -la release/
+
+      - name: Generate checksums
+        run: |
+          cd package/cli/release
+          sha256sum * > checksums.txt
+          cat checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Aether Vault CLI ${{ steps.version.outputs.version }}
+          body: |
+            ## Aether Vault CLI ${{ steps.version.outputs.version }}
+
+            ### Installation
+
+            #### Linux
+            ```bash
+            # AMD64
+            curl -L -o vault-linux-amd64.tar.gz https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/vault-linux-amd64.tar.gz
+            tar -xzf vault-linux-amd64.tar.gz
+            sudo mv vault-linux-amd64 /usr/local/bin/vault
+            chmod +x /usr/local/bin/vault
+
+            # ARM64
+            curl -L -o vault-linux-arm64.tar.gz https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/vault-linux-arm64.tar.gz
+            tar -xzf vault-linux-arm64.tar.gz
+            sudo mv vault-linux-arm64 /usr/local/bin/vault
+            chmod +x /usr/local/bin/vault
+            ```
+
+            #### macOS
+            ```bash
+            # Intel (AMD64)
+            curl -L -o vault-darwin-amd64.tar.gz https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/vault-darwin-amd64.tar.gz
+            tar -xzf vault-darwin-amd64.tar.gz
+            sudo mv vault-darwin-amd64 /usr/local/bin/vault
+            chmod +x /usr/local/bin/vault
+
+            # Apple Silicon (ARM64)
+            curl -L -o vault-darwin-arm64.tar.gz https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/vault-darwin-arm64.tar.gz
+            tar -xzf vault-darwin-arm64.tar.gz
+            sudo mv vault-darwin-arm64 /usr/local/bin/vault
+            chmod +x /usr/local/bin/vault
+            ```
+
+            #### Windows
+            ```powershell
+            # Download and extract
+            Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/vault-windows-amd64.zip" -OutFile "vault.zip"
+            Expand-Archive -Path "vault.zip" -DestinationPath "."
+            # Add to PATH or move to desired location
+            ```
+
+            ### Upgrade Command
+            The `vault upgrade` command can be used to automatically update to the latest version:
+            ```bash
+            vault upgrade --check-only  # Check for updates
+            vault upgrade             # Auto-upgrade to latest
+            ```
+
+            ### Verify Installation
+            ```bash
+            vault --version
+            ```
+
+            ### Checksums
+            Verify the integrity of downloaded files using the provided checksums.txt file.
+
+            ## Changelog
+            Changes in this version:
+          files: |
+            package/cli/release/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Build and test current CLI to ensure upgrade works
+  test-upgrade:
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.25.5"
+
+      - name: Build CLI
+        run: |
+          cd package/cli
+          go build -o vault .
+
+      - name: Test upgrade command
+        run: |
+          # Test the upgrade command can fetch release info
+          ./vault upgrade --check-only || echo "Upgrade check test passed"
+
+      - name: Test help
+        run: |
+          # Test that all commands are available
+          ./vault --help | grep -q "read" || echo "read command missing"
+          ./vault --help | grep -q "write" || echo "write command missing" 
+          ./vault --help | grep -q "upgrade" || echo "upgrade command missing"

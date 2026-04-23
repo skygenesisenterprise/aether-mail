@@ -1,0 +1,401 @@
+name: Docker
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+on:
+  push:
+    # Publish Docker images only for tags ending with -docker
+    tags: ["v*.*.*-docker"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build (e.g., 1.0.0)"
+        required: true
+        type: string
+
+env:
+  # GitHub Container Registry
+  REGISTRY: ghcr.io
+  # Use skygenesisenterprise/aether-identity as the full image path
+  IMAGE_NAME: skygenesisenterprise/aether-identity
+  # Docker Hub Registry
+  DOCKERHUB_REGISTRY: docker.io
+  DOCKERHUB_IMAGE_NAME: skygenesisenterprise/aether-identity
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Only run on tags ending with -docker or on PRs for testing
+    if: startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-docker') || github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+      # This is used to complete the identity challenge
+      # with sigstore/fulcio when running outside of PRs.
+      id-token: write
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      package_version: ${{ steps.version.outputs.package_version }}
+
+    steps:
+      - name: Print trigger information
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Ref name: ${{ github.ref_name }}"
+          echo "Ref type: ${{ github.ref_type }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Is tag: ${{ startsWith(github.ref, 'refs/tags/') }}"
+          echo "Ends with -docker: ${{ endsWith(github.ref, '-docker') }}"
+          echo "Should run: ${{ startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-docker') || github.event_name == 'pull_request' }}"
+          echo "Registry: ${{ env.REGISTRY }}"
+          echo "Image name: ${{ env.IMAGE_NAME }}"
+          echo "Full image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            INPUT_VERSION="${{ github.event.inputs.version }}"
+            # Remove -docker suffix if present for the clean version
+            CLEAN_VERSION="${INPUT_VERSION%-docker}"
+            VERSION="v${CLEAN_VERSION#v}"
+            PACKAGE_VERSION="${VERSION#v}"
+          else
+            TAG="${{ github.ref_name }}"
+            # Remove -docker suffix and keep v prefix for clean version
+            CLEAN_VERSION="${TAG%-docker}"
+            VERSION="${CLEAN_VERSION}"
+            PACKAGE_VERSION="${CLEAN_VERSION#v}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+          echo "Tag version: $VERSION"
+          echo "Package version: $PACKAGE_VERSION"
+
+      - name: Verify Dockerfile exists
+        run: |
+          echo "Checking for Dockerfile..."
+          if [ -f "server/infra/Dockerfile.dev" ]; then
+            echo "✅ Dockerfile found at server/infra/Dockerfile.dev"
+            echo "Dockerfile content preview:"
+            head -20 server/infra/Dockerfile.dev
+          else
+            echo "❌ No Dockerfile found at server/infra/Dockerfile.dev"
+            echo "Available files:"
+            find . -name "Dockerfile*" -type f
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Build cross-platform binaries
+        run: |
+          echo "🔨 Building cross-platform binaries for Aether Identity..."
+
+          # Create dist directory
+          mkdir -p dist
+
+          # Define platforms
+          platforms=(
+            "linux/amd64"
+            "linux/arm64" 
+            "windows/amd64"
+            "darwin/amd64"
+            "darwin/arm64"
+          )
+
+          # Build Go server binary
+          echo "Building Go server..."
+          cd server
+          for platform in "${platforms[@]}"; do
+            IFS='/' read -r GOOS GOARCH <<< "$platform"
+            
+            output_name="aether-identity-server"
+            if [ "$GOOS" = "windows" ]; then
+              output_name+=".exe"
+            fi
+            
+            echo "Building server for $GOOS/$GOARCH..."
+            GOOS=$GOOS GOARCH=$GOARCH go build \
+              -ldflags="-s -w -X main.version=${{ steps.version.outputs.package_version }}" \
+              -o "../dist/${GOOS}-${GOARCH}-${output_name}" \
+              .
+          done
+          cd ..
+
+          # Build Next.js frontend (platform-independent)
+          echo "Building Next.js frontend..."
+          cd app
+          pnpm install
+          pnpm build
+
+          # Create frontend package
+          mkdir -p ../dist/frontend
+          cp -r .next/standalone ../dist/frontend/
+          cp -r .next/static ../dist/frontend/
+          cp package.json ../dist/frontend/
+          cd ..
+
+          echo "✅ Cross-platform binaries built successfully!"
+          ls -la dist/
+
+      - name: Create platform-specific archives
+        run: |
+          echo "📦 Creating platform-specific archives..."
+
+          VERSION="${{ steps.version.outputs.package_version }}"
+
+          # Create archives for each platform
+          platforms=("linux/amd64" "linux/arm64" "windows/amd64" "darwin/amd64" "darwin/arm64")
+
+          for platform in "${platforms[@]}"; do
+            IFS='/' read -r GOOS GOARCH <<< "$platform"
+            
+            # Create archive directory
+            archive_dir="aether-identity-${VERSION}-${GOOS}-${GOARCH}"
+            mkdir -p "dist/${archive_dir}"
+            
+            # Copy binaries
+            if [ "$GOOS" = "windows" ]; then
+              cp "dist/${GOOS}-${GOARCH}-aether-identity-server.exe" "dist/${archive_dir}/"
+            else
+              cp "dist/${GOOS}-${GOARCH}-aether-identity-server" "dist/${archive_dir}/"
+            fi
+            
+            # Copy frontend
+            cp -r dist/frontend/* "dist/${archive_dir}/"
+            
+            # Copy configuration files
+            cp docker-compose.yml docker-entrypoint.sh "dist/${archive_dir}/" 2>/dev/null || true
+            cp -r prisma/ "dist/${archive_dir}/" 2>/dev/null || true
+            
+          # Create README for the archive
+            cat > "dist/${archive_dir}/README.md" << EOF
+          # Aether Identity v${VERSION}
+
+          Platform: ${GOOS}/${GOARCH}
+
+          ## Installation
+
+          1. Extract the archive
+          2. Run the server: \`\`\`./aether-identity-server\`\`\`
+
+          ## Components
+
+          - **aether-identity-server**: Main backend server (Go)
+          - **frontend/**: Next.js web application
+
+          ## Configuration
+
+          See \`prisma/\` directory for database configuration.
+          EOF
+
+            # Create the archive
+            cd dist
+            if [ "$GOOS" = "windows" ]; then
+              zip -r "${archive_dir}.zip" "${archive_dir}"
+            else
+              tar -czf "${archive_dir}.tar.gz" "${archive_dir}"
+            fi
+            cd ..
+            
+            # Clean up archive directory
+            rm -rf "dist/${archive_dir}"
+          done
+
+          echo "✅ Platform archives created!"
+          ls -la dist/*.tar.gz dist/*.zip 2>/dev/null || true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: aether-identity-binaries
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+          retention-days: 30
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      # Login against GitHub Container Registry except on PR
+      # https://github.com/docker/login-action
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Login against Docker Hub except on PR
+      # https://github.com/docker/login-action
+      - name: Log into Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata for GHCR
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+            type=raw,value=latest,enable={{is_default_branch}}
+          flavor: |
+            latest=auto
+
+      # Extract metadata for Docker Hub
+      - name: Extract Docker metadata for Docker Hub
+        id: meta-dockerhub
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+        with:
+          images: ${{ env.DOCKERHUB_REGISTRY }}/${{ env.DOCKERHUB_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+            type=raw,value=latest,enable={{is_default_branch}}
+          flavor: |
+            latest=auto
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      # Uses configuration from infrastructure/docker/docker-compose.dev.yml
+      # https://github.com/docker/build-push-action
+      - name: Build and push Docker image to GHCR
+        id: build-and-push
+        uses: docker/build-push-action@64c9b141502b80dbbd71e008a0130ad330f480f8 # v6.18.0
+        with:
+          context: ./server
+          file: ./server/infra/Dockerfile.dev
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      # Build and push Docker image to Docker Hub
+      - name: Build and push Docker image to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@64c9b141502b80dbbd71e008a0130ad330f480f8 # v6.18.0
+        with:
+          context: ./server
+          file: ./server/infra/Dockerfile.dev
+          push: true
+          tags: ${{ steps.meta-dockerhub.outputs.tags }}
+          labels: ${{ steps.meta-dockerhub.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          provenance: false
+
+      # Sign the resulting Docker image digest except on PRs.
+      # This will only write to the public Rekor transparency log when the Docker
+      # repository is public to avoid leaking data.  If you would like to publish
+      # transparency data even for private images, pass --force to cosign below.
+      # https://github.com/sigstore/cosign
+      - name: Sign the published Docker image
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+        # This step uses the identity token to provision an ephemeral certificate
+        # against the sigstore community Fulcio instance.
+        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-docker') && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Aether Identity v${{ needs.build.outputs.package_version }}
+          body: |
+            ## Aether Identity v${{ needs.build.outputs.package_version }}
+
+            🐳 **Docker Images**:
+            - **GitHub Container Registry**: `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.version }}`
+            - **Docker Hub**: `${{ env.DOCKERHUB_REGISTRY }}/${{ env.DOCKERHUB_IMAGE_NAME }}:${{ needs.build.outputs.version }}`
+
+            📦 **Platform Binaries**:
+            - Linux (x86_64, ARM64)
+            - Windows (x86_64)
+            - macOS (x86_64, ARM64)
+
+            ### 🚀 Quick Start
+
+            #### Docker (Recommended):
+            ```bash
+            # From GitHub Container Registry
+            docker run -p 3000:3000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.version }}
+
+            # From Docker Hub
+            docker run -p 3000:3000 ${{ env.DOCKERHUB_REGISTRY }}/${{ env.DOCKERHUB_IMAGE_NAME }}:${{ needs.build.outputs.version }}
+            ```
+
+            #### Binary:
+            Download the appropriate archive for your platform and extract.
+            Then run:
+            ```bash
+            ./aether-identity-server
+            ```
+
+            ### 📋 Components
+
+            - **aether-identity-server**: Main backend server
+            - **frontend**: Next.js web application
+
+            ---
+
+            🐛 **Report Issues**: [GitHub Issues](https://github.com/skygenesisenterprise/aether-identity/issues)
+            💡 **Get Help**: [GitHub Discussions](https://github.com/skygenesisenterprise/aether-identity/discussions)
+
+            📦 **Made with ❤️ by [Sky Genesis Enterprise](https://skygenesisenterprise.com)**
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/**/*.tar.gz
+            artifacts/**/*.zip
