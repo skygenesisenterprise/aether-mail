@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { Contact, contacts } from "@/components/email/data";
 
 interface Config {
   selected: string | null;

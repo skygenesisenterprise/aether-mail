@@ -128,7 +128,7 @@ export function DriveView({ className }: DriveViewProps) {
             </Button>
             <Button>
               <Plus className="h-4 w-4 mr-1" />
-              Nouveau
+              New File
             </Button>
           </div>
         </div>

@@ -14,8 +14,8 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light");
+  const [theme, setThemeState] = useState<Theme>("dark");
+  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark");
 
   // Fonction pour déterminer le thème résolu
   const getResolvedTheme = (theme: Theme): "dark" | "light" => {
@@ -41,8 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Charger le thème depuis localStorage au montage
-    const savedTheme = (localStorage.getItem("aether-mail-theme") as Theme) || "system";
+    // Charger le thème depuis localStorage au montage (défaut: dark)
+    const savedTheme = (localStorage.getItem("aether-mail-theme") as Theme) || "dark";
     setThemeState(savedTheme);
     applyTheme(savedTheme);
 

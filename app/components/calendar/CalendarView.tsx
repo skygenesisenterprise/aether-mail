@@ -5,7 +5,18 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterv
 import { fr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CalendarEvent {
   id: string;
@@ -30,6 +41,8 @@ export function CalendarView({ className }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(new Date());
   const [events, setEvents] = React.useState<CalendarEvent[]>(mockEvents);
+  const [showAddEvent, setShowAddEvent] = React.useState(false);
+  const [newEvent, setNewEvent] = React.useState({ title: '', time: '09:00', location: '', attendees: '' });
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -42,6 +55,21 @@ export function CalendarView({ className }: CalendarViewProps) {
   const selectedDateEvents = events.filter(
     (event) => selectedDate && isSameDay(event.date, selectedDate)
   );
+
+  const addEvent = () => {
+    if (!newEvent.title.trim() || !selectedDate) return;
+    const event: CalendarEvent = {
+      id: Date.now().toString(),
+      title: newEvent.title,
+      date: selectedDate,
+      time: newEvent.time,
+      location: newEvent.location,
+      attendees: newEvent.attendees ? newEvent.attendees.split(',').map(a => a.trim()) : undefined,
+    };
+    setEvents([...events, event]);
+    setNewEvent({ title: '', time: '09:00', location: '', attendees: '' });
+    setShowAddEvent(false);
+  };
 
   return (
     <div className={cn('flex h-full', className)}>
@@ -84,7 +112,7 @@ export function CalendarView({ className }: CalendarViewProps) {
                   key={day.toISOString()}
                   onClick={() => setSelectedDate(day)}
                   className={cn(
-                    'bg-background px-2 py-2 min-h-[100px] text-left hover:bg-accent transition-colors',
+                    'bg-background px-2 py-2 min-h-25 text-left hover:bg-accent transition-colors',
                     !isCurrentMonth && 'text-muted-foreground/50',
                     isSelected && 'bg-accent'
                   )}
@@ -124,9 +152,9 @@ export function CalendarView({ className }: CalendarViewProps) {
           <h3 className="font-semibold">
             {selectedDate ? format(selectedDate, 'd MMMM', { locale: fr }) : 'Sélectionner une date'}
           </h3>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setShowAddEvent(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            Nouveau
+            New Event
           </Button>
         </div>
 
@@ -165,6 +193,94 @@ export function CalendarView({ className }: CalendarViewProps) {
           )}
         </div>
       </div>
+
+      <Dialog open={showAddEvent} onOpenChange={setShowAddEvent}>
+        <DialogContent>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <DialogHeader>
+              <DialogTitle>Nouvel événement</DialogTitle>
+            </DialogHeader>
+            <motion.div 
+              className="grid gap-4 py-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              <motion.div 
+                className="grid gap-2"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.15 }}
+              >
+                <Label htmlFor="title">Titre</Label>
+                <Input
+                  id="title"
+                  placeholder="Réunion équipe..."
+                  value={newEvent.title}
+                  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                />
+              </motion.div>
+              <motion.div 
+                className="grid gap-2"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Label htmlFor="time">Heure</Label>
+                <Select 
+                  value={newEvent.time} 
+                  onValueChange={(value) => setNewEvent({ ...newEvent, time: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner l'heure" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'].map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </motion.div>
+              <motion.div 
+                className="grid gap-2"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.25 }}
+              >
+                <Label htmlFor="location">Lieu</Label>
+                <Input
+                  id="location"
+                  placeholder="Salle A, Visioconférence..."
+                  value={newEvent.location}
+                  onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                />
+              </motion.div>
+              <motion.div 
+                className="grid gap-2"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Label htmlFor="attendees">Participants</Label>
+                <Input
+                  id="attendees"
+                  placeholder="Alice, Bob, Charlie..."
+                  value={newEvent.attendees}
+                  onChange={(e) => setNewEvent({ ...newEvent, attendees: e.target.value })}
+                />
+              </motion.div>
+            </motion.div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setShowAddEvent(false)}>Annuler</Button>
+              <Button onClick={addEvent}>Ajouter</Button>
+            </DialogFooter>
+          </motion.div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

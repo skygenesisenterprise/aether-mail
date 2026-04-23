@@ -4,12 +4,20 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { 
-  Bot, Send, Sparkles, MessageSquare, Lightbulb, 
-  Mail, Calendar, FileText, Users, Zap, Copy, RefreshCw,
-  ThumbsUp, ThumbsDown, MoreVertical, Trash2
+  Bot, 
+  Send, 
+  Sparkles, 
+  Mail, 
+  Calendar, 
+  FileText, 
+  Zap, 
+  Copy, 
+  RefreshCw,
+  ThumbsUp, 
+  ThumbsDown, 
+  MoreVertical,
 } from 'lucide-react';
 
 interface Message {
@@ -97,7 +105,7 @@ export function CopilotView({ className }: CopilotViewProps) {
       <div className="w-64 border-r bg-background flex flex-col">
         <div className="p-4 border-b">
           <div className="flex items-center gap-2 mb-4">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
               <Bot className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -143,7 +151,7 @@ export function CopilotView({ className }: CopilotViewProps) {
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full space-y-8">
               <div className="text-center space-y-2">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto">
+                <div className="h-16 w-16 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto">
                   <Sparkles className="h-8 w-8 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold">Bonjour! Je suis Copilot</h3>
@@ -196,7 +204,7 @@ export function CopilotView({ className }: CopilotViewProps) {
                   <div className={cn(
                     'h-8 w-8 rounded-full flex items-center justify-center shrink-0',
                     message.role === 'assistant' 
-                      ? 'bg-gradient-to-br from-purple-500 to-pink-500' 
+                      ? 'bg-linear-to-br from-purple-500 to-pink-500' 
                       : 'bg-muted'
                   )}>
                     {message.role === 'assistant' ? (
@@ -233,7 +241,7 @@ export function CopilotView({ className }: CopilotViewProps) {
               ))}
               {isTyping && (
                 <div className="flex gap-3">
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                     <Bot className="h-4 w-4 text-white" />
                   </div>
                   <div className="bg-muted rounded-lg px-4 py-3">
@@ -261,7 +269,7 @@ export function CopilotView({ className }: CopilotViewProps) {
                 }
               }}
               placeholder="Posez une question à Copilot..."
-              className="min-h-[60px] pr-12 resize-none"
+              className="min-h-15 pr-12 resize-none"
             />
             <Button
               size="icon"

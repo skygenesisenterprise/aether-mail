@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import { AuthGuard } from "@/components/AuthGuard";
-import { NewsletterView } from "@/components/newsletter";
+import { OrgExplorerView } from "@/components/organization";
 
-export default function NewsletterPage() {
+export default function OrgExplorerPage() {
   return (
     <AuthGuard>
-      <NewsletterView />
+      <OrgExplorerView />
     </AuthGuard>
   );
 }

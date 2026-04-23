@@ -1,11 +1,9 @@
 import {
   Archive,
   ArchiveX,
-  Clock,
   MoreVertical,
   Trash2,
   Star,
-  StarIcon,
   X,
 } from "lucide-react";
 
