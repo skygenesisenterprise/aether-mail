@@ -4,19 +4,21 @@
   "description": "Electron main process for Aether Mail desktop app",
   "private": true,
   "type": "module",
-  "main": "dist/main/index.mjs",
+  "main": "dist/index.cjs",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/main/index.mjs",
-    "dev": "tsx watch electron/main/index.ts"
+    "build": "esbuild main/index.ts --bundle --platform=node --outfile=dist/index.cjs --format=cjs --external:electron",
+    "start": "electron .",
+    "dev": "pnpm run build && pnpm exec electron ."
   },
   "dependencies": {
-    "electron-log": "^5.2.4"
+    "electron-log": "^5.2.4",
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.8.3"
   },
   "devDependencies": {
     "electron": "^41.3.0",
     "electron-builder": "^26.8.1",
-    "tsx": "^4.19.0",
+    "esbuild": "^0.24.2",
     "typescript": "^5.0.0"
   },
   "build": {

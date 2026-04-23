@@ -1,10 +1,9 @@
-import electron, { app, BrowserWindow, ipcMain, protocol, session } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol, session } from 'electron';
 import log from 'electron-log';
 import path from 'node:path';
-import * as pkg from '../../package.json';
 import { setupAutoUpdater } from './utils/auto-update';
 import { isDev, DEFAULT_PORT } from './utils/constants';
-import { initNextServer, stopNextServer } from './utils/next-server';
+import { initNextServer } from './utils/next-server';
 import { setupMenu } from './ui/menu';
 import { createWindow } from './ui/window';
 import { initCookies } from './utils/cookie';
@@ -41,7 +40,7 @@ process.on('unhandledRejection', async (error) => {
 
   console.log(`APP_PATH_ROOT: ${root}`);
 
-  const subdirName = pkg.name;
+  const subdirName = 'aether-mail';
 
   for (const [key, val] of [
     ['appData', ''],
@@ -67,10 +66,6 @@ if (process.platform !== 'darwin') {
 }
 
 console.log('start whenReady');
-
-declare global {
-  var __electron__: typeof electron;
-}
 
 (async () => {
   await app.whenReady();
@@ -220,7 +215,8 @@ setupAutoUpdater();
 let lastCookieSync = 0;
 const COOKIE_SYNC_THROTTLE = 5000;
 
-async function syncCookiesToRenderer(win: BrowserWindow) {
+async function syncCookiesToRenderer(win: BrowserWindow | undefined) {
+  if (!win) return;
   const now = Date.now();
   if (now - lastCookieSync < COOKIE_SYNC_THROTTLE) return;
   lastCookieSync = now;
@@ -232,4 +228,6 @@ async function syncCookiesToRenderer(win: BrowserWindow) {
   } catch (error) {
     console.error('Sync failed:', error);
   }
+
+  return win;
 }

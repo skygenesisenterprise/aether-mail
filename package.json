@@ -8,6 +8,7 @@
     "app",
     "tools",
     "options",
+    "electron",
     "package/node",
     "package/vscode",
     "package/extension",
@@ -17,11 +18,11 @@
     "prisma"
   ],
   "scripts": {
-    "dev": "concurrently \"pnpm --filter app dev\" \"pnpm --filter server dev\"",
+    "dev": "pnpm --filter app dev",
     "dev:frontend": "pnpm --filter app dev",
     "dev:backend": "pnpm --filter server dev",
     "dev:cli": "pnpm --filter cli dev",
-    "dev:electron": "cd app && pnpm electron:start",
+    "dev:electron": "pnpm --filter @aether-mail/electron dev",
     "build": "pnpm -r build",
     "build:frontend": "pnpm --filter app build",
     "build:electron": "cd app && pnpm electron:build",
@@ -72,7 +73,7 @@
   "packageManager": "pnpm@8.15.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/skygenesisenterprise/giteria.git"
+    "url": "https://github.com/skygenesisenterprise/aether-mail.git"
   },
   "keywords": [
     "vault",
@@ -94,9 +95,9 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/skygenesisenterprise/giteria/issues"
+    "url": "https://github.com/skygenesisenterprise/aether-mail/issues"
   },
-  "homepage": "https://github.com/skygenesisenterprise/giteria#readme",
+  "homepage": "https://github.com/skygenesisenterprise/aether-mail#readme",
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
       "eslint --fix --quiet",

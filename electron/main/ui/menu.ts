@@ -1,6 +1,7 @@
 import { BrowserWindow, Menu } from 'electron';
 
-export function setupMenu(win: BrowserWindow): void {
+export function setupMenu(win: BrowserWindow | undefined): BrowserWindow | undefined {
+  if (!win) return;
   const app = Menu.getApplicationMenu();
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
@@ -26,4 +27,6 @@ export function setupMenu(win: BrowserWindow): void {
       },
     ]),
   );
+
+  return win;
 }
