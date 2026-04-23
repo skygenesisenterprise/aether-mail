@@ -6,14 +6,17 @@ import {
   File,
   Inbox,
   MessagesSquare,
+  PenSquare,
   Search,
   Send,
   ShoppingCart,
   Trash2,
   Users2,
+  Mail as MailIcon,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Separator } from "@/components/ui/separator";
@@ -23,30 +26,48 @@ import { AccountSwitcher } from "@/components/email/account-switcher";
 import { MailDisplay } from "@/components/email/mail-display";
 import { MailList } from "@/components/email/mail-list";
 import { Nav } from "@/components/email/nav";
+import { EmailEditor } from "@/components/email/EmailEditor";
+import { Footer } from "@/components/email/Footer";
 import { type Mail } from "@/components/email/data";
 import { useMail } from "@/components/email/use-mail";
 
-interface MailProps {
-  accounts: {
+interface MailProps extends React.HTMLAttributes<HTMLDivElement> {
+  accounts?: {
     label: string;
     email: string;
     icon: React.ReactNode;
   }[];
-  mails: Mail[];
+  mails?: Mail[];
   defaultLayout?: number[];
   defaultCollapsed?: boolean;
   navCollapsedSize: number;
 }
 
 export function Mail({
-  accounts,
-  mails,
+  accounts = [],
+  mails = [],
   defaultLayout = [20, 32, 48],
   defaultCollapsed = false,
   navCollapsedSize,
 }: MailProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(defaultCollapsed);
-  const [mail] = useMail();
+  const [mailStore, setMail] = useMail();
+  const [isWriting, setIsWriting] = React.useState(false);
+  const [activeFolder, setActiveFolder] = React.useState("inbox");
+
+  const folderLabels: Record<string, string> = {
+    inbox: "Inbox",
+    drafts: "Drafts",
+    sent: "Sent",
+    junk: "Junk",
+    trash: "Trash",
+    archive: "Archive",
+    social: "Social",
+    updates: "Updates",
+    forums: "Forums",
+    shopping: "Shopping",
+    promotions: "Promotions",
+  };
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -68,7 +89,7 @@ export function Mail({
             setIsCollapsed(collapsed);
             document.cookie = `react-resizable-panels:collapsed=${JSON.stringify(collapsed)}`;
           }}
-          className={cn(isCollapsed && "min-w-[50px] transition-all duration-300 ease-in-out")}
+          className={cn(isCollapsed && "min-w-12.5 transition-all duration-300 ease-in-out")}
         >
           <div
             className={cn(
@@ -76,7 +97,17 @@ export function Mail({
               isCollapsed && "px-0"
             )}
           >
-            <AccountSwitcher isCollapsed={isCollapsed} accounts={accounts} />
+            <div className={cn("flex flex-col gap-2 w-full", isCollapsed && "items-center")}>
+              <Button
+                size="sm"
+                className="w-full justify-start gap-2"
+                onClick={() => setIsWriting(true)}
+              >
+                <PenSquare className="h-4 w-4" />
+                <span className={cn(isCollapsed && "hidden")}>New Email</span>
+              </Button>
+              <AccountSwitcher isCollapsed={isCollapsed} accounts={accounts} />
+            </div>
           </div>
           <Separator />
           <Nav
@@ -86,37 +117,43 @@ export function Mail({
                 title: "Inbox",
                 label: "128",
                 icon: Inbox,
-                variant: "default",
+                variant: activeFolder === "inbox" ? "default" : "ghost",
+                onClick: () => setActiveFolder("inbox"),
               },
               {
                 title: "Drafts",
                 label: "9",
                 icon: File,
-                variant: "ghost",
+                variant: activeFolder === "drafts" ? "default" : "ghost",
+                onClick: () => setActiveFolder("drafts"),
               },
               {
                 title: "Sent",
                 label: "",
                 icon: Send,
-                variant: "ghost",
+                variant: activeFolder === "sent" ? "default" : "ghost",
+                onClick: () => setActiveFolder("sent"),
               },
               {
                 title: "Junk",
                 label: "23",
                 icon: ArchiveX,
-                variant: "ghost",
+                variant: activeFolder === "junk" ? "default" : "ghost",
+                onClick: () => setActiveFolder("junk"),
               },
               {
                 title: "Trash",
                 label: "",
                 icon: Trash2,
-                variant: "ghost",
+                variant: activeFolder === "trash" ? "default" : "ghost",
+                onClick: () => setActiveFolder("trash"),
               },
               {
                 title: "Archive",
                 label: "",
                 icon: Archive,
-                variant: "ghost",
+                variant: activeFolder === "archive" ? "default" : "ghost",
+                onClick: () => setActiveFolder("archive"),
               },
             ]}
           />
@@ -128,31 +165,36 @@ export function Mail({
                 title: "Social",
                 label: "972",
                 icon: Users2,
-                variant: "ghost",
+                variant: activeFolder === "social" ? "default" : "ghost",
+                onClick: () => setActiveFolder("social"),
               },
               {
                 title: "Updates",
                 label: "342",
                 icon: AlertCircle,
-                variant: "ghost",
+                variant: activeFolder === "updates" ? "default" : "ghost",
+                onClick: () => setActiveFolder("updates"),
               },
               {
                 title: "Forums",
                 label: "128",
                 icon: MessagesSquare,
-                variant: "ghost",
+                variant: activeFolder === "forums" ? "default" : "ghost",
+                onClick: () => setActiveFolder("forums"),
               },
               {
                 title: "Shopping",
                 label: "8",
                 icon: ShoppingCart,
-                variant: "ghost",
+                variant: activeFolder === "shopping" ? "default" : "ghost",
+                onClick: () => setActiveFolder("shopping"),
               },
               {
                 title: "Promotions",
                 label: "21",
                 icon: Archive,
-                variant: "ghost",
+                variant: activeFolder === "promotions" ? "default" : "ghost",
+                onClick: () => setActiveFolder("promotions"),
               },
             ]}
           />
@@ -161,14 +203,14 @@ export function Mail({
         <ResizablePanel defaultSize={`${defaultLayout[1]}%`} minSize="30%">
           <Tabs defaultValue="all" className="flex h-full flex-col">
             <div className="flex items-center px-4 py-1.5">
-              <h1 className="text-foreground text-xl font-bold">Inbox</h1>
+              <h1 className="text-foreground text-xl font-bold">{folderLabels[activeFolder] || "Inbox"}</h1>
               <TabsList className="ml-auto">
                 <TabsTrigger value="all">All mail</TabsTrigger>
                 <TabsTrigger value="unread">Unread</TabsTrigger>
               </TabsList>
             </div>
             <Separator />
-            <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 p-4 backdrop-blur">
+            <div className="bg-background/95 supports-backdrop-filter:bg-background/60 p-4 backdrop-blur">
               <form>
                 <div className="relative">
                   <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
@@ -177,16 +219,31 @@ export function Mail({
               </form>
             </div>
             <TabsContent value="all" className="m-0 min-h-0 flex-1">
-              <MailList items={mails} />
+              <MailList items={(mails ?? [])} />
             </TabsContent>
             <TabsContent value="unread" className="m-0 min-h-0 flex-1">
-              <MailList items={mails.filter((item) => !item.read)} />
+              <MailList items={(mails ?? []).filter((item) => !item.read)} />
             </TabsContent>
           </Tabs>
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={`${defaultLayout[2]}%`} minSize="30%">
-          <MailDisplay mail={mails.find((item) => item.id === mail.selected) || null} />
+          {isWriting ? (
+            <EmailEditor onClose={() => setIsWriting(false)} />
+          ) : mailStore.selected ? (
+            <MailDisplay 
+              mail={(mails ?? []).find((item) => item.id === mailStore.selected) || null} 
+              onClose={() => setMail({ ...mailStore, selected: null })}
+            />
+          ) : (
+            <div className="flex flex-col h-full">
+              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+                <MailIcon className="h-12 w-12 mb-4 opacity-50" />
+                <p className="text-sm font-medium">Select an item to read</p>
+              </div>
+              <Footer className="py-2 text-xs text-center text-muted-foreground border-t" />
+            </div>
+          )}
         </ResizablePanel>
       </ResizablePanelGroup>
     </TooltipProvider>

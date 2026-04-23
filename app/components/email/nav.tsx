@@ -11,6 +11,7 @@ interface NavProps {
     label?: string;
     icon: LucideIcon;
     variant: "default" | "ghost";
+    onClick?: () => void;
   }[];
 }
 
@@ -32,6 +33,7 @@ export function Nav({ links, isCollapsed }: NavProps) {
                     link.variant === "default" &&
                       "dark:bg-muted dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-white"
                   )}
+                  onClick={link.onClick}
                 >
                   <link.icon className="h-4 w-4" />
                   <span className="sr-only">{link.title}</span>
@@ -53,6 +55,7 @@ export function Nav({ links, isCollapsed }: NavProps) {
                   "group dark:bg-muted dark:text-foreground dark:hover:bg-muted dark:hover:text-foreground",
                 "justify-start"
               )}
+              onClick={link.onClick}
             >
               <link.icon className="mr-2 h-4 w-4" />
               {link.title}

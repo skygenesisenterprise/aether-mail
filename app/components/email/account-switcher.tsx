@@ -11,16 +11,16 @@ import {
 
 interface AccountSwitcherProps {
   isCollapsed: boolean;
-  accounts: {
+  accounts?: {
     label: string;
     email: string;
     icon: React.ReactNode;
   }[];
 }
 
-export function AccountSwitcher({ isCollapsed, accounts }: AccountSwitcherProps) {
+export function AccountSwitcher({ isCollapsed, accounts = [] }: AccountSwitcherProps) {
   const [selectedAccount, setSelectedAccount] = React.useState<string>(
-    accounts[0].email
+    accounts[0]?.email || ""
   );
 
   return (

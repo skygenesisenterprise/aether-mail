@@ -1,0 +1,41 @@
+{
+  "name": "@aether-mail/electron",
+  "version": "1.0.0",
+  "description": "Electron main process for Aether Mail desktop app",
+  "private": true,
+  "type": "module",
+  "main": "dist/main/index.mjs",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main/index.mjs",
+    "dev": "tsx watch electron/main/index.ts"
+  },
+  "dependencies": {
+    "electron-log": "^5.2.4"
+  },
+  "devDependencies": {
+    "electron": "^34.3.1",
+    "electron-builder": "^25.1.8",
+    "tsx": "^4.19.0",
+    "typescript": "^5.0.0"
+  },
+  "build": {
+    "appId": "com.skygenesisenterprise.aether-mail",
+    "productName": "Aether Mail",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

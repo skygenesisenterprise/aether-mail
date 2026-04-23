@@ -12,7 +12,10 @@
     "dev:local": "NODE_ENV=development ./start-dev.sh",
     "dev:debug": "NODE_ENV=development DEBUG=* ./start-dev.sh",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next"
+    "clean": "rm -rf .next",
+    "electron:build": "pnpm build && pnpm --filter @aether-mail/electron build",
+    "electron:start": "pnpm electron:build && electron .",
+    "electron:preview": "pnpm build && electron dist-electron/main/index.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

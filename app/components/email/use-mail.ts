@@ -8,7 +8,7 @@ interface Config {
 const useMailStore = create<
   Config & { setState: (newState: Partial<Config>) => void }
 >((set) => ({
-  selected: mails[0].id,
+  selected: null,
   setState: (newState) => set((state) => ({ ...state, ...newState })),
 }));
 

@@ -2,16 +2,18 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
-  Inbox,
+  Mails,
   Calendar,
   Users,
   File,
+  HardDrive,
   Settings,
   CheckSquare,
   Bot,
   Rss,
-  FolderTree,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -29,20 +31,24 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { title: 'Inbox', href: '/inbox', icon: Inbox },
+  { title: 'Mails', href: '/inbox', icon: Mails },
   { title: 'Calendar', href: '/calendar', icon: Calendar },
   { title: 'Contacts', href: '/contacts', icon: Users },
   { title: 'Todo', href: '/todo', icon: CheckSquare },
-  { title: 'Drive', href: '/drive', icon: File },
+  { title: 'Drive', href: '/drive', icon: HardDrive },
   { title: 'Newsletter', href: '/newsletter', icon: Rss },
   { title: 'Copilot', href: '/copilot', icon: Bot },
-  { title: 'Org Explorer', href: '/org-explorer', icon: FolderTree },
+  { title: 'Organization', href: '/organization', icon: Building2 },
 ];
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Sidebar({ className, ...props }: SidebarProps) {
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    return pathname === href || pathname.startsWith(href + '/');
+  };
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -57,12 +63,12 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         <nav className="flex flex-col items-center gap-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const active = isActive(item.href);
             return (
               <Tooltip key={item.href}>
                 <TooltipTrigger asChild>
                   <Button
-                    variant={isActive ? 'secondary' : 'ghost'}
+                    variant={active ? 'secondary' : 'ghost'}
                     size="icon"
                     asChild
                   >

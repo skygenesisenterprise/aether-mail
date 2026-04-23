@@ -11,6 +11,7 @@ import {
   Reply,
   ReplyAll,
   Trash2,
+  X,
 } from "lucide-react";
 
 import { DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -23,19 +24,26 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail } from "@/components/examples/mail/data";
+import { Mail } from "@/components/email/data";
 import { useState } from "react";
 
 interface MailDisplayProps {
   mail: Mail | null;
+  onClose?: () => void;
 }
 
-export function MailDisplay({ mail }: MailDisplayProps) {
+export function MailDisplay({ mail, onClose }: MailDisplayProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center p-2">
+        {onClose && (
+          <Button variant="ghost" size="icon" onClick={onClose} title="Fermer">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Fermer</span>
+          </Button>
+        )}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" disabled={!mail} title="Archive">
             <Archive className="h-4 w-4" />
@@ -66,7 +74,7 @@ export function MailDisplay({ mail }: MailDisplayProps) {
             <PopoverContent className="flex w-auto p-0">
               <div className="flex flex-col gap-2 border-r px-2 py-4">
                 <div className="px-4 text-sm font-medium">Snooze until</div>
-                <div className="grid min-w-[250px] gap-1">
+                <div className="grid min-w-62.5 gap-1">
                   <Button variant="ghost" className="justify-start font-normal">
                     Later today{" "}
                     <span className="text-muted-foreground ml-auto">
