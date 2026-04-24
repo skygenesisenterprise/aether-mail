@@ -13,6 +13,8 @@ import {
   Trash2,
   Users2,
   Mail as MailIcon,
+  History,
+  FolderSearch,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -150,10 +152,24 @@ export function Mail({
               },
               {
                 title: "Archive",
-                label: "",
+                label: "26",
                 icon: Archive,
                 variant: activeFolder === "archive" ? "default" : "ghost",
                 onClick: () => setActiveFolder("archive"),
+              },
+              {
+                title: "Conversation history",
+                label: "25",
+                icon: History,
+                variant: activeFolder === "history" ? "default" : "ghost",
+                onClick: () => setActiveFolder("history"),
+              },
+              {
+                title: "Research file",
+                label: "",
+                icon: FolderSearch,
+                variant: activeFolder === "all" ? "default" : "ghost",
+                onClick: () => setActiveFolder("all"),
               },
             ]}
           />

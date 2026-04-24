@@ -30,7 +30,7 @@ function isValidLocale(locale: string): locale is Locale {
 
 const AUTH_PATHS = ["/login", "/register"];
 const PROTECTED_PATHS = ["/exemple"];
-const NO_LOCALE_PATHS = ["/health", "/mfa", "/authorize", "/inbox", "/settings", "/contacts", "/drive", "/newsletter", "/organization", "/todo", "/calendar", "/copilot" ];
+const NO_LOCALE_PATHS = ["/health", "/mfa", "/authorize", "/inbox", "/settings", "/contacts", "/drive", "/newsletter", "/organization", "/todo", "/calendar", "/copilot", "/meet", "/workflow", "/automation", "/activity" ];
 
 function isValidJWT(token: string | undefined): boolean {
   if (!token) return false;
@@ -44,9 +44,7 @@ export default function proxy(request: NextRequest) {
   const firstSegment = segments[0];
 
   if (pathname === "/" || pathname === "") {
-    const country = getCountryFromRequest(request);
-    const locale = getLocaleFromCountry(country);
-    return NextResponse.redirect(new URL(`/${locale}`, request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   const isAuthPath = AUTH_PATHS.some((p) => pathname === p || pathname === `/${firstSegment}${p}`);

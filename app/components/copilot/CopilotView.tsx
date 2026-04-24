@@ -117,7 +117,7 @@ export function CopilotView({ className }: CopilotViewProps) {
 
         <ScrollArea className="flex-1">
           <div className="p-2">
-            <div className="text-xs font-medium text-muted-foreground px-2 py-2">RACCORDIS</div>
+            <div className="text-xs font-medium text-muted-foreground px-2 py-2">RACCOURCIS</div>
             {chatHistory.map((chat) => (
               <button
                 key={chat.id}
@@ -281,7 +281,7 @@ export function CopilotView({ className }: CopilotViewProps) {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            Copilot peut fare des erreurs. Vérifiez les informations importantes.
+            Copilot can make mistakes. Please check any important information.
           </p>
         </div>
       </div>

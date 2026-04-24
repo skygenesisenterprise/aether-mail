@@ -22,5 +22,5 @@
 
 ## API Reference
 
-- When needing to make API calls from the web client, refer to `routers/api/v1/` for the available endpoints
+- When needing to make API calls from the web client, refer to `server/api/v1/` for the available endpoints
 - Each subdirectory contains different API categories (repo, org, user, admin, misc, etc.)

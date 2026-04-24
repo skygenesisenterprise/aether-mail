@@ -142,7 +142,7 @@ export function TodoView({ className }: TodoViewProps) {
                 >
                   <button
                     onClick={() => toggleTodo(todo.id)}
-                    className="flex-shrink-0"
+                    className="shrink-0"
                   >
                     {todo.completed ? (
                       <CheckSquare className="h-5 w-5 text-primary" />
@@ -180,7 +180,7 @@ export function TodoView({ className }: TodoViewProps) {
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    className="flex-shrink-0"
+                    className="shrink-0"
                     onClick={() => deleteTodo(todo.id)}
                   >
                     <Trash2 className="h-4 w-4" />

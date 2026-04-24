@@ -11,8 +11,12 @@ import {
   Settings,
   ListTodo,
   MessageSquareMore,
+  MessagesSquare,
+  MessageCircleCode,
   Rss,
   Building2,
+  Activity,
+  Workflow,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -31,13 +35,22 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { title: 'Mail', href: '/inbox', icon: Mail },
+  { title: 'Activity', href: '/activity', icon: Activity },
+
   { title: 'Calendar', href: '/calendar', icon: CalendarDays },
-  { title: 'Copilot', href: '/copilot', icon: MessageSquareMore },
-  { title: 'Contacts', href: '/contacts', icon: Users },
+  { title: 'Meet', href: '/meet', icon: MessagesSquare },
+
   { title: 'Todo', href: '/todo', icon: ListTodo },
-  { title: 'Flux RSS', href: '/newsletter', icon: Rss },
-  { title: 'Organization', href: '/organization', icon: Building2 },
+  { title: 'Contacts', href: '/contacts', icon: Users },
+
   { title: 'Drive', href: '/drive', icon: HardDrive },
+  { title: 'Flux RSS', href: '/newsletter', icon: Rss },
+
+  { title: 'Workflow', href: '/workflow', icon: Workflow },
+  { title: 'Copilot', href: '/copilot', icon: MessageCircleCode },
+
+  { title: 'Organization', href: '/organization', icon: Building2 },
+  
 ];
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
