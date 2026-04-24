@@ -66,7 +66,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
-          'flex flex-col items-center w-16 bg-sidebar min-h-svh py-4',
+          'flex flex-col items-center w-16 bg-sidebar min-h-screen py-4',
           className
         )}
         {...props}

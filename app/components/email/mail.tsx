@@ -108,6 +108,7 @@ export function Mail({
                 <PenSquare className="h-4 w-4" />
                 <span className={cn(isCollapsed && "hidden")}>New Email</span>
               </Button>
+              <div className="border-t border-border" />
               <AccountSwitcher isCollapsed={isCollapsed} accounts={accounts} />
             </div>
           </div>

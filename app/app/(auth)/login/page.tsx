@@ -1,91 +1,17 @@
 import { LoginForm } from "@/components/auth/login-form";
-import { Shield, Lock, Clock, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle } from "lucide-react";
+import * as React from "react";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary text-primary-foreground flex-col justify-between p-12">
-        <div>
-          <div className="flex items-center gap-3 mb-16">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Sky Genesis Enterprise</h1>
-            </div>
-          </div>
-
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-3xl font-bold leading-tight text-balance">
-                Welcome to the Official Portal
-              </h2>
-              <p className="mt-4 text-primary-foreground/80 leading-relaxed">
-                Access your enterprise services securely. Our platform guarantees the
-                confidentiality and integrity of your data.
-              </p>
-            </div>
-
-            <div className="space-y-4 pt-8 border-t border-primary-foreground/20">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-primary-foreground/10 rounded-lg">
-                  <Shield className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Advanced Protection</h3>
-                  <p className="text-sm text-primary-foreground/70">
-                    End-to-end encryption compliant with government standards
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-primary-foreground/10 rounded-lg">
-                  <Lock className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Regulatory Compliance</h3>
-                  <p className="text-sm text-primary-foreground/70">
-                    ISO 27001 certified and GDPR compliant
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-primary-foreground/10 rounded-lg">
-                  <Clock className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">24/7 Availability</h3>
-                  <p className="text-sm text-primary-foreground/70">
-                    Redundant infrastructure and continuous technical support
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="text-sm text-primary-foreground/60">
-          <p>&copy; 2026 Sky Genesis Enterprise. All rights reserved.</p>
-          <p className="mt-1">Version 1.0.0 | Last updated: April 2026</p>
-        </div>
-      </div>
-
-      {/* Right Panel - Login Form */}
-      <div className="w-full lg:w-1/2 flex flex-col">
-        {/* Mobile Header */}
-        <div className="lg:hidden bg-primary text-primary-foreground p-6">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-xl font-bold">Sky Genesis Enterprise</h1>
-              <p className="text-primary-foreground/70 text-sm">Institutional Portal</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 flex items-center justify-center p-8 bg-background">
-          <div className="w-full max-w-md space-y-8">
-            <div className="text-center lg:text-left">
-              <h2 className="text-2xl font-bold text-foreground">Sign In</h2>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-md">
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <div className="text-center mb-6">
+              <h1 className="text-xl font-bold text-primary">Sky Genesis Enterprise</h1>
+              <h2 className="mt-4 text-2xl font-bold text-foreground">Sign In</h2>
               <p className="mt-2 text-muted-foreground">
                 Please authenticate to access your secure space
               </p>
@@ -93,34 +19,76 @@ export default function LoginPage() {
 
             <LoginForm />
 
-            <div className="pt-6 border-t border-border">
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span>Secure SSL/TLS Connection</span>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
               </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 flex items-center justify-center border-border hover:bg-muted"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                </svg>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 flex items-center justify-center border-border hover:bg-muted"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 flex items-center justify-center border-border hover:bg-muted"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8747-.6237-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-1.1834 12.1957 1.7038 14.9417a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0291a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6069 3.9495-1.5229 6.0023-3.0304a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5487-11.9667a.061.061 0 00-.0312-.0286z" fill="#5865F2"/>
+                </svg>
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-6 text-center">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span>Secure SSL/TLS Connection</span>
             </div>
           </div>
         </div>
-
-        <footer className="p-6 bg-muted/50 border-t border-border">
-          <div className="max-w-md mx-auto text-center text-sm text-muted-foreground space-y-2">
-            <p>
-              By signing in, you agree to our{" "}
-              <a href="${locale}/legal/terms" className="text-primary hover:underline">
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a href="${locale}/legal/privacy" className="text-primary hover:underline">
-                Privacy Policy
-              </a>
-            </p>
-            <p className="text-xs">
-              Any unauthorized access attempt is strictly prohibited and will be reported to the
-              proper authorities.
-            </p>
-          </div>
-        </footer>
       </div>
+
+      <footer className="p-6 bg-muted/50 border-t border-border">
+        <div className="max-w-md mx-auto text-center text-sm text-muted-foreground space-y-2">
+          <p>
+            By signing in, you agree to our{" "}
+            <a href="${locale}/legal/terms" className="text-primary hover:underline">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a href="${locale}/legal/privacy" className="text-primary hover:underline">
+              Privacy Policy
+            </a>
+          </p>
+          <p className="text-xs">
+            Any unauthorized access attempt is strictly prohibited and will be reported to the
+            proper authorities.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

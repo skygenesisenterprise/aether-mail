@@ -17,7 +17,7 @@ const fontMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: {
     template: "%s | Sky Genesis Enterprise",
-    default: "Aether Mail | Sky Genesis Enterprise",
+    default: "Aether Mail ",
   },
   description:
     "An lightweight, open-source email client built for privacy, speed, and seamless integration within the Aether Office ecosystem",

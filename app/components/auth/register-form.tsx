@@ -79,7 +79,7 @@ export function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-2">
       {error && (
         <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
@@ -94,7 +94,7 @@ export function RegisterForm() {
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         <Label htmlFor="fullName" className="text-sm font-medium text-foreground">
           Full Name
         </Label>
@@ -106,14 +106,14 @@ export function RegisterForm() {
             placeholder="John Wick"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="h-9 pl-10 bg-background border-border focus:border-primary focus:ring-primary text-sm"
+            className="h-8 pl-10 bg-background border-border focus:border-primary focus:ring-primary text-sm"
             required
             disabled={isLoading}
           />
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         <Label htmlFor="email" className="text-sm font-medium text-foreground">
           Corporate Email
         </Label>
@@ -125,14 +125,14 @@ export function RegisterForm() {
             placeholder="john.wick@aethermail.me"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-9 pl-10 bg-background border-border focus:border-primary focus:ring-primary text-sm"
+            className="h-8 pl-10 bg-background border-border focus:border-primary focus:ring-primary text-sm"
             required
             disabled={isLoading}
           />
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         <Label htmlFor="password" className="text-sm font-medium text-foreground">
           Password
         </Label>
@@ -160,7 +160,7 @@ export function RegisterForm() {
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
           Confirm Password
         </Label>
@@ -169,7 +169,7 @@ export function RegisterForm() {
           <Input
             id="confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
-            placeholder="•••��••••••••"
+            placeholder="••••••••••••"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="h-9 pl-10 pr-10 bg-background border-border focus:border-primary focus:ring-primary text-sm"
@@ -188,8 +188,8 @@ export function RegisterForm() {
         </div>
       </div>
 
-      <div className="rounded-md border border-border bg-muted/30 p-4">
-        <div className="flex items-start space-x-3">
+      <div className="rounded-md border border-border bg-muted/30 p-2">
+        <div className="flex items-start gap-2">
           <Checkbox
             id="terms"
             checked={acceptTerms}
@@ -199,7 +199,7 @@ export function RegisterForm() {
           />
           <Label
             htmlFor="terms"
-            className="text-sm font-normal text-muted-foreground cursor-pointer leading-relaxed"
+            className="text-xs text-muted-foreground cursor-pointer leading-tight"
           >
             By creating an account, you agree to our{" "}
             <a href="#" className="text-primary hover:underline font-medium">
@@ -215,7 +215,7 @@ export function RegisterForm() {
 
       <Button
         type="submit"
-        className="w-full h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold tracking-wide text-sm"
+        className="w-full h-8 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold tracking-wide text-sm"
         disabled={isLoading}
       >
         {isLoading ? (

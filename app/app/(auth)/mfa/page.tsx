@@ -10,7 +10,7 @@ import {
   InputOTPSeparator,
 } from "@/components/ui/input-otp";
 import { authApi } from "@/lib/api/auth";
-import { Shield, Lock, AlertCircle, ArrowLeft } from "lucide-react";
+import { Shield, AlertCircle, CheckCircle } from "lucide-react";
 
 export default function MfaPage() {
   const searchParams = useSearchParams();
@@ -62,83 +62,19 @@ export default function MfaPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      <div className="hidden lg:flex lg:w-1/2 bg-primary text-primary-foreground flex-col justify-between p-12">
-        <div>
-          <div className="flex items-center gap-3 mb-16">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Sky Genesis Enterprise</h1>
-            </div>
-          </div>
-
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-3xl font-bold leading-tight text-balance">
-                Two-Step Verification
-              </h2>
-              <p className="mt-4 text-primary-foreground/80 leading-relaxed">
-                To protect your account, please enter the verification code sent to your trusted
-                device.
-              </p>
-            </div>
-
-            <div className="space-y-4 pt-8 border-t border-primary-foreground/20">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-primary-foreground/10 rounded-lg">
-                  <Shield className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Enhanced Security</h3>
-                  <p className="text-sm text-primary-foreground/70">
-                    Two-factor authentication ensures the integrity of your access
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-primary-foreground/10 rounded-lg">
-                  <Lock className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Temporary Code</h3>
-                  <p className="text-sm text-primary-foreground/70">
-                    The code expires after 30 seconds for maximum security
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="text-sm text-primary-foreground/60">
-          <p>&copy; 2026 Sky Genesis Enterprise. All rights reserved.</p>
-          <p className="mt-1">Version 1.0.0 | Last updated: April 2026</p>
-        </div>
-      </div>
-
-      <div className="w-full lg:w-1/2 flex flex-col">
-        <div className="lg:hidden bg-primary text-primary-foreground p-6">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-xl font-bold">Sky Genesis Enterprise</h1>
-              <p className="text-primary-foreground/70 text-sm">Institutional Portal</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 flex items-center justify-center p-8 bg-background">
-          <div className="w-full max-w-md space-y-8">
-            <div className="text-center lg:text-left">
-              <div className="flex items-center justify-center lg:justify-start gap-2 mb-2">
-                <Shield className="h-8 w-8 text-primary" />
-              </div>
-              <h2 className="text-2xl font-bold text-foreground">Two-Factor Authentication</h2>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-md">
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <div className="text-center mb-6">
+              <h1 className="text-xl font-bold text-primary">Sky Genesis Enterprise</h1>
+              <h2 className="mt-4 text-2xl font-bold text-foreground">Two-Factor Authentication</h2>
               <p className="mt-2 text-muted-foreground">
                 Enter the 6-digit code from your authenticator app
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -199,55 +135,36 @@ export default function MfaPage() {
                   "Verify"
                 )}
               </Button>
-
-              <div className="text-center">
-                <button
-                  type="button"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
-                >
-                  <ArrowLeft className="h-3 w-3" />
-                  <span>Back to sign in</span>
-                </button>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Secure Access</span>
-                </div>
-              </div>
-
-              <p className="text-center text-xs text-muted-foreground">
-                Don&apos;t have access to your device?
-                <a href="#" className="text-primary font-medium hover:underline ml-1">
-                  Use a recovery code
-                </a>
-              </p>
             </form>
           </div>
-        </div>
 
-        <footer className="p-6 bg-muted/50 border-t border-border">
-          <div className="max-w-md mx-auto text-center text-sm text-muted-foreground space-y-2">
-            <p>
-              By signing in, you agree to our{" "}
-              <a href="#" className="text-primary hover:underline">
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a href="#" className="text-primary hover:underline">
-                Privacy Policy
-              </a>
-            </p>
-            <p className="text-xs">
-              Any unauthorized access attempt is strictly prohibited and will be reported to the
-              proper authorities.
-            </p>
+          <div className="mt-6 text-center">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span>Secure SSL/TLS Connection</span>
+            </div>
           </div>
-        </footer>
+        </div>
       </div>
+
+      <footer className="p-6 bg-muted/50 border-t border-border">
+        <div className="max-w-md mx-auto text-center text-sm text-muted-foreground space-y-2">
+          <p>
+            By signing in, you agree to our{" "}
+            <a href="#" className="text-primary hover:underline">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a href="#" className="text-primary hover:underline">
+              Privacy Policy
+            </a>
+          </p>
+          <p className="text-xs">
+            Any unauthorized access attempt is strictly prohibited and will be reported to the
+            proper authorities.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
