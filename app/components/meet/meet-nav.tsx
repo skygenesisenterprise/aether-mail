@@ -6,7 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Hash, Plus, Search, MessageSquare } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Hash, Plus, Search, MessageSquare, User, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/lib/api/meet-types";
 
@@ -40,11 +48,10 @@ interface MeetNavProps {
   activeConversationId: string | null;
   onSelectConversation: (id: string) => void;
   totalUnread: number;
-  onNewConversation?: () => void;
+  onNewConversation?: (type: "direct" | "group" | "channel", name: string, participantIds?: string[]) => void;
 }
 
 export function MeetNav({
-  isCollapsed = false,
   conversations,
   activeConversationId,
   onSelectConversation,
@@ -53,6 +60,10 @@ export function MeetNav({
 }: MeetNavProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("chats");
+  const [showNewConvDialog, setShowNewConvDialog] = React.useState(false);
+  const [newConvType, setNewConvType] = React.useState<"direct" | "group" | "channel">("direct");
+  const [newConvName, setNewConvName] = React.useState("");
+  const [selectedParticipants, setSelectedParticipants] = React.useState<string[]>([]);
 
   const filteredConversations = React.useMemo(() => {
     let filtered = conversations;
@@ -73,6 +84,22 @@ export function MeetNav({
     
     return filtered;
   }, [conversations, activeTab, searchQuery]);
+
+  const handleNewConversation = () => {
+    if (newConvType === "direct" || newConvType === "group") {
+      if (selectedParticipants.length > 0) {
+        onNewConversation?.(newConvType, newConvName, selectedParticipants);
+      }
+    } else {
+      if (newConvName.trim()) {
+        onNewConversation?.(newConvType, newConvName);
+      }
+    }
+    setShowNewConvDialog(false);
+    setNewConvName("");
+    setSelectedParticipants([]);
+    setNewConvType("direct");
+  };
 
   return (
     <div className="flex flex-col h-full border-r bg-background">
@@ -139,11 +166,82 @@ export function MeetNav({
       <Separator />
       
       <div className="p-3 border-t">
-        <Button variant="outline" className="w-full justify-start" onClick={onNewConversation}>
+        <Button variant="outline" className="w-full justify-start" onClick={() => setShowNewConvDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
           New conversation
         </Button>
       </div>
+
+      <Dialog open={showNewConvDialog} onOpenChange={setShowNewConvDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Conversation</DialogTitle>
+            <DialogDescription>
+              Create a new direct message, group, or channel
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex gap-2">
+              <Button
+                variant={newConvType === "direct" ? "default" : "outline"}
+                onClick={() => setNewConvType("direct")}
+                className="flex-1"
+              >
+                <User className="h-4 w-4 mr-2" />
+                Direct
+              </Button>
+              <Button
+                variant={newConvType === "group" ? "default" : "outline"}
+                onClick={() => setNewConvType("group")}
+                className="flex-1"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Group
+              </Button>
+              <Button
+                variant={newConvType === "channel" ? "default" : "outline"}
+                onClick={() => setNewConvType("channel")}
+                className="flex-1"
+              >
+                <Hash className="h-4 w-4 mr-2" />
+                Channel
+              </Button>
+            </div>
+
+            {(newConvType === "group" || newConvType === "channel") && (
+              <div className="space-y-2">
+                <Input
+                  placeholder={newConvType === "channel" ? "Channel name" : "Group name"}
+                  value={newConvName}
+                  onChange={(e) => setNewConvName(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Input
+                placeholder="Search contacts..."
+                className="mb-2"
+              />
+              <div className="max-h-48 overflow-y-auto space-y-1 border rounded-md p-2">
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  Select contacts to add (demo)
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewConvDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleNewConversation}>
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

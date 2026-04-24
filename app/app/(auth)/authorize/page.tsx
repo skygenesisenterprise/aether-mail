@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Shield, Globe, AlertCircle, CheckCircle } from "lucide-react";
+import { Globe, AlertCircle, CheckCircle } from "lucide-react";
 
 export default function AuthorizePage() {
   const searchParams = useSearchParams();

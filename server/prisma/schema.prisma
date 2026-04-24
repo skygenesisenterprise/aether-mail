@@ -7,41 +7,53 @@ datasource db {
 }
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  passwordHash      String
-  name              String?
-  avatarUrl         String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  accounts          Account[]
-  sessions         Session[]
-  emails           Email[]
-  contacts         Contact[]
-  calendarEvents   CalendarEvent[]
-  todos            Todo[]
-  feeds            Feed[]
-  feedArticles    FeedArticle[]
-  bookmarks       Bookmark[]
-  settings         UserSettings?
+  accounts             Account[]
+  sessions             Session[]
+  emails               Email[]
+  contacts             Contact[]
+  calendarEvents       CalendarEvent[]
+  todos                Todo[]
+  feeds                Feed[]
+  feedArticles         FeedArticle[]
+  bookmarks            Bookmark[]
+  settings             UserSettings?
+  calendars            Calendar[]
+  meetings             Meeting[]
+  meetingConversations MeetingConversation[]
+  meetingSettings      MeetingSettings?
+  contactGroups        ContactGroup[]
+  filters              Filter[]
+  labels               Label[]
+  signatures           Signature[]
+  vacationResponder    VacationResponder?
+  notifications        Notification[]
+  todoLists            TodoList[]
+  newsletters          Newsletter[]
 }
 
 model Account {
-  id                String    @id @default(cuid())
+  id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
   refreshToken      String?
   accessToken       String?
-  expiresAt        Int?
-  tokenType        String?
+  expiresAt         Int?
+  tokenType         String?
   scope             String?
-  idToken          String?
-  sessionState     String?
+  idToken           String?
+  sessionState      String?
 
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
@@ -53,7 +65,7 @@ model Session {
   userId       String
   expires      DateTime
 
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -67,37 +79,37 @@ model VerificationToken {
 }
 
 model Email {
-  id            String    @id @default(cuid())
-  userId        String
-  folder        String    @default("inbox")
-  subject       String?
-  text          String?
-  html          String?
-  from          String
-  fromName      String?
-  to            String
-  toName        String?
-  replyTo       String?
-  cc           String?
-  bcc          String?
-  read          Boolean   @default(false)
-  starred       Boolean   @default(false)
-  pinned       Boolean   @default(false)
-  archived     Boolean   @default(false)
-  spam         Boolean   @default(false)
-  trash        Boolean   @default(false)
-  downloaded   Boolean   @default(false)
-  remoteId     String?
-  threadId     String?
-  inReplyTo    String?
-  references   String?
-  headers      String?
-  attachments  String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
+  id          String    @id @default(cuid())
+  userId      String
+  folder      String    @default("inbox")
+  subject     String?
+  text        String?
+  html        String?
+  from        String
+  fromName    String?
+  to          String
+  toName      String?
+  replyTo     String?
+  cc          String?
+  bcc         String?
+  read        Boolean   @default(false)
+  starred     Boolean   @default(false)
+  pinned      Boolean   @default(false)
+  archived    Boolean   @default(false)
+  spam        Boolean   @default(false)
+  trash       Boolean   @default(false)
+  downloaded  Boolean   @default(false)
+  remoteId    String?
+  threadId    String?
+  inReplyTo   String?
+  references  String?
+  headers     String?
+  attachments String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([folder])
@@ -107,32 +119,50 @@ model Email {
 }
 
 model Contact {
-  id              String    @id @default(cuid())
-  userId          String
-  name            String
-  email           String
-  phone           String?
-  company         String?
-  jobTitle        String?
-  address        String?
-  notes           String?
-  avatarUrl       String?
-  starred        Boolean   @default(false)
-  deletedAt      DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  userId    String
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  jobTitle  String?
+  address   String?
+  notes     String?
+  avatarUrl String?
+  starred   Boolean   @default(false)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, email])
   @@index([userId])
   @@index([starred])
 }
 
+model Calendar {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  color       String?
+  description String?
+  isDefault   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events CalendarEvent[]
+
+  @@index([userId])
+}
+
 model CalendarEvent {
-  id           String    @id @default(cuid())
-  userId       String
-  title        String
+  id          String    @id @default(cuid())
+  userId      String
+  calendarId  String?
+  title       String
   description String?
   location    String?
   startDate   DateTime
@@ -146,55 +176,60 @@ model CalendarEvent {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendar Calendar? @relation(fields: [calendarId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([calendarId])
   @@index([startDate])
 }
 
 model Todo {
   id          String    @id @default(cuid())
   userId      String
+  todoListId  String?
   title       String
   completed   Boolean   @default(false)
   dueDate     DateTime?
   priority    String    @default("medium")
   category    String    @default("Travail")
   notes       String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   completedAt DateTime?
   deletedAt   DateTime?
 
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todoList TodoList? @relation(fields: [todoListId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([completed])
   @@index([dueDate])
+  @@index([todoListId])
 }
 
 model Feed {
-  id           String    @id @default(cuid())
-  userId       String
-  name         String
-  url          String
-  iconUrl      String?
-  category     String?
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  url           String
+  iconUrl       String?
+  category      String?
   lastFetchedAt DateTime?
-  unreadCount  Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  unreadCount   Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  articles     FeedArticle[]
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articles FeedArticle[]
 
   @@unique([userId, url])
   @@index([userId])
 }
 
 model FeedArticle {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   feedId      String
   userId      String
   title       String
@@ -203,13 +238,13 @@ model FeedArticle {
   url         String
   author      String?
   publishedAt DateTime
-  read        Boolean   @default(false)
-  starred    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  read        Boolean  @default(false)
+  starred     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  feed        Feed      @relation(fields: [feedId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feed Feed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([feedId])
   @@index([userId])
@@ -220,15 +255,33 @@ model FeedArticle {
 model Bookmark {
   id          String    @id @default(cuid())
   userId      String
-  title      String
-  url        String
+  title       String
+  url         String
   description String?
-  thumbnail  String?
-  tags       String?
-  createdAt  DateTime  @default(now())
-  deletedAt  DateTime?
+  thumbnail   String?
+  tags        String?
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime?
 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Newsletter {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  senderEmail String
+  senderName  String?
+  listsUrl    String?
+  subscribers Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -240,33 +293,293 @@ model UserSettings {
   language              String   @default("fr")
   emailView             String   @default("default")
   emailSort             String   @default("date desc")
-  contactsSort         String   @default("name asc")
-  calendarView         String   @default("month")
-  todoView             String   @default("list")
+  contactsSort          String   @default("name asc")
+  calendarView          String   @default("month")
+  todoView              String   @default("list")
   sidebarCollapsed      Boolean  @default(false)
-  desktopNotifications Boolean  @default(true)
-  emailNotifications   Boolean  @default(true)
-  calendarNotifications Boolean @default(true)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  desktopNotifications  Boolean  @default(true)
+  emailNotifications    Boolean  @default(true)
+  calendarNotifications Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model SyncState {
-  id            String   @id @default(cuid())
-  userId        String
-  lastSyncedAt  DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  lastSyncedAt DateTime @default(now())
   syncToken    String?
   deviceId     String
-  deviceName  String
-  platform    String
-  status      String   @default("active")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  deviceName   String
+  platform     String
+  status       String   @default("active")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([userId])
   @@index([deviceId])
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  domain    String?
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members OrganizationMember[]
+  domains OrganizationDomain[]
+}
+
+model OrganizationMember {
+  id             String    @id @default(cuid())
+  organizationId String
+  userId         String
+  role           String    @default("member")
+  status         String    @default("active")
+  invitedAt      DateTime?
+  joinedAt       DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model OrganizationDomain {
+  id             String    @id @default(cuid())
+  organizationId String
+  domain         String
+  verified       Boolean   @default(false)
+  verifiedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, domain])
+  @@index([organizationId])
+}
+
+model Meeting {
+  id          String    @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  timezone    String?
+  recurring   String?
+  password    String?
+  settings    String?
+  hostUrl     String?
+  joinUrl     String?
+  status      String    @default("scheduled")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  participants MeetingParticipant[]
+  recordings   MeetingRecording[]
+
+  @@index([userId])
+  @@index([startDate])
+}
+
+model MeetingParticipant {
+  id        String    @id @default(cuid())
+  meetingId String
+  userId    String?
+  email     String?
+  name      String?
+  role      String    @default("participant")
+  status    String    @default("pending")
+  joinedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  meeting      Meeting              @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  conversation MeetingConversation? @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+  @@index([userId])
+}
+
+model MeetingRecording {
+  id        String   @id @default(cuid())
+  meetingId String
+  url       String
+  duration  Int?
+  size      Int?
+  status    String   @default("processing")
+  createdAt DateTime @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+}
+
+model MeetingConversation {
+  id        String    @id @default(cuid())
+  userId    String
+  meetingId String?
+  type      String    @default("direct")
+  status    String    @default("waiting")
+  startedAt DateTime?
+  endedAt   DateTime?
+  createdAt DateTime  @default(now())
+
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages     ConversationMessage[]
+  participants MeetingParticipant[]
+
+  @@index([userId])
+}
+
+model ConversationMessage {
+  id             String    @id @default(cuid())
+  conversationId String
+  senderId       String?
+  content        String
+  type           String    @default("text")
+  createdAt      DateTime  @default(now())
+  deletedAt      DateTime?
+
+  conversation MeetingConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+model MeetingSettings {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  defaultDuration    Int      @default(60)
+  defaultTimezone    String   @default("Europe/Paris")
+  waitingRoomEnabled Boolean  @default(true)
+  chatEnabled        Boolean  @default(true)
+  screenShareEnabled Boolean  @default(true)
+  recordingEnabled   Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ContactGroup {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Filter {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  conditions String
+  actions    String
+  enabled    Boolean   @default(true)
+  priority   Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([enabled])
+}
+
+model Label {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String?
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Signature {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  content   String
+  html      String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VacationResponder {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  enabled      Boolean   @default(false)
+  subject      String?
+  message      String
+  startDate    DateTime?
+  endDate      DateTime?
+  contactsOnly Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String?
+  data      String?
+  read      Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model TodoList {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todos Todo[]
+
+  @@index([userId])
 }

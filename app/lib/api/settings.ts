@@ -43,60 +43,56 @@ class SettingsApiService {
     return response.json();
   }
 
-  async getSettings(accountId: string): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/settings`);
+  async getSettings(): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request("/api/v1/settings");
   }
 
-  async updateSettings(accountId: string, data: {
-    language?: string;
-    timezone?: string;
-    dateFormat?: string;
-    timeFormat?: string;
+  async updateSettings(data: {
     theme?: string;
-    displayName?: string;
-    signature?: string;
-    notifications?: {
-      email?: boolean;
-      push?: boolean;
-      desktop?: boolean;
-      sound?: boolean;
-    };
+    language?: string;
+    emailView?: string;
+    emailSort?: string;
+    contactsSort?: string;
+    calendarView?: string;
+    todoView?: string;
+    sidebarCollapsed?: boolean;
+    desktopNotifications?: boolean;
+    emailNotifications?: boolean;
+    calendarNotifications?: boolean;
   }): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/settings`, {
+    return this.request("/api/v1/settings", {
       method: "PATCH",
-      body: JSON.stringify({ ...data, accountId }),
+      body: JSON.stringify(data),
     });
   }
 
-  async getVacationResponder(accountId: string): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/vacation`);
+  async getVacationResponder(): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request("/api/v1/settings/vacation");
   }
 
-  async updateVacationResponder(accountId: string, data: {
-    enabled: boolean;
+  async updateVacationResponder(data: {
+    enabled?: boolean;
     subject?: string;
-    message: string;
+    message?: string;
     startDate?: string;
     endDate?: string;
     contactsOnly?: boolean;
   }): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/vacation`, {
+    return this.request("/api/v1/settings/vacation", {
       method: "PUT",
-      body: JSON.stringify({ ...data, accountId }),
+      body: JSON.stringify(data),
     });
   }
 
-  async getFilterRules(accountId: string): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/filters`);
+  async getFilters(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    return this.request("/api/v1/filters");
   }
 
-  async createFilterRule(data: {
-    accountId: string;
+  async createFilter(data: {
     name: string;
-    priority: number;
-    conditions: any[];
-    actions: any[];
-    enabled: boolean;
+    conditions: string;
+    actions: string;
+    priority?: number;
   }): Promise<{ success: boolean; data?: any; error?: string }> {
     return this.request("/api/v1/filters", {
       method: "POST",
@@ -104,12 +100,12 @@ class SettingsApiService {
     });
   }
 
-  async updateFilterRule(id: string, data: {
+  async updateFilter(id: string, data: {
     name?: string;
-    priority?: number;
-    conditions?: any[];
-    actions?: any[];
+    conditions?: string;
+    actions?: string;
     enabled?: boolean;
+    priority?: number;
   }): Promise<{ success: boolean; data?: any; error?: string }> {
     return this.request(`/api/v1/filters/${id}`, {
       method: "PUT",
@@ -117,8 +113,73 @@ class SettingsApiService {
     });
   }
 
-  async deleteFilterRule(accountId: string, ruleId: string): Promise<{ success: boolean; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/filters/${ruleId}`, {
+  async deleteFilter(ruleId: string): Promise<{ success: boolean; error?: string }> {
+    return this.request(`/api/v1/filters/${ruleId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async getLabels(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    return this.request("/api/v1/labels");
+  }
+
+  async createLabel(data: {
+    name: string;
+    color?: string;
+    parentId?: string;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request("/api/v1/labels", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateLabel(id: string, data: {
+    name?: string;
+    color?: string;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request(`/api/v1/labels/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteLabel(id: string): Promise<{ success: boolean; error?: string }> {
+    return this.request(`/api/v1/labels/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async getSignatures(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    return this.request("/api/v1/account/signatures");
+  }
+
+  async createSignature(data: {
+    name: string;
+    content: string;
+    html?: string;
+    isDefault?: boolean;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request("/api/v1/account/signatures", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateSignature(id: string, data: {
+    name?: string;
+    content?: string;
+    html?: string;
+    isDefault?: boolean;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request(`/api/v1/account/signatures/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSignature(id: string): Promise<{ success: boolean; error?: string }> {
+    return this.request(`/api/v1/account/signatures/${id}`, {
       method: "DELETE",
     });
   }

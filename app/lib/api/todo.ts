@@ -43,47 +43,32 @@ class TodoApiService {
     return response.json();
   }
 
-  async getTaskLists(accountId: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/task-lists`);
+  async getTodoLists(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    return this.request("/api/v1/task-lists");
   }
 
-  async createTaskList(data: { accountId: string; name: string; color?: string }): Promise<{ success: boolean; data?: any; error?: string }> {
+  async createTodoList(data: { name: string; color?: string }): Promise<{ success: boolean; data?: any; error?: string }> {
     return this.request("/api/v1/task-lists", {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
-  async updateTaskList(id: string, data: { name?: string; color?: string }): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/task-lists/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
+  async getTodos(limit = 50, offset = 0): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    return this.request(`/api/v1/tasks?limit=${limit}&offset=${offset}`);
   }
 
-  async deleteTaskList(accountId: string, listId: string): Promise<{ success: boolean; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/task-lists/${listId}`, {
-      method: "DELETE",
-    });
-  }
-
-  async getTasks(accountId: string, listId?: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
-    const params = listId ? `?listId=${listId}` : "";
-    return this.request(`/api/v1/accounts/${accountId}/tasks${params}`);
-  }
-
-  async getTask(accountId: string, taskId: string): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/tasks/${taskId}`);
+  async getTodo(taskId: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request(`/api/v1/tasks/${taskId}`);
   }
 
   async createTask(data: {
-    accountId: string;
-    listId?: string;
     title: string;
-    description?: string;
+    todoListId?: string;
     dueDate?: string;
-    priority?: "low" | "medium" | "high";
-    tags?: string[];
+    priority?: string;
+    category?: string;
+    notes?: string;
   }): Promise<{ success: boolean; data?: any; error?: string }> {
     return this.request("/api/v1/tasks", {
       method: "POST",
@@ -93,10 +78,11 @@ class TodoApiService {
 
   async updateTask(id: string, data: {
     title?: string;
-    description?: string;
+    todoListId?: string;
     dueDate?: string;
-    priority?: "low" | "medium" | "high";
-    tags?: string[];
+    priority?: string;
+    category?: string;
+    notes?: string;
     completed?: boolean;
   }): Promise<{ success: boolean; data?: any; error?: string }> {
     return this.request(`/api/v1/tasks/${id}`, {
@@ -105,21 +91,16 @@ class TodoApiService {
     });
   }
 
-  async deleteTask(accountId: string, taskId: string): Promise<{ success: boolean; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/tasks/${taskId}`, {
+  async deleteTask(id: string): Promise<{ success: boolean; error?: string }> {
+    return this.request(`/api/v1/tasks/${id}`, {
       method: "DELETE",
     });
   }
 
-  async completeTask(accountId: string, taskId: string): Promise<{ success: boolean; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/tasks/${taskId}/complete`, {
+  async completeTask(id: string, completed = true): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request(`/api/v1/tasks/${id}/complete`, {
       method: "POST",
-    });
-  }
-
-  async uncompleteTask(accountId: string, taskId: string): Promise<{ success: boolean; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/tasks/${taskId}/uncomplete`, {
-      method: "POST",
+      body: JSON.stringify({ completed }),
     });
   }
 }

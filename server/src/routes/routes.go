@@ -10,15 +10,20 @@ import (
 )
 
 type Router struct {
-	engine            *gin.Engine
-	authController    *controllers.AuthController
-	emailController   *controllers.EmailController
-	folderController  *controllers.FolderController
-	contactController *controllers.ContactController
-	imapController    *controllers.IMAPController
-	smtpController    *controllers.SMTPController
-	pop3Controller    *controllers.POP3Controller
-	authMiddleware    *middleware.AuthMiddleware
+	engine              *gin.Engine
+	authController     *controllers.AuthController
+	emailController    *controllers.EmailController
+	folderController   *controllers.FolderController
+	contactController   *controllers.ContactController
+	imapController     *controllers.IMAPController
+	smtpController      *controllers.SMTPController
+	pop3Controller      *controllers.POP3Controller
+	meetingController   *controllers.MeetingController
+	organizationController *controllers.OrganizationController
+	todoController      *controllers.TodoController
+	settingsController *controllers.SettingsController
+	notificationController *controllers.NotificationController
+	authMiddleware      *middleware.AuthMiddleware
 }
 
 func NewRouter(
@@ -26,15 +31,26 @@ func NewRouter(
 	jwtService *services.JWTService,
 	mailConfig *config.MailConfig,
 ) *Router {
+	meetingService := services.NewMeetingService(stalwartService)
+	organizationService := services.NewOrganizationService(stalwartService)
+	todoService := services.NewTodoService(stalwartService)
+	settingsService := services.NewSettingsService(stalwartService)
+	notificationService := services.NewNotificationService(stalwartService)
+
 	return &Router{
-		authController:    controllers.NewAuthController(stalwartService, jwtService, mailConfig),
-		emailController:   controllers.NewEmailController(stalwartService, mailConfig),
-		folderController:  controllers.NewFolderController(stalwartService, mailConfig),
-		contactController: controllers.NewContactController(stalwartService),
-		imapController:    controllers.NewIMAPController(stalwartService),
-		smtpController:    controllers.NewSMTPController(),
+		authController:      controllers.NewAuthController(stalwartService, jwtService, mailConfig),
+		emailController:     controllers.NewEmailController(stalwartService, mailConfig),
+		folderController:    controllers.NewFolderController(stalwartService, mailConfig),
+		contactController:  controllers.NewContactController(stalwartService),
+		imapController:     controllers.NewIMAPController(stalwartService),
+		smtpController:     controllers.NewSMTPController(),
 		pop3Controller:    controllers.NewPOP3Controller(),
-		authMiddleware:    middleware.NewAuthMiddleware(jwtService),
+		meetingController:  controllers.NewMeetingController(meetingService),
+		organizationController: controllers.NewOrganizationController(organizationService),
+		todoController:    controllers.NewTodoController(todoService),
+		settingsController: controllers.NewSettingsController(settingsService),
+		notificationController: controllers.NewNotificationController(notificationService),
+		authMiddleware:     middleware.NewAuthMiddleware(jwtService),
 	}
 }
 
@@ -63,6 +79,8 @@ func SetupRoutes(
 		{
 			account.GET("/me", router.authController.GetAccount)
 			account.GET("/accounts", router.authController.GetAccounts)
+			account.GET("/signatures", router.settingsController.GetSignatures)
+			account.POST("/signatures", router.settingsController.CreateSignature)
 		}
 
 		emails := api.Group("/emails")
@@ -106,6 +124,134 @@ func SetupRoutes(
 			contacts.PATCH("", router.contactController.UpdateContact)
 			contacts.DELETE("/:accountId/:contactId", router.contactController.DeleteContact)
 			contacts.GET("/search", router.contactController.SearchContacts)
+		}
+
+		meetings := api.Group("/meetings")
+		meetings.Use(router.authMiddleware.RequireAuth())
+		{
+			meetings.GET("", router.meetingController.GetMeetings)
+			meetings.GET("/:meetingId", router.meetingController.GetMeeting)
+			meetings.POST("", router.meetingController.CreateMeeting)
+			meetings.PUT("/:meetingId", router.meetingController.UpdateMeeting)
+			meetings.DELETE("/:meetingId", router.meetingController.DeleteMeeting)
+			meetings.POST("/:meetingId/join", router.meetingController.JoinMeeting)
+			meetings.POST("/:meetingId/start", router.meetingController.StartMeeting)
+			meetings.POST("/:meetingId/end", router.meetingController.EndMeeting)
+			meetings.POST("/:meetingId/leave", router.meetingController.LeaveMeeting)
+			meetings.GET("/:meetingId/participants", router.meetingController.GetParticipants)
+			meetings.POST("/:meetingId/invite", router.meetingController.InviteParticipants)
+			meetings.POST("/:meetingId/participants/:userId/remove", router.meetingController.RemoveParticipant)
+			meetings.POST("/:meetingId/participants/:userId/mute", router.meetingController.MuteParticipant)
+			meetings.POST("/:meetingId/participants/:userId/remove-from-call", router.meetingController.RemoveFromCall)
+			meetings.GET("/:meetingId/recordings", router.meetingController.GetRecordings)
+			meetings.GET("/:meetingId/recordings/:recordingId", router.meetingController.GetRecording)
+			meetings.POST("/:meetingId/recordings/start", router.meetingController.StartRecording)
+			meetings.POST("/:meetingId/recordings/stop", router.meetingController.StopRecording)
+			meetings.DELETE("/:meetingId/recordings/:recordingId", router.meetingController.DeleteRecording)
+		}
+
+		conversations := api.Group("/meetings/conversations")
+		conversations.Use(router.authMiddleware.RequireAuth())
+		{
+			conversations.GET("", router.meetingController.GetConversations)
+			conversations.GET("/:conversationId", router.meetingController.GetConversation)
+			conversations.POST("/:conversationId/start", router.meetingController.StartCall)
+			conversations.POST("/:conversationId/accept", router.meetingController.AcceptCall)
+			conversations.POST("/:conversationId/decline", router.meetingController.DeclineCall)
+			conversations.POST("/:conversationId/hold", router.meetingController.ToggleHold)
+			conversations.POST("/:conversationId/resume", router.meetingController.ToggleHold)
+			conversations.POST("/:conversationId/mute", router.meetingController.ToggleMute)
+			conversations.POST("/:conversationId/unmute", router.meetingController.ToggleMute)
+			conversations.POST("/:conversationId/video-on", router.meetingController.ToggleVideo)
+			conversations.POST("/:conversationId/video-off", router.meetingController.ToggleVideo)
+			conversations.POST("/:conversationId/screenshare", router.meetingController.ToggleScreenShare)
+			conversations.POST("/:conversationId/screenshare-stop", router.meetingController.ToggleScreenShare)
+			conversations.GET("/:conversationId/participants", router.meetingController.GetParticipants)
+			conversations.GET("/:conversationId/messages", router.meetingController.GetMessages)
+			conversations.GET("/:conversationId/messages/:messageId", router.meetingController.GetMessage)
+			conversations.POST("/:conversationId/messages", router.meetingController.SendMessage)
+			conversations.DELETE("/:conversationId/messages/:messageId", router.meetingController.DeleteMessage)
+		}
+
+		meetingSettings := api.Group("/meetings/settings")
+		meetingSettings.Use(router.authMiddleware.RequireAuth())
+		{
+			meetingSettings.GET("", router.meetingController.GetSettings)
+			meetingSettings.PUT("", router.meetingController.UpdateSettings)
+		}
+
+		organization := api.Group("/organization")
+		organization.Use(router.authMiddleware.RequireAuth())
+		{
+			organization.GET("", router.organizationController.GetOrganization)
+			organization.PATCH("", router.organizationController.UpdateOrganization)
+			organization.GET("/members", router.organizationController.GetMembers)
+			organization.POST("/invites", router.organizationController.InviteMember)
+			organization.DELETE("/members/:userId", router.organizationController.RemoveMember)
+			organization.GET("/domains", router.organizationController.GetDomains)
+			organization.POST("/domains", router.organizationController.AddDomain)
+			organization.POST("/domains/:domainId/verify", router.organizationController.VerifyDomain)
+		}
+
+		tasks := api.Group("/tasks")
+		tasks.Use(router.authMiddleware.RequireAuth())
+		{
+			tasks.GET("", router.todoController.GetTodos)
+			tasks.GET("/:taskId", router.todoController.GetTodo)
+			tasks.POST("", router.todoController.CreateTodo)
+			tasks.PUT("/:id", router.todoController.UpdateTodo)
+			tasks.DELETE("/:taskId", router.todoController.DeleteTodo)
+			tasks.POST("/:id/complete", router.todoController.CompleteTodo)
+		}
+
+		taskLists := api.Group("/task-lists")
+		taskLists.Use(router.authMiddleware.RequireAuth())
+		{
+			taskLists.GET("", router.todoController.GetTodoLists)
+			taskLists.POST("", router.todoController.CreateTodoList)
+		}
+
+		settings := api.Group("/settings")
+		settings.Use(router.authMiddleware.RequireAuth())
+		{
+			settings.GET("", router.settingsController.GetSettings)
+			settings.PATCH("", router.settingsController.UpdateSettings)
+			settings.GET("/vacation", router.settingsController.GetVacation)
+			settings.PUT("/vacation", router.settingsController.UpdateVacation)
+		}
+
+		filters := api.Group("/filters")
+		filters.Use(router.authMiddleware.RequireAuth())
+		{
+			filters.GET("", router.settingsController.GetFilters)
+			filters.POST("", router.settingsController.CreateFilter)
+			filters.PUT("/:id", router.settingsController.UpdateFilter)
+			filters.DELETE("/:ruleId", router.settingsController.DeleteFilter)
+		}
+
+		labels := api.Group("/labels")
+		labels.Use(router.authMiddleware.RequireAuth())
+		{
+			labels.GET("/:accountId", router.settingsController.GetLabels)
+			labels.POST("", router.settingsController.CreateLabel)
+			labels.PUT("/:labelId", router.settingsController.UpdateLabel)
+			labels.DELETE("/:labelId", router.settingsController.DeleteLabel)
+		}
+
+		accountSignatures := api.Group("/account/signatures")
+		accountSignatures.Use(router.authMiddleware.RequireAuth())
+		{
+			accountSignatures.PUT("/:id", router.settingsController.UpdateSignature)
+			accountSignatures.DELETE("/:id", router.settingsController.DeleteSignature)
+		}
+
+		notifications := api.Group("/notifications")
+		notifications.Use(router.authMiddleware.RequireAuth())
+		{
+			notifications.GET("", router.notificationController.GetNotifications)
+			notifications.GET("/:notificationId", router.notificationController.GetNotification)
+			notifications.POST("/mark-read", router.notificationController.MarkRead)
+			notifications.POST("/:notificationId/dismiss", router.notificationController.Dismiss)
 		}
 
 		protocols := api.Group("/protocols")

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/skygenesisenterprise/aether-mail/server/src/models"
@@ -182,4 +183,20 @@ func (s *SettingsService) UpdateSignature(req *models.UpdateSignatureRequest) (*
 
 func (s *SettingsService) DeleteSignature(accountID, signatureID string) error {
 	return s.stalwart.DeleteSignature(accountID, signatureID)
+}
+
+func (s *SettingsService) GetLabels(accountID string) ([]*models.Label, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *SettingsService) CreateLabel(req *models.CreateLabelRequest) (*models.Label, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *SettingsService) UpdateLabel(labelID string, req *models.UpdateLabelRequest) (*models.Label, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *SettingsService) DeleteLabel(labelID string) error {
+	return fmt.Errorf("not implemented")
 }

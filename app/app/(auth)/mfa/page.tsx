@@ -10,7 +10,7 @@ import {
   InputOTPSeparator,
 } from "@/components/ui/input-otp";
 import { authApi } from "@/lib/api/auth";
-import { Shield, AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle, CheckCircle } from "lucide-react";
 
 export default function MfaPage() {
   const searchParams = useSearchParams();

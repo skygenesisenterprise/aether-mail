@@ -43,80 +43,86 @@ class CalendarApiService {
     return response.json();
   }
 
-  async getCalendars(accountId: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/calendars`);
+  async getCalendars(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    return this.request("/api/v1/calendars");
   }
 
-  async getCalendar(accountId: string, calendarId: string): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/calendars/${calendarId}`);
+  async getCalendar(id: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request(`/api/v1/calendars/${id}`);
   }
 
-  async createCalendar(data: { accountId: string; name: string; color?: string; isDefault?: boolean }): Promise<{ success: boolean; data?: any; error?: string }> {
+  async createCalendar(data: { name: string; color?: string; description?: string; isDefault?: boolean }): Promise<{ success: boolean; data?: any; error?: string }> {
     return this.request("/api/v1/calendars", {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
-  async updateCalendar(calendarId: string, data: { name?: string; color?: string }): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/calendars/${calendarId}`, {
+  async updateCalendar(id: string, data: { name?: string; color?: string; description?: string; isDefault?: boolean }): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request(`/api/v1/calendars/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
   }
 
-  async deleteCalendar(accountId: string, calendarId: string): Promise<{ success: boolean; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/calendars/${calendarId}`, {
+  async deleteCalendar(id: string): Promise<{ success: boolean; error?: string }> {
+    return this.request(`/api/v1/calendars/${id}`, {
       method: "DELETE",
     });
   }
 
-  async getEvents(accountId: string, calendarId: string, start: string, end: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/calendars/${calendarId}/events?start=${start}&end=${end}`);
+  async getEvents(calendarId?: string, start?: string, end?: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    const params = new URLSearchParams();
+    if (calendarId) params.set("calendarId", calendarId);
+    if (start) params.set("start", start);
+    if (end) params.set("end", end);
+    return this.request(`/api/v1/calendars/events?${params}`);
   }
 
-  async getEvent(accountId: string, eventId: string): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/events/${eventId}`);
+  async getEvent(id: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request(`/api/v1/calendars/events/${id}`);
   }
 
   async createEvent(data: {
-    accountId: string;
-    calendarId: string;
+    calendarId?: string;
     title: string;
     description?: string;
-    start: string;
-    end: string;
+    startDate: string;
+    endDate?: string;
     allDay?: boolean;
     location?: string;
-    attendees?: string[];
-    recurrence?: any;
-    reminders?: any[];
+    recurring?: string;
+    color?: string;
+    reminders?: string;
+    attendees?: string;
   }): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request("/api/v1/events", {
+    return this.request("/api/v1/calendars/events", {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
-  async updateEvent(eventId: string, data: {
+  async updateEvent(id: string, data: {
+    calendarId?: string;
     title?: string;
     description?: string;
-    start?: string;
-    end?: string;
+    startDate?: string;
+    endDate?: string;
     allDay?: boolean;
     location?: string;
-    attendees?: string[];
-    recurrence?: any;
-    reminders?: any[];
+    recurring?: string;
+    color?: string;
+    reminders?: string;
+    attendees?: string;
   }): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/events/${eventId}`, {
+    return this.request(`/api/v1/calendars/events/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
-  async deleteEvent(accountId: string, eventId: string): Promise<{ success: boolean; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/events/${eventId}`, {
+  async deleteEvent(id: string): Promise<{ success: boolean; error?: string }> {
+    return this.request(`/api/v1/calendars/events/${id}`, {
       method: "DELETE",
     });
   }

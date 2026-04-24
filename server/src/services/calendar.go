@@ -43,8 +43,8 @@ func (s *CalendarService) GetEvent(accountID, eventID string) (*models.CalendarE
 }
 
 func (s *CalendarService) CreateEvent(req *models.CreateEventRequest) (*models.CalendarEvent, error) {
-	if req.TimeZone == "" {
-		req.TimeZone = "UTC"
+	if req.Timezone == "" {
+		req.Timezone = "UTC"
 	}
 
 	return s.stalwart.CreateCalendarEvent(req)

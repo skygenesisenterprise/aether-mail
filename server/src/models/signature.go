@@ -1,52 +1,29 @@
 package models
 
 type Signature struct {
-	ID           string `json:"id"`
-	AccountID    string `json:"account_id"`
-	Name         string `json:"name"`
-	Content      string `json:"content"`
-	Type         string `json:"type"` // plain, html
-	IsDefault    bool   `json:"is_default"`
-	ForNewEmails bool   `json:"for_new_emails"`
-	ForReplies   bool   `json:"for_replies"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
-}
-
-type SignatureList struct {
-	AccountID  string       `json:"account_id"`
-	Signatures []*Signature `json:"signatures"`
-}
-
-type SignatureResponse struct {
-	Success bool       `json:"success"`
-	Data    *Signature `json:"data,omitempty"`
-	Error   string     `json:"error,omitempty"`
-}
-
-type SignatureListResponse struct {
-	Success bool           `json:"success"`
-	Data    *SignatureList `json:"data,omitempty"`
-	Error   string         `json:"error,omitempty"`
+	ID        string `json:"id"`
+	UserID   string `json:"user_id"`
+	Name     string `json:"name"`
+	Content  string `json:"content"`
+	HTML     string `json:"html,omitempty"`
+	IsDefault bool `json:"is_default"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type CreateSignatureRequest struct {
-	AccountID    string `json:"account_id" binding:"required"`
-	Name         string `json:"name" binding:"required"`
-	Content      string `json:"content" binding:"required"`
-	Type         string `json:"type"`
-	IsDefault    bool   `json:"is_default"`
-	ForNewEmails bool   `json:"for_new_emails"`
-	ForReplies   bool   `json:"for_replies"`
+	AccountID string `json:"account_id"`
+	Name      string `json:"name" binding:"required"`
+	Content   string `json:"content" binding:"required"`
+	HTML      string `json:"html"`
+	IsDefault bool   `json:"is_default"`
 }
 
 type UpdateSignatureRequest struct {
-	AccountID    string `json:"account_id" binding:"required"`
-	ID           string `json:"id" binding:"required"`
-	Name         string `json:"name,omitempty"`
-	Content      string `json:"content,omitempty"`
-	Type         string `json:"type,omitempty"`
-	IsDefault    *bool  `json:"is_default,omitempty"`
-	ForNewEmails *bool  `json:"for_new_emails,omitempty"`
-	ForReplies   *bool  `json:"for_replies,omitempty"`
+	ID        string `json:"id"`
+	SignatureID string `json:"signature_id"`
+	Name      string `json:"name"`
+	Content  string `json:"content"`
+	HTML     string `json:"html"`
+	IsDefault bool   `json:"is_default"`
 }

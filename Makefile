@@ -1,6 +1,6 @@
-.PHONY: help build build-app build-server build-dev build-cloud run-app run-server run-dev run-prod stop clean prune rmi-dev dev-up dev-down
+.PHONY: help build build-app build-server build-dev build-cloud run-app run-server run-dev run-prod stop clean prune rmi-dev dev-up dev-down dev-logs
 
-APP_NAME := aether-mail
+APP_NAME := aethermail
 
 help:
 	@echo "Available targets:"
@@ -19,6 +19,10 @@ help:
 	@echo "  rmi-dev       - Remove dev image and container"
 	@echo "  dev-up        - Start dev environment (docker-compose)"
 	@echo "  dev-down      - Stop dev environment"
+	@echo "  dev-logs      - View dev environment logs"
+	@echo "  cloud-up      - Start cloud environment (docker-compose)"
+	@echo "  cloud-down    - Stop cloud environment"
+	@echo "  cloud-logs    - View cloud environment logs"
 
 build:
 	docker build -t $(APP_NAME):latest .
@@ -30,10 +34,10 @@ build-server:
 	docker build -f Dockerfile -t $(APP_NAME)-server:latest --target backend-builder .
 
 build-dev:
-	docker build -f Dockerfile.dev -t $(APP_NAME)-dev:latest .
+	docker build --no-cache -f Dockerfile.dev -t $(APP_NAME):latest .
 
 build-cloud:
-	docker build -f Dockerfile.cloud -t $(APP_NAME)-cloud:latest .
+	docker build --no-cache -f Dockerfile.cloud -t $(APP_NAME):latest .
 
 run-app:
 	docker run --name $(APP_NAME)-app -p 3000:3000 $(APP_NAME)-app:latest
@@ -42,7 +46,7 @@ run-server:
 	docker run --name $(APP_NAME)-server -p 8080:8080 $(APP_NAME)-server:latest
 
 run-dev:
-	docker run --name $(APP_NAME)-dev -p 3001:3001 -p 8080:8080 $(APP_NAME)-dev:latest
+	docker run --name $(APP_NAME)-dev -p 3000:3000 $(APP_NAME)-dev:latest
 
 run-prod:
 	docker run --name $(APP_NAME)-prod -p 3000:3000 $(APP_NAME):latest
@@ -59,12 +63,39 @@ prune:
 	docker system prune -f
 
 rmi-dev:
-	docker stop $(APP_NAME)-dev 2>/dev/null || true
-	docker rm $(APP_NAME)-dev 2>/dev/null || true
-	docker rmi $(APP_NAME)-dev:latest 2>/dev/null || true
+	docker stop $(APP_NAME) 2>/dev/null || true
+	docker rm $(APP_NAME) 2>/dev/null || true
+	docker rmi $(APP_NAME):latest 2>/dev/null || true
 
 dev-up:
 	docker compose -f docker-compose.dev.yml up -d
 
 dev-down:
 	docker compose -f docker-compose.dev.yml down
+
+dev-logs:
+	docker compose -f docker-compose.dev.yml logs -f
+
+dev-rebuild:
+	docker compose -f docker-compose.dev.yml down
+	docker build --no-cache -f Dockerfile.dev -t $(APP_NAME):latest .
+	docker compose -f docker-compose.dev.yml up -d
+
+cloud-up:
+	docker compose -f docker-compose.cloud.yml up -d
+
+cloud-down:
+	docker compose -f docker-compose.cloud.yml down
+
+cloud-logs:
+	docker compose -f docker-compose.cloud.yml logs -f
+
+cloud-rebuild:
+	docker compose -f docker-compose.cloud.yml down
+	docker build --no-cache -f Dockerfile.cloud -t $(APP_NAME):latest .
+	docker compose -f docker-compose.cloud.yml up -d
+
+rmi-cloud:
+	docker stop $(APP_NAME) 2>/dev/null || true
+	docker rm $(APP_NAME) 2>/dev/null || true
+	docker rmi $(APP_NAME):latest 2>/dev/null || true

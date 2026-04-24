@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Hash, MessageSquare, MoreVertical, Phone, Video, Paperclip, Smile, Send, X, File, Image as ImageIcon } from "lucide-react";
+import { Hash, MessageSquare, MoreVertical, Phone, Video, Paperclip, Smile, Send, X, File, Image as ImageIcon, PhoneOff, Mic, MicOff, Camera, CameraOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Conversation, Message } from "@/lib/api/meet-types";
 
@@ -31,12 +31,34 @@ interface Attachment {
   url?: string;
 }
 
+interface CallState {
+  active: boolean;
+  type: "audio" | "video" | null;
+  participants: string[];
+  isMuted: boolean;
+  isVideoOn: boolean;
+}
+
 interface ChatDisplayProps {
   conversation: Conversation | undefined;
   messages: Message[];
   currentUserId: string;
   onSendMessage: (content: string, attachments?: Attachment[]) => void;
   onStartCall?: (type: "audio" | "video") => void;
+  onAcceptCall?: (conversationId: string) => void;
+  onDeclineCall?: (conversationId: string) => void;
+  onOpenSettings?: () => void;
+  onFileAttached?: (file: File) => void;
+}
+
+interface ChatDisplayProps {
+  conversation: Conversation | undefined;
+  messages: Message[];
+  currentUserId: string;
+  onSendMessage: (content: string, attachments?: Attachment[]) => void;
+  onStartCall?: (type: "audio" | "video") => void;
+  onAcceptCall?: (conversationId: string) => void;
+  onDeclineCall?: (conversationId: string) => void;
   onOpenSettings?: () => void;
   onFileAttached?: (file: File) => void;
 }
@@ -99,6 +121,8 @@ export function ChatDisplay({
   currentUserId,
   onSendMessage,
   onStartCall,
+  onAcceptCall,
+  onDeclineCall,
   onOpenSettings,
   onFileAttached,
 }: ChatDisplayProps) {
@@ -106,6 +130,18 @@ export function ChatDisplay({
   const [attachments, setAttachments] = React.useState<Attachment[]>([]);
   const [showSettingsDialog, setShowSettingsDialog] = React.useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = React.useState(false);
+  const [callState, setCallState] = React.useState<CallState>({
+    active: false,
+    type: null,
+    participants: [],
+    isMuted: false,
+    isVideoOn: true,
+  });
+  const [incomingCall, setIncomingCall] = React.useState<{
+    conversationId: string;
+    callerName: string;
+    type: "audio" | "video";
+  } | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -177,9 +213,57 @@ export function ChatDisplay({
   const handleStartCall = (type: "audio" | "video") => {
     if (onStartCall) {
       onStartCall(type);
-    } else {
-      alert(`Starting ${type === "video" ? "video" : "audio"} call...`);
+    } else if (conversation) {
+      setCallState({
+        active: true,
+        type,
+        participants: [currentUserId],
+        isMuted: false,
+        isVideoOn: type === "video",
+      });
     }
+  };
+
+  const handleEndCall = () => {
+    setCallState({
+      active: false,
+      type: null,
+      participants: [],
+      isMuted: false,
+      isVideoOn: true,
+    });
+  };
+
+  const handleToggleMute = async () => {
+    if (conversation && onDeclineCall) {
+      await onDeclineCall(conversation.id);
+    }
+    setCallState(prev => ({ ...prev, isMuted: !prev.isMuted }));
+  };
+
+  const handleToggleVideo = () => {
+    setCallState(prev => ({ ...prev, isVideoOn: !prev.isVideoOn }));
+  };
+
+  const handleAcceptIncoming = () => {
+    if (incomingCall && onAcceptCall) {
+      onAcceptCall(incomingCall.conversationId);
+      setCallState({
+        active: true,
+        type: incomingCall.type,
+        participants: [currentUserId],
+        isMuted: false,
+        isVideoOn: incomingCall.type === "video",
+      });
+      setIncomingCall(null);
+    }
+  };
+
+  const handleDeclineIncoming = () => {
+    if (incomingCall && onDeclineCall) {
+      onDeclineCall(incomingCall.conversationId);
+    }
+    setIncomingCall(null);
   };
 
   const handleOpenSettings = () => {
@@ -403,6 +487,96 @@ export function ChatDisplay({
           </div>
         </DialogContent>
       </Dialog>
+
+      {callState.active && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex flex-col">
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center">
+              <Avatar className="h-24 w-24 mx-auto mb-4">
+                <AvatarFallback className="text-4xl">
+                  {conversation?.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <h2 className="text-xl font-semibold text-white mb-2">
+                {conversation?.name}
+              </h2>
+              <p className="text-muted-foreground">
+                {callState.type === "video" ? "Video" : "Audio"} call in progress
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-center gap-4 p-6 bg-black/50">
+            <Button
+              variant={callState.isMuted ? "destructive" : "secondary"}
+              size="icon"
+              onClick={handleToggleMute}
+              className="h-14 w-14 rounded-full"
+            >
+              {callState.isMuted ? (
+                <MicOff className="h-6 w-6" />
+              ) : (
+                <Mic className="h-6 w-6" />
+              )}
+            </Button>
+            
+            <Button
+              variant={callState.isVideoOn ? "secondary" : "destructive"}
+              size="icon"
+              onClick={handleToggleVideo}
+              className="h-14 w-14 rounded-full"
+              disabled={callState.type === "audio"}
+            >
+              {callState.isVideoOn ? (
+                <Camera className="h-6 w-6" />
+              ) : (
+                <CameraOff className="h-6 w-6" />
+              )}
+            </Button>
+            
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={handleEndCall}
+              className="h-14 w-14 rounded-full"
+            >
+              <PhoneOff className="h-6 w-6" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {incomingCall && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-8">
+          <div className="bg-background rounded-lg p-6 max-w-sm w-full text-center">
+            <Avatar className="h-16 w-16 mx-auto mb-4">
+              <AvatarFallback className="text-2xl">
+                {incomingCall.callerName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <h2 className="text-xl font-semibold mb-2">{incomingCall.callerName}</h2>
+            <p className="text-muted-foreground mb-6">
+              {incomingCall.type === "video" ? "Video" : "Audio"} call incoming
+            </p>
+            <div className="flex gap-4 justify-center">
+              <Button
+                variant="destructive"
+                onClick={handleDeclineIncoming}
+              >
+                <PhoneOff className="mr-2 h-4 w-4" />
+                Decline
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleAcceptIncoming}
+              >
+                <Phone className="mr-2 h-4 w-4" />
+                Accept
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

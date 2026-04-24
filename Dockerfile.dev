@@ -96,7 +96,6 @@ COPY app/i18n/                ./app/i18n/
 COPY app/lib/                 ./app/lib/
 COPY app/public/              ./app/public/
 COPY app/styles/              ./app/styles/
-COPY app/messages/            ./app/messages/
 COPY server/prisma/           ./prisma/
 COPY scripts/                 ./app/scripts/
 

@@ -49,9 +49,8 @@ class OrganizationApiService {
 
   async updateOrganization(data: {
     name?: string;
-    logo?: string;
-    website?: string;
-    description?: string;
+    domain?: string;
+    logo_url?: string;
   }): Promise<{ success: boolean; data?: any; error?: string }> {
     return this.request("/api/v1/organization", {
       method: "PATCH",
@@ -63,7 +62,7 @@ class OrganizationApiService {
     return this.request("/api/v1/organization/members");
   }
 
-  async inviteMember(data: { email: string; role: string }): Promise<{ success: boolean; data?: any; error?: string }> {
+  async inviteMember(data: { email: string; role?: string }): Promise<{ success: boolean; data?: any; error?: string }> {
     return this.request("/api/v1/organization/invites", {
       method: "POST",
       body: JSON.stringify(data),
@@ -90,12 +89,6 @@ class OrganizationApiService {
   async verifyDomain(domainId: string): Promise<{ success: boolean; data?: any; error?: string }> {
     return this.request(`/api/v1/organization/domains/${domainId}/verify`, {
       method: "POST",
-    });
-  }
-
-  async deleteDomain(domainId: string): Promise<{ success: boolean; error?: string }> {
-    return this.request(`/api/v1/organization/domains/${domainId}`, {
-      method: "DELETE",
     });
   }
 }

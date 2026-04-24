@@ -43,19 +43,23 @@ class NotificationsApiService {
     return response.json();
   }
 
-  async getNotifications(accountId: string, limit: number = 50, offset: number = 0): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/notifications?limit=${limit}&offset=${offset}`);
+  async getNotifications(limit = 50, offset = 0): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    return this.request(`/api/v1/notifications?limit=${limit}&offset=${offset}`);
   }
 
-  async markAsRead(accountId: string, notificationIds: string[]): Promise<{ success: boolean; error?: string }> {
+  async getNotification(id: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.request(`/api/v1/notifications/${id}`);
+  }
+
+  async markAsRead(notificationIds: string[]): Promise<{ success: boolean; error?: string }> {
     return this.request("/api/v1/notifications/mark-read", {
       method: "POST",
-      body: JSON.stringify({ accountId, notificationIds }),
+      body: JSON.stringify({ notification_ids: notificationIds }),
     });
   }
 
-  async dismissNotification(accountId: string, notificationId: string): Promise<{ success: boolean; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/notifications/${notificationId}/dismiss`, {
+  async dismiss(id: string): Promise<{ success: boolean; error?: string }> {
+    return this.request(`/api/v1/notifications/${id}/dismiss`, {
       method: "POST",
     });
   }

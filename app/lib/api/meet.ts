@@ -1,4 +1,15 @@
-import type { Conversation, Message, User, MeetResponse, ConversationType } from "./meet-types";
+import type { 
+  Conversation, 
+  Message, 
+  MeetUser,
+  Meeting,
+  MeetingParticipant,
+  MeetingRecording,
+  MeetingSettings,
+  ApiResponse,
+  ListResponse,
+  ConversationType 
+} from "./meet-types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -45,132 +56,242 @@ class MeetApiService {
     return response.json();
   }
 
-  async getConversations(): Promise<MeetResponse<Conversation[]>> {
-    return this.request("/api/v1/conversations");
+  async getMeetings(limit = 50, offset = 0): Promise<ListResponse<Meeting>> {
+    return this.request(`/api/v1/meetings?limit=${limit}&offset=${offset}`);
   }
 
-  async getConversation(conversationId: string): Promise<MeetResponse<Conversation>> {
-    return this.request(`/api/v1/conversations/${conversationId}`);
+  async getMeeting(meetingId: string): Promise<ApiResponse<Meeting>> {
+    return this.request(`/api/v1/meetings/${meetingId}`);
   }
 
-  async createConversation(data: {
-    type: ConversationType;
-    name?: string;
-    participantIds: string[];
-  }): Promise<MeetResponse<Conversation>> {
-    return this.request("/api/v1/conversations", {
+  async createMeeting(data: {
+    title: string;
+    description?: string;
+    startDate: string;
+    endDate?: string;
+    timezone?: string;
+    recurring?: string;
+    password?: string;
+  }): Promise<ApiResponse<Meeting>> {
+    return this.request("/api/v1/meetings", {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
-  async updateConversation(conversationId: string, data: {
-    name?: string;
+  async updateMeeting(meetingId: string, data: {
+    title?: string;
     description?: string;
-  }): Promise<MeetResponse<Conversation>> {
-    return this.request(`/api/v1/conversations/${conversationId}`, {
-      method: "PATCH",
+    startDate?: string;
+    endDate?: string;
+    timezone?: string;
+    recurring?: string;
+    password?: string;
+  }): Promise<ApiResponse<Meeting>> {
+    return this.request(`/api/v1/meetings/${meetingId}`, {
+      method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
-  async deleteConversation(conversationId: string): Promise<MeetResponse<{ success: boolean }>> {
-    return this.request(`/api/v1/conversations/${conversationId}`, {
+  async deleteMeeting(meetingId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/${meetingId}`, {
       method: "DELETE",
     });
   }
 
-  async getMessages(conversationId: string, limit: number = 50, before?: string): Promise<MeetResponse<Message[]>> {
-    const params = new URLSearchParams();
-    params.set("limit", limit.toString());
-    if (before) params.set("before", before);
-    
-    return this.request(`/api/v1/conversations/${conversationId}/messages?${params}`);
-  }
-
-  async sendMessage(conversationId: string, content: string, replyToId?: string): Promise<MeetResponse<Message>> {
-    return this.request(`/api/v1/conversations/${conversationId}/messages`, {
+  async joinMeeting(meetingId: string, password?: string): Promise<ApiResponse<Meeting>> {
+    return this.request(`/api/v1/meetings/${meetingId}/join`, {
       method: "POST",
-      body: JSON.stringify({ content, replyToId }),
+      body: JSON.stringify({ password }),
     });
   }
 
-  async editMessage(conversationId: string, messageId: string, content: string): Promise<MeetResponse<Message>> {
-    return this.request(`/api/v1/conversations/${conversationId}/messages/${messageId}`, {
-      method: "PATCH",
+  async startMeeting(meetingId: string): Promise<ApiResponse<Meeting>> {
+    return this.request(`/api/v1/meetings/${meetingId}/start`, {
+      method: "POST",
+    });
+  }
+
+  async endMeeting(meetingId: string): Promise<ApiResponse<Meeting>> {
+    return this.request(`/api/v1/meetings/${meetingId}/end`, {
+      method: "POST",
+    });
+  }
+
+  async leaveMeeting(meetingId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/${meetingId}/leave`, {
+      method: "POST",
+    });
+  }
+
+  async getParticipants(meetingId: string): Promise<ListResponse<MeetingParticipant>> {
+    return this.request(`/api/v1/meetings/${meetingId}/participants`);
+  }
+
+  async inviteParticipants(meetingId: string, email: string, name?: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/${meetingId}/invite`, {
+      method: "POST",
+      body: JSON.stringify({ email, name }),
+    });
+  }
+
+  async removeParticipant(meetingId: string, userId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/${meetingId}/participants/${userId}/remove`, {
+      method: "POST",
+    });
+  }
+
+  async muteParticipant(meetingId: string, userId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/${meetingId}/participants/${userId}/mute`, {
+      method: "POST",
+    });
+  }
+
+  async removeFromCall(meetingId: string, userId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/${meetingId}/participants/${userId}/remove-from-call`, {
+      method: "POST",
+    });
+  }
+
+  async getRecordings(meetingId: string): Promise<ListResponse<MeetingRecording>> {
+    return this.request(`/api/v1/meetings/${meetingId}/recordings`);
+  }
+
+  async getRecording(meetingId: string, recordingId: string): Promise<ApiResponse<MeetingRecording>> {
+    return this.request(`/api/v1/meetings/${meetingId}/recordings/${recordingId}`);
+  }
+
+  async startRecording(meetingId: string): Promise<ApiResponse<MeetingRecording>> {
+    return this.request(`/api/v1/meetings/${meetingId}/recordings/start`, {
+      method: "POST",
+    });
+  }
+
+  async stopRecording(meetingId: string): Promise<ApiResponse<MeetingRecording>> {
+    return this.request(`/api/v1/meetings/${meetingId}/recordings/stop`, {
+      method: "POST",
+    });
+  }
+
+  async deleteRecording(meetingId: string, recordingId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/${meetingId}/recordings/${recordingId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async getMeetingSettings(): Promise<ApiResponse<MeetingSettings>> {
+    return this.request("/api/v1/meetings/settings");
+  }
+
+  async updateMeetingSettings(settings: Partial<MeetingSettings>): Promise<ApiResponse<MeetingSettings>> {
+    return this.request("/api/v1/meetings/settings", {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    });
+  }
+
+  async getConversations(): Promise<ListResponse<Conversation>> {
+    return this.request("/api/v1/meetings/conversations");
+  }
+
+  async getConversation(conversationId: string): Promise<ApiResponse<Conversation>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}`);
+  }
+
+  async startCall(conversationId: string): Promise<ApiResponse<Conversation>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/start`, {
+      method: "POST",
+    });
+  }
+
+  async acceptCall(conversationId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/accept`, {
+      method: "POST",
+    });
+  }
+
+  async declineCall(conversationId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/decline`, {
+      method: "POST",
+    });
+  }
+
+  async holdCall(conversationId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/hold`, {
+      method: "POST",
+    });
+  }
+
+  async resumeCall(conversationId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/resume`, {
+      method: "POST",
+    });
+  }
+
+  async mute(conversationId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/mute`, {
+      method: "POST",
+    });
+  }
+
+  async unmute(conversationId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/unmute`, {
+      method: "POST",
+    });
+  }
+
+  async videoOn(conversationId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/video-on`, {
+      method: "POST",
+    });
+  }
+
+  async videoOff(conversationId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/video-off`, {
+      method: "POST",
+    });
+  }
+
+  async screenShare(conversationId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/screenshare`, {
+      method: "POST",
+    });
+  }
+
+  async stopScreenShare(conversationId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/screenshare-stop`, {
+      method: "POST",
+    });
+  }
+
+  async getConversationMessages(conversationId: string): Promise<ListResponse<Message>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/messages`);
+  }
+
+  async sendMessage(conversationId: string, content: string): Promise<ApiResponse<Message>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/messages`, {
+      method: "POST",
       body: JSON.stringify({ content }),
     });
   }
 
-  async deleteMessage(conversationId: string, messageId: string): Promise<MeetResponse<{ success: boolean }>> {
-    return this.request(`/api/v1/conversations/${conversationId}/messages/${messageId}`, {
+  async deleteMessage(conversationId: string, messageId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.request(`/api/v1/meetings/conversations/${conversationId}/messages/${messageId}`, {
       method: "DELETE",
     });
   }
 
-  async addReaction(conversationId: string, messageId: string, emoji: string): Promise<MeetResponse<{ success: boolean }>> {
-    return this.request(`/api/v1/conversations/${conversationId}/messages/${messageId}/reactions`, {
-      method: "POST",
-      body: JSON.stringify({ emoji }),
-    });
-  }
-
-  async removeReaction(conversationId: string, messageId: string, emoji: string): Promise<MeetResponse<{ success: boolean }>> {
-    return this.request(`/api/v1/conversations/${conversationId}/messages/${messageId}/reactions`, {
-      method: "DELETE",
-      body: JSON.stringify({ emoji }),
-    });
-  }
-
-  async markAsRead(conversationId: string): Promise<MeetResponse<{ success: boolean }>> {
-    return this.request(`/api/v1/conversations/${conversationId}/read`, {
-      method: "POST",
-    });
-  }
-
-  async muteConversation(conversationId: string, muted: boolean): Promise<MeetResponse<{ success: boolean }>> {
-    return this.request(`/api/v1/conversations/${conversationId}/mute`, {
-      method: "POST",
-      body: JSON.stringify({ muted }),
-    });
-  }
-
-  async getChannels(): Promise<MeetResponse<Conversation[]>> {
-    return this.request("/api/v1/channels");
-  }
-
-  async createChannel(data: {
-    name: string;
+  async createConversation(data: {
+    type: "direct" | "group" | "channel";
+    name?: string;
+    participantIds?: string[];
     description?: string;
-    isPrivate?: boolean;
-    memberIds?: string[];
-  }): Promise<MeetResponse<Conversation>> {
-    return this.request("/api/v1/channels", {
+  }): Promise<ApiResponse<Conversation>> {
+    return this.request("/api/v1/meetings/conversations", {
       method: "POST",
       body: JSON.stringify(data),
     });
-  }
-
-  async joinChannel(channelId: string): Promise<MeetResponse<{ success: boolean }>> {
-    return this.request(`/api/v1/channels/${channelId}/join`, {
-      method: "POST",
-    });
-  }
-
-  async leaveChannel(channelId: string): Promise<MeetResponse<{ success: boolean }>> {
-    return this.request(`/api/v1/channels/${channelId}/leave`, {
-      method: "POST",
-    });
-  }
-
-  async searchMessages(query: string, conversationId?: string): Promise<MeetResponse<Message[]>> {
-    const params = new URLSearchParams({ query });
-    if (conversationId) params.set("conversationId", conversationId);
-    return this.request(`/api/v1/messages/search?${params}`);
-  }
-
-  async getUnreadCount(): Promise<MeetResponse<{ total: number; byConversation: Record<string, number> }>> {
-    return this.request("/api/v1/conversations/unread-count");
   }
 }
 
