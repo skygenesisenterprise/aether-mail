@@ -76,7 +76,7 @@ class ActivityApiService {
   normalizeActivity(raw: Record<string, unknown>): Activity {
     return {
       id: String(raw.id || ""),
-      type: String(raw.type || "unknown"),
+      type: String(raw.type || "unknown") as Activity["type"],
       title: String(raw.title || ""),
       description: raw.description ? String(raw.description) : undefined,
       timestamp: String(raw.timestamp || raw.createdAt || new Date().toISOString()),

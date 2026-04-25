@@ -124,8 +124,8 @@ export function AccountSwitcher({ isCollapsed, accounts = [] }: AccountSwitcherP
             className="flex items-center gap-2"
           >
             {displayIcon}
-            <span className={cn("ml-2", isCollapsed && "hidden")}>
-              {selected?.label}
+            <span className={cn("ml-2 text-xs", isCollapsed && "hidden")}>
+              {selected?.email || selectedAccount}
             </span>
           </motion.div>
         </SelectValue>
@@ -144,7 +144,10 @@ export function AccountSwitcher({ isCollapsed, accounts = [] }: AccountSwitcherP
                 className="flex items-center gap-3 [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 [&_svg]:text-foreground"
               >
                 {account.icon || getProviderIcon(account.email)}
-                <span>{account.email}</span>
+                <div className="flex flex-col">
+                  <span className="font-medium">{account.label}</span>
+                  <span className="text-xs text-muted-foreground">{account.email}</span>
+                </div>
               </motion.div>
             </SelectItem>
           ))}

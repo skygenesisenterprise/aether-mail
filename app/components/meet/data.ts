@@ -1,6 +1,6 @@
-import type { User, Conversation, Message } from "@/lib/api/meet-types";
+import type { MeetUser, Conversation, Message } from "@/lib/api/meet-types";
 
-export const currentUser: User = {
+export const currentUser: MeetUser = {
   id: "user-1",
   name: "John Doe",
   email: "john@company.com",
@@ -8,7 +8,7 @@ export const currentUser: User = {
   status: "online",
 };
 
-export const users: User[] = [
+export const users: MeetUser[] = [
   { id: "user-2", name: "Sarah Chen", email: "sarah@company.com", status: "online" },
   { id: "user-3", name: "Mike Johnson", email: "mike@company.com", status: "away" },
   { id: "user-4", name: "Emily Davis", email: "emily@company.com", status: "busy" },

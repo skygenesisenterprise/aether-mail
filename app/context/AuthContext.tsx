@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { authApi, type TokenResponse } from "@/lib/api/auth";
+import { authApi, } from "@/lib/api/auth";
 import type { User } from "@/lib/api/types";
 
 interface AuthContextType {
@@ -49,10 +49,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           console.log("[AuthContext] Token exists but no stored user, fetching account");
           try {
-            const accountResponse = await authApi.getAccount();
-            if (accountResponse.success && accountResponse.data?.user) {
-              authApi.storeUser(accountResponse.data.user);
-              setUser(accountResponse.data.user);
+            const accountResponse = await authApi.getUserInfo();
+            if (accountResponse.success && accountResponse.data) {
+              authApi.storeUser(accountResponse.data);
+              setUser(accountResponse.data);
             } else {
               console.log("[AuthContext] Could not fetch account, clearing invalid session");
               authApi.clearTokens();

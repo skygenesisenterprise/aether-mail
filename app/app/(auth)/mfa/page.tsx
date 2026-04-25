@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +12,7 @@ import {
 import { authApi } from "@/lib/api/auth";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
-export default function MfaPage() {
+function MfaForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [code, setCode] = useState("");
@@ -166,5 +166,13 @@ export default function MfaPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function MfaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <MfaForm />
+    </Suspense>
   );
 }

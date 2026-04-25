@@ -165,7 +165,7 @@ function ActivityItem({ activity }: { activity: Activity }) {
         !activity.isRead && "bg-muted"
       )}
     >
-      <div className="relative flex-shrink-0">
+      <div className="relative shrink-0">
         <Avatar className="h-8 w-8">
           <AvatarFallback className="text-sm">
             {sourceModuleIcons[activity.sourceModule]}
@@ -181,7 +181,7 @@ function ActivityItem({ activity }: { activity: Activity }) {
           <div className="flex items-center gap-2">
             <span className="text-lg">{sourceModuleIcons[activity.sourceModule]}</span>
             <span className={cn(
-              "w-2 h-2 rounded-full flex-shrink-0 mt-1.5",
+              "w-2 h-2 rounded-full shrink-0 mt-1.5",
               priorityColors[activity.priority]
             )} />
           </div>
@@ -343,7 +343,7 @@ export default function ActivityPage() {
           
           <div className="flex items-center gap-2">
             <Select value={filterModule} onValueChange={setFilterModule}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-35">
                 <SelectValue placeholder="All modules" />
               </SelectTrigger>
               <SelectContent>
@@ -357,7 +357,7 @@ export default function ActivityPage() {
             </Select>
             
             <Select value={filterPriority} onValueChange={setFilterPriority}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-35">
                 <SelectValue placeholder="All priorities" />
               </SelectTrigger>
               <SelectContent>

@@ -74,12 +74,16 @@ func (s *IMAPEmailService) GetEmails(mailbox string, limit, offset int) (*models
 		return nil, err
 	}
 
+	total, _ := imap.GetMessageCount()
+	
+	if limit == 0 {
+		limit = total
+	}
+
 	emails, err := imap.ListMessagesByUID(limit, offset)
 	if err != nil {
 		return nil, err
 	}
-
-	total, _ := imap.GetMessageCount()
 
 	return &models.EmailList{
 		AccountID:   s.username,

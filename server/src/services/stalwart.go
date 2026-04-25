@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/skygenesisenterprise/aether-mail/server/src/config"
 	"github.com/skygenesisenterprise/aether-mail/server/src/models"
+	"github.com/skygenesisenterprise/aether-mail/server/src/utils"
 )
 
 type StalwartService struct {
@@ -683,7 +685,57 @@ func (s *StalwartService) parseJMAPEmail(data map[string]interface{}) *models.Em
 		}
 	}
 
+	if textBody, ok := data["textBody"].([]interface{}); ok && len(textBody) > 0 {
+		if tb, ok := textBody[0].(map[string]interface{}); ok {
+			if content, ok := tb["content"].(string); ok {
+				email.Body = s.decodeTextContent(content, tb)
+			}
+		}
+	}
+
+	if htmlBody, ok := data["htmlBody"].([]interface{}); ok && len(htmlBody) > 0 {
+		if hb, ok := htmlBody[0].(map[string]interface{}); ok {
+			if content, ok := hb["content"].(string); ok {
+				email.BodyHTML = s.decodeTextContent(content, hb)
+			}
+		}
+	}
+
+	if email.Body == "" && email.BodyHTML == "" {
+		if rawContent, err := s.GetEmailRaw(s.accountID, email.ID); err == nil && rawContent != "" {
+			parsedEmail, err := utils.ParseEmail(rawContent)
+			if err == nil && parsedEmail != nil {
+				if parsedEmail.Body != "" {
+					email.Body = parsedEmail.Body
+				}
+				if parsedEmail.BodyHTML != "" {
+					email.BodyHTML = parsedEmail.BodyHTML
+				}
+				if email.Preview == "" && parsedEmail.Preview != "" {
+					email.Preview = parsedEmail.Preview
+				}
+			}
+		}
+	}
+
 	return email
+}
+
+func (s *StalwartService) decodeTextContent(content string, part map[string]interface{}) string {
+	if encoding, ok := part["encoding"].(string); ok {
+		if strings.ToLower(encoding) == "quoted-printable" {
+			decoded, err := utils.QuotedPrintableDecode(content)
+			if err == nil {
+				return decoded
+			}
+		} else if strings.ToLower(encoding) == "base64" {
+			decoded, err := base64.StdEncoding.DecodeString(content)
+			if err == nil {
+				return string(decoded)
+			}
+		}
+	}
+	return content
 }
 
 func (s *StalwartService) GetEmail(accountID, emailID string) (*models.Email, error) {

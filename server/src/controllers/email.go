@@ -38,7 +38,7 @@ func (c *EmailController) GetEmails(ctx *gin.Context) {
 		return
 	}
 
-	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "50"))
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "1000"))
 	offset, _ := strconv.Atoi(ctx.DefaultQuery("offset", "0"))
 	mailboxID := ctx.DefaultQuery("mailbox", "INBOX")
 	isReadStr := ctx.Query("is_read")

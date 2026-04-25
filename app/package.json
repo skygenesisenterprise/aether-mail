@@ -7,15 +7,21 @@
   "scripts": {
     "dev": "pnpm next dev -p 3000 -H 0.0.0.0",
     "build": "next build",
+    "build:web": "NODE_ENV=production next build",
+    "build:capacitor": "CAPACITOR=true next build",
     "start": "next start",
     "lint": "eslint",
     "dev:local": "NODE_ENV=development ./start-dev.sh",
     "dev:debug": "NODE_ENV=development DEBUG=* ./start-dev.sh",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next",
+    "clean": "rm -rf .next out",
     "electron:build": "pnpm build && pnpm --filter @aether-mail/electron build",
     "electron:start": "pnpm electron:build && electron .",
-    "electron:preview": "pnpm build && electron dist-electron/main/index.mjs"
+    "electron:preview": "pnpm build && electron dist-electron/main/index.mjs",
+    "android": "pnpm build:capacitor && npx cap sync android && npx cap open android",
+    "ios": "pnpm build:capacitor && npx cap sync ios && npx cap open ios",
+    "build:ios": "pnpm build:capacitor && npx cap sync ios && npx cap build ios",
+    "build:android": "pnpm build:capacitor && npx cap sync android && npx cap build android"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -83,7 +89,10 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
     "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1",
     "@tailwindcss/postcss": "^4.2.4",
     "@types/node": "^25",
     "@types/react": "^19",

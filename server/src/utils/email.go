@@ -138,24 +138,54 @@ func readBody(r io.Reader) (string, error) {
 
 	content = strings.TrimLeft(content, "\n")
 
-	switch strings.ToLower(ct) {
+	return decodeContent(content, ct), nil
+}
+
+func decodePartContent(part *multipart.Part) string {
+	content, _ := io.ReadAll(part)
+	contentStr := string(content)
+
+	ct := part.Header.Get("Content-Transfer-Encoding")
+	charset := extractCharset(part.Header.Get("Content-Type"))
+
+	decoded := decodeContent(contentStr, ct)
+
+	if charset != "" && strings.ToLower(charset) != "utf-8" && !utf8.ValidString(decoded) {
+		decoded = ToUTF8(decoded, charset)
+	}
+
+	return decoded
+}
+
+func decodeContent(content, encoding string) string {
+	switch strings.ToLower(encoding) {
 	case "quoted-printable":
 		reader := quotedprintable.NewReader(strings.NewReader(content))
 		result, err := io.ReadAll(reader)
 		if err != nil {
-			return content, nil
+			return content
 		}
-		return string(result), nil
+		return string(result)
 	case "base64":
 		reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(content))
 		result, err := io.ReadAll(reader)
 		if err != nil {
-			return content, nil
+			return content
 		}
-		return string(result), nil
+		return string(result)
 	}
+	return content
+}
 
-	return content, nil
+func extractCharset(contentType string) string {
+	if contentType == "" {
+		return ""
+	}
+	_, params, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return ""
+	}
+	return params["charset"]
 }
 
 func parseMultipart(mr *multipart.Reader) (string, string, []*models.Attachment) {
@@ -195,11 +225,11 @@ func parseMultipart(mr *multipart.Reader) (string, string, []*models.Attachment)
 
 			attachments = append(attachments, att)
 		} else if strings.HasPrefix(mediaType, "text/") {
-			content, _ := io.ReadAll(part)
+			content := decodePartContent(part)
 			if mediaType == "text/html" {
-				bodyHTML += string(content)
+				bodyHTML += content
 			} else {
-				body += string(content)
+				body += content
 			}
 		}
 	}

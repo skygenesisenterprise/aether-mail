@@ -30,8 +30,22 @@ import { MailList } from "@/components/email/mail-list";
 import { Nav } from "@/components/email/nav";
 import { EmailEditor } from "@/components/email/EmailEditor";
 import { Footer } from "@/components/email/Footer";
-import { type Mail } from "@/components/email/data";
+
 import { useMail } from "@/components/email/use-mail";
+
+interface MailItem {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  text: string;
+  html?: string;
+  date: string;
+  read: boolean;
+  starred?: boolean;
+  labels: string[];
+  folderId?: string;
+}
 
 interface MailProps extends React.HTMLAttributes<HTMLDivElement> {
   accounts?: {
@@ -39,10 +53,11 @@ interface MailProps extends React.HTMLAttributes<HTMLDivElement> {
     email: string;
     icon: React.ReactNode;
   }[];
-  mails?: Mail[];
+  mails?: MailItem[];
   defaultLayout?: number[];
   defaultCollapsed?: boolean;
   navCollapsedSize: number;
+  isLoading?: boolean;
 }
 
 export function Mail({
@@ -51,11 +66,19 @@ export function Mail({
   defaultLayout = [20, 32, 48],
   defaultCollapsed = false,
   navCollapsedSize,
+  isLoading = false,
 }: MailProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(defaultCollapsed);
   const [mailStore, setMail] = useMail();
   const [isWriting, setIsWriting] = React.useState(false);
   const [activeFolder, setActiveFolder] = React.useState("inbox");
+  const [isClientLoading, setIsClientLoading] = React.useState(isLoading);
+
+  React.useEffect(() => {
+    if (mails.length > 0 || !isLoading) {
+      setIsClientLoading(false);
+    }
+  }, [mails, isLoading]);
 
   const folderLabels: Record<string, string> = {
     inbox: "Inbox",
@@ -71,8 +94,63 @@ export function Mail({
     promotions: "Promotions",
   };
 
+  const folderMap: Record<string, string[]> = {
+    inbox: ["INBOX", "inbox"],
+    drafts: ["Drafts", "drafts", "draft"],
+    sent: ["Sent", "sent", "Sent Items"],
+    junk: ["Junk", "Spam", "junk", "spam"],
+    trash: ["Trash", "Deleted", "trash", "deleted"],
+    archive: ["Archive", "All Mail", "archive", "all"],
+    social: ["Social", "social"],
+    updates: ["Updates", "updates"],
+    forums: ["Forums", "forums"],
+    shopping: ["Shopping", "promotions", "shopping"],
+    promotions: ["Promotions", "promotions"],
+  };
+
+  const getFolderCount = (folder: string): number => {
+    const folderNames = folderMap[folder] || [folder];
+    return mails.filter(mail => {
+      const mailFolder = (mail as any).folderId || "INBOX";
+      return folderNames.some(f => 
+        mailFolder.toLowerCase() === f.toLowerCase() ||
+        mailFolder.toLowerCase().includes(f.toLowerCase())
+      );
+    }).length;
+  };
+
+  const getUnreadCount = (folder: string): number => {
+    const folderNames = folderMap[folder] || [folder];
+    return mails.filter(mail => {
+      const mailFolder = (mail as any).folderId || "INBOX";
+      return !mail.read && folderNames.some(f => 
+        mailFolder.toLowerCase() === f.toLowerCase() ||
+        mailFolder.toLowerCase().includes(f.toLowerCase())
+      );
+    }).length;
+  };
+
+  const filteredMails = React.useMemo(() => {
+    const folderNames = folderMap[activeFolder] || [activeFolder];
+    return mails.filter(mail => {
+      const mailFolder = (mail as any).folderId || "INBOX";
+      return folderNames.some(f => 
+        mailFolder.toLowerCase() === f.toLowerCase() ||
+        mailFolder.toLowerCase().includes(f.toLowerCase())
+      );
+    });
+  }, [mails, activeFolder]);
+
   return (
     <TooltipProvider delayDuration={0}>
+      {isClientLoading ? (
+        <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="text-sm text-muted-foreground">Loading emails...</p>
+          </div>
+        </div>
+      ) : (
       <ResizablePanelGroup
         orientation="horizontal"
         onLayoutChanged={(layout) => {
@@ -118,42 +196,42 @@ export function Mail({
             links={[
               {
                 title: "Inbox",
-                label: "128",
+                label: String(getUnreadCount("inbox") || ""),
                 icon: Inbox,
                 variant: activeFolder === "inbox" ? "default" : "ghost",
                 onClick: () => setActiveFolder("inbox"),
               },
               {
                 title: "Drafts",
-                label: "9",
+                label: String(getFolderCount("drafts") || ""),
                 icon: File,
                 variant: activeFolder === "drafts" ? "default" : "ghost",
                 onClick: () => setActiveFolder("drafts"),
               },
               {
                 title: "Sent",
-                label: "",
+                label: String(getFolderCount("sent") || ""),
                 icon: Send,
                 variant: activeFolder === "sent" ? "default" : "ghost",
                 onClick: () => setActiveFolder("sent"),
               },
               {
                 title: "Junk",
-                label: "23",
+                label: String(getUnreadCount("junk") || ""),
                 icon: ArchiveX,
                 variant: activeFolder === "junk" ? "default" : "ghost",
                 onClick: () => setActiveFolder("junk"),
               },
               {
                 title: "Trash",
-                label: "",
+                label: String(getFolderCount("trash") || ""),
                 icon: Trash2,
                 variant: activeFolder === "trash" ? "default" : "ghost",
                 onClick: () => setActiveFolder("trash"),
               },
               {
                 title: "Archive",
-                label: "26",
+                label: String(getFolderCount("archive") || ""),
                 icon: Archive,
                 variant: activeFolder === "archive" ? "default" : "ghost",
                 onClick: () => setActiveFolder("archive"),
@@ -236,10 +314,10 @@ export function Mail({
               </form>
             </div>
             <TabsContent value="all" className="m-0 min-h-0 flex-1">
-              <MailList items={(mails ?? [])} />
+              <MailList items={filteredMails} />
             </TabsContent>
             <TabsContent value="unread" className="m-0 min-h-0 flex-1">
-              <MailList items={(mails ?? []).filter((item) => !item.read)} />
+              <MailList items={filteredMails.filter((item) => !item.read)} />
             </TabsContent>
           </Tabs>
         </ResizablePanel>
@@ -263,6 +341,7 @@ export function Mail({
           )}
         </ResizablePanel>
       </ResizablePanelGroup>
+      )}
     </TooltipProvider>
   );
 }

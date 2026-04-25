@@ -4,7 +4,8 @@ import * as React from "react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { Meet } from "@/components/meet/meet";
 import { meetApi } from "@/lib/api/meet";
-import type { Conversation, Message, MeetUser, ApiResponse, ListResponse } from "@/lib/api/meet-types";
+import { authApi } from "@/lib/api/auth";
+import type { Conversation, Message, MeetUser } from "@/lib/api/meet-types";
 
 interface CurrentUser {
   id: string;
@@ -18,17 +19,21 @@ interface ExtendedConversation extends Conversation {
 }
 
 export default function MeetPage() {
-  const currentUser = React.useRef<CurrentUser>({
-    id: "current-user",
-    name: "Current User",
-    email: "user@example.com",
-  });
-
+  const [currentUser, setCurrentUser] = React.useState<CurrentUser | null>(null);
   const [conversations, setConversations] = React.useState<ExtendedConversation[]>([]);
   const [messages, setMessages] = React.useState<Record<string, Message[]>>({});
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
+    const user = authApi.getStoredUser();
+    if (user) {
+      setCurrentUser({
+        id: user.id || user.email,
+        name: user.name || user.email.split('@')[0],
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+      });
+    }
     loadData();
   }, []);
 
@@ -80,6 +85,7 @@ export default function MeetPage() {
   };
 
   const handleSendMessage = async (conversationId: string, content: string) => {
+    if (!currentUser) return;
     try {
       const response = await meetApi.sendMessage(conversationId, content);
       if (response.success && response.data) {
@@ -93,8 +99,8 @@ export default function MeetPage() {
       const newMessage: Message = {
         id: `msg-${Date.now()}`,
         conversationId,
-        senderId: currentUser.current.id,
-        senderName: currentUser.current.name,
+        senderId: currentUser.id,
+        senderName: currentUser.name,
         content,
         timestamp: new Date().toISOString(),
       };
@@ -120,7 +126,7 @@ export default function MeetPage() {
     }
   };
 
-  if (loading) {
+  if (loading || !currentUser) {
     return (
       <AuthGuard>
         <div className="flex items-center justify-center h-full">
@@ -133,7 +139,7 @@ export default function MeetPage() {
   return (
     <AuthGuard>
       <Meet
-        currentUser={currentUser.current as unknown as MeetUser}
+        currentUser={currentUser as unknown as MeetUser}
         conversations={conversations}
         messages={messages}
         onStartCall={handleStartCall}

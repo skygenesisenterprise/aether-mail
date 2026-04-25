@@ -1,8 +1,21 @@
 import { create } from "zustand";
-import { Mail, mails } from "@/components/email/data";
+
+interface MailItem {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  text: string;
+  html?: string;
+  date: string;
+  read: boolean;
+  starred?: boolean;
+  labels: string[];
+  folderId?: string;
+}
 
 interface Config {
-  selected: Mail["id"] | null;
+  selected: MailItem["id"] | null;
 }
 
 const useMailStore = create<

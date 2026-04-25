@@ -39,3 +39,7 @@ dist/
 out/
 
 messages/backup/
+
+# Capacitor build output
+android/
+ios/

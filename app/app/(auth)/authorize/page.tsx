@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Globe, AlertCircle, CheckCircle } from "lucide-react";
 
-export default function AuthorizePage() {
+function AuthorizeForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -229,5 +229,13 @@ export default function AuthorizePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function AuthorizePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <AuthorizeForm />
+    </Suspense>
   );
 }

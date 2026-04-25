@@ -261,7 +261,7 @@ function ConversationItem({ conversation, isActive, onClick }: ConversationItemP
         isActive ? "bg-accent" : "hover:bg-muted/50"
       )}
     >
-      <div className="relative flex-shrink-0">
+      <div className="relative shrink-0">
         <Avatar className="h-10 w-10">
           <AvatarFallback>
             {conversation.type === "channel" ? (

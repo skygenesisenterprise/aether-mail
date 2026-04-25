@@ -1,3 +1,5 @@
+import * as React from "react";
+import { useState } from "react";
 import { addDays } from "date-fns";
 import { addHours } from "date-fns";
 import { format } from "date-fns";
@@ -24,11 +26,70 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail } from "@/components/email/data";
-import { useState } from "react";
+
+function cleanEmailHtml(html: string): string {
+  if (!html) return "";
+  
+  let cleaned = html;
+
+  const hasQuotedPrintable = /Content-Transfer-Encoding:\s*quoted-printable/i.test(cleaned);
+  const hasBase64 = /Content-Transfer-Encoding:\s*base64/i.test(cleaned);
+
+  if (hasQuotedPrintable) {
+    cleaned = cleaned
+      .replace(/=[\r\n]+/g, "")
+      .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+  }
+
+  cleaned = cleaned
+    .replace(/^.*Content-Type:[^\n]*/gm, "")
+    .replace(/^.*Content-Transfer-Encoding:[^\n]*/gm, "")
+    .replace(/^----_NmP-[^\n]*/gm, "")
+    .replace(/^--d8b9e1f[^\n]*/gm, "")
+    .replace(/^#__bodyTable__[^\n]*/gm, "")
+    .replace(/<html[^>]*>/gi, "<html>")
+    .replace(/<\/html>.*$/gi, "</html>");
+
+  if (hasBase64) {
+    try {
+      const base64Content = cleaned.replace(/[^A-Za-z0-9+/=]/g, "");
+      const decoded = atob(base64Content);
+      cleaned = decoded;
+    } catch {}
+  }
+
+  return cleaned;
+}
+
+function decodeQuotedPrintable(str: string): string {
+  if (!str) return "";
+  return str
+    .replace(/=[\r\n]+/g, "")
+    .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/=\?([^?]+)\?([BQ])\?([^?]*)\?=/gi, (_, charset, encoding, text) => {
+      if (encoding.toUpperCase() === 'B') {
+        try {
+          return decodeURIComponent(escape(atob(text)));
+        } catch { return text; }
+      }
+      return text;
+    });
+}
+interface MailItem {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  text: string;
+  html?: string;
+  date: string;
+  read: boolean;
+  starred?: boolean;
+  labels: string[];
+}
 
 interface MailDisplayProps {
-  mail: Mail | null;
+  mail: MailItem | null;
   onClose?: () => void;
 }
 
@@ -172,7 +233,14 @@ export function MailDisplay({ mail, onClose }: MailDisplayProps) {
             )}
           </div>
           <Separator />
-          <div className="flex-1 p-4 text-sm whitespace-pre-wrap">{mail.text}</div>
+          {mail.html ? (
+            <div 
+              className="flex-1 p-4 text-sm overflow-auto email-content" 
+              dangerouslySetInnerHTML={{ __html: cleanEmailHtml(mail.html) }} 
+            />
+          ) : (
+            <div className="flex-1 p-4 text-sm whitespace-pre-wrap">{mail.text}</div>
+          )}
           <Separator className="mt-auto" />
           <div className="p-4">
             <form>

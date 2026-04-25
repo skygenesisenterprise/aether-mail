@@ -87,7 +87,7 @@ function MessageItem({ message, isOwn }: { message: Message; isOwn: boolean }) {
       "flex gap-3 max-w-[80%]",
       isOwn ? "ml-auto flex-row-reverse" : ""
     )}>
-      <Avatar className="h-8 w-8 flex-shrink-0">
+      <Avatar className="h-8 w-8 shrink-0">
         <AvatarFallback className="text-xs">
           {message.senderName.charAt(0).toUpperCase()}
         </AvatarFallback>
@@ -381,7 +381,7 @@ export function ChatDisplay({
                     ) : (
                       <File className="h-3 w-3" />
                     )}
-                    <span className="max-w-[150px] truncate">{attachment.name}</span>
+                    <span className="max-w-37.5 truncate">{attachment.name}</span>
                     <span className="text-xs opacity-70">({formatFileSize(attachment.size)})</span>
                     <button
                       onClick={() => removeAttachment(attachment.id)}
@@ -398,7 +398,7 @@ export function ChatDisplay({
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={`Message ${conversation?.type === "channel" ? "#" : ""}${conversation?.name}`}
-              className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] max-h-[200px]"
+              className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-11 max-h-50"
               rows={1}
             />
           </div>

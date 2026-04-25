@@ -20,6 +20,7 @@ export interface Email {
   date: string;
   preview: string;
   body: string;
+  body_html?: string;
   isRead: boolean;
   isFlagged: boolean;
   isDraft: boolean;

@@ -44,7 +44,9 @@ func (c *AuthController) Login(ctx *gin.Context) {
 
 	switch authMethod {
 	case "imap":
+		fmt.Printf("[auth] Attempting IMAP connection to %s:%d with TLS=%v\n", c.mailConfig.IMAP.Host, c.mailConfig.IMAP.Port, c.mailConfig.IMAP.UseTLS)
 		if err := c.imapService.Connect(c.mailConfig.IMAP.Host, c.mailConfig.IMAP.Port, c.mailConfig.IMAP.UseTLS); err != nil {
+			fmt.Printf("[auth] IMAP connection failed: %v\n", err)
 			ctx.JSON(http.StatusInternalServerError, models.AuthResponse{
 				Success: false,
 				Error:   fmt.Sprintf("Failed to connect to mail server: %s", err.Error()),
@@ -53,7 +55,9 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		}
 		defer c.imapService.Disconnect()
 
+		fmt.Printf("[auth] IMAP connection successful, attempting authentication for: %s\n", req.Email)
 		if err := c.imapService.Authenticate(req.Email, req.Password); err != nil {
+			fmt.Printf("[auth] IMAP authentication failed: %v\n", err)
 			ctx.JSON(http.StatusUnauthorized, models.AuthResponse{
 				Success: false,
 				Error:   "Invalid credentials",
@@ -79,7 +83,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 			SMTPPort: c.mailConfig.SMTP.Port,
 		})
 
-		fmt.Printf("[auth] IMAP authentication successful for user: %s\n", user.Email)
+		fmt.Printf("[auth] IMAP authentication successful for user: %s at %s:%d\n", user.Email, c.mailConfig.IMAP.Host, c.mailConfig.IMAP.Port)
 
 	default:
 		tokenResp, err := c.stalwartService.Authenticate(req.Email, req.Password)

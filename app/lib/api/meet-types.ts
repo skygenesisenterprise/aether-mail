@@ -1,6 +1,4 @@
-import type { User } from "./types";
-
-export type ConversationType = "direct" | "channel" | "group";
+ export type ConversationType = "direct" | "channel" | "group";
 
 export interface MeetUser {
   id: string;

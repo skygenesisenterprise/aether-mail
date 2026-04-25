@@ -47,7 +47,7 @@ export function LoginForm() {
         authApi.storeUser(response.data.user);
       }
 
-      router.push("/dashboard");
+      router.push("/inbox");
     } catch (err) {
       setError("Network error. Please try again.");
     } finally {

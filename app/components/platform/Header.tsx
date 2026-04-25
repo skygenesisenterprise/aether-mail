@@ -20,11 +20,14 @@ import {
   Bot,
   Rss,
   FolderTree,
+  LogOut,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/context/AuthContext';
 
 interface AppItem {
   title: string;
@@ -47,6 +50,7 @@ interface HeaderProps extends React.HTMLAttributes<HTMLElement> {}
 
 export function Header({ className, ...props }: HeaderProps) {
   const { theme, setTheme } = useTheme();
+  const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [mounted, setMounted] = React.useState(false);
   const [appsMenuOpen, setAppsMenuOpen] = React.useState(false);
@@ -61,6 +65,20 @@ export function Header({ className, ...props }: HeaderProps) {
   };
 
   const isDark = mounted && theme === 'dark';
+
+  const handleLogout = async () => {
+    setAccountMenuOpen(false);
+    await logout();
+  };
+
+  const getUserInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <header
@@ -151,8 +169,10 @@ export function Header({ className, ...props }: HeaderProps) {
             onClick={() => setAccountMenuOpen(!accountMenuOpen)}
           >
             <Avatar className="h-8 w-8">
-              <AvatarImage src="/avatars/1.png" alt="User" />
-              <AvatarFallback>U</AvatarFallback>
+              <AvatarImage src={user?.avatarUrl} alt={user?.name} />
+              <AvatarFallback>
+                {user?.name ? getUserInitials(user.name) : 'U'}
+              </AvatarFallback>
             </Avatar>
           </Button>
 
@@ -163,15 +183,17 @@ export function Header({ className, ...props }: HeaderProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full mt-2 w-56 bg-background border rounded-md shadow-lg z-50"
+                className="absolute right-0 top-full mt-2 w-64 bg-background border rounded-md shadow-lg z-50"
               >
+                <div className="p-3 border-b">
+                  <div className="font-semibold">{user?.name || 'User'}</div>
+                  <div className="text-sm text-muted-foreground truncate">{user?.email}</div>
+                </div>
                 <div className="p-2">
-                  <div className="font-semibold px-3 py-2">My Account</div>
-                  <div className="border-t my-2" />
                   <Link
                     href="/profile"
                     onClick={() => setAccountMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
                   >
                     <User className="h-4 w-4" />
                     <span>Profile</span>
@@ -179,16 +201,17 @@ export function Header({ className, ...props }: HeaderProps) {
                   <Link
                     href="/settings"
                     onClick={() => setAccountMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
                   >
                     <Settings className="h-4 w-4" />
                     <span>Settings</span>
                   </Link>
                   <div className="border-t my-2" />
                   <button
-                    onClick={() => setAccountMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-red-600 hover:bg-accent transition-colors w-full"
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-red-600 hover:bg-accent transition-colors w-full"
                   >
+                    <LogOut className="h-4 w-4" />
                     <span>Log out</span>
                   </button>
                 </div>

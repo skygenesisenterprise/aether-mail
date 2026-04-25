@@ -8,7 +8,10 @@ import {
   ActivityFilters,
   ActivityEventType,
 } from "@/types/activity";
-import { generateMockEvents } from "@/lib/mock-activity";
+
+function generateMockEvents(pageSize: number, page: number): ActivityEvent[] {
+  return [];
+}
 
 const initialState: ActivityState = {
   events: [],

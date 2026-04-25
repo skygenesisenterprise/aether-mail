@@ -3,6 +3,7 @@ package services
 import (
 	"bufio"
 	"crypto/tls"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/skygenesisenterprise/aether-mail/server/src/models"
+	"github.com/skygenesisenterprise/aether-mail/server/src/utils"
 )
 
 type IMAPService struct {
@@ -52,9 +54,11 @@ func (s *IMAPService) Connect(host string, port int, useTLS bool) error {
 	s.writer = conn
 
 	if useTLS {
-		tlsConn := tls.Client(conn, &tls.Config{
-			ServerName: host,
-		})
+		tlsConfig := &tls.Config{
+			ServerName:         host,
+			InsecureSkipVerify: true,
+		}
+		tlsConn := tls.Client(conn, tlsConfig)
 		if err := tlsConn.Handshake(); err != nil {
 			return fmt.Errorf("TLS handshake failed: %w", err)
 		}
@@ -79,7 +83,12 @@ func (s *IMAPService) Authenticate(username, password string) error {
 	s.username = username
 
 	tag := s.nextTag()
-	cmd := fmt.Sprintf("%s LOGIN %s %s", tag, s.escapeString(username), s.escapeString(password))
+	
+	quotedUsername := s.quoteString(username)
+	quotedPassword := s.quoteString(password)
+	
+	cmd := fmt.Sprintf("%s LOGIN %s %s", tag, quotedUsername, quotedPassword)
+	fmt.Printf("[IMAP] LOGIN command: %s LOGIN [username] [password]\n", tag)
 
 	if err := s.sendCommand(cmd); err != nil {
 		return fmt.Errorf("failed to send LOGIN command: %w", err)
@@ -225,10 +234,18 @@ func (s *IMAPService) ListMessagesByUID(limit, offset int) ([]*models.Email, err
 		return nil, fmt.Errorf("no mailbox selected")
 	}
 
+	if limit == 0 {
+		total, _ := s.GetMessageCount()
+		limit = total
+		if limit == 0 {
+			limit = 1
+		}
+	}
+
 	tag := s.nextTag()
 	start := offset + 1
 	end := offset + limit
-	cmd := fmt.Sprintf("%s UID FETCH %d:%d (UID FLAGS ENVELOPE BODY.PEEK[HEADER])", tag, start, end)
+	cmd := fmt.Sprintf("%s UID FETCH %d:%d (UID FLAGS ENVELOPE BODY.PEEK[HEADER] BODY.PEEK[TEXT])", tag, start, end)
 
 	if err := s.sendCommand(cmd); err != nil {
 		return nil, err
@@ -236,14 +253,16 @@ func (s *IMAPService) ListMessagesByUID(limit, offset int) ([]*models.Email, err
 
 	var emails []*models.Email
 	var currentEmailResp strings.Builder
+	respCount := 0
 
 	for {
 		resp, err := s.readResponse()
 		if err != nil {
 			return nil, err
 		}
+		respCount++
 
-		if strings.HasPrefix(resp, tag+" ") {
+		if strings.HasPrefix(resp, tag+" OK") || strings.HasPrefix(resp, tag+" BAD") {
 			if currentEmailResp.Len() > 0 {
 				email := s.parseEmailResponse(currentEmailResp.String())
 				if email != nil {
@@ -265,11 +284,20 @@ func (s *IMAPService) ListMessagesByUID(limit, offset int) ([]*models.Email, err
 					}
 					emails = append(emails, email)
 				}
-				currentEmailResp.Reset()
 			}
+			currentEmailResp.Reset()
 			currentEmailResp.WriteString(resp)
 		} else if currentEmailResp.Len() > 0 {
-			if resp == ")" || strings.HasPrefix(resp, tag+" ") {
+			if strings.HasPrefix(resp, "* ") && !strings.Contains(resp, "FETCH") && respCount > 1 {
+				email := s.parseEmailResponse(currentEmailResp.String())
+				if email != nil {
+					if email.ID == "" {
+						email.ID = fmt.Sprintf("%d-%d", start, len(emails)+1)
+					}
+					emails = append(emails, email)
+				}
+				currentEmailResp.Reset()
+			} else if resp == ")" || strings.HasPrefix(resp, tag+" ") {
 				email := s.parseEmailResponse(currentEmailResp.String())
 				if email != nil {
 					if email.ID == "" {
@@ -820,6 +848,12 @@ func (s *IMAPService) escapeString(str string) string {
 	return str
 }
 
+func (s *IMAPService) quoteString(str string) string {
+	escaped := strings.ReplaceAll(str, "\\", "\\\\")
+	escaped = strings.ReplaceAll(escaped, "\"", "\\\"")
+	return fmt.Sprintf("\"%s\"", escaped)
+}
+
 func (s *IMAPService) parseListResponse(resp string) *models.Folder {
 	folder := &models.Folder{}
 
@@ -922,45 +956,43 @@ func (s *IMAPService) parseEmailResponse(resp string) *models.Email {
 		s.parseEnvelope(envelopeMatch[1], email)
 	}
 
-	bodypartRegex := regexp.MustCompile(`BODY\[TEXT\]\s*\{(\d+)\}`)
-	bodypartMatch := bodypartRegex.FindStringSubmatch(resp)
-	if len(bodypartMatch) > 1 {
-		email.Body = bodypartMatch[2]
-	}
-
 	lines := strings.Split(resp, "\r\n")
-	inHeaders := true
 	var bodyLines []string
-	var currentHeader string
+	var headerLines []string
+	inBody := false
+	seenBodyMarker := false
 
 	for _, line := range lines {
-		if strings.Contains(line, "BODY[HEADER]") || strings.Contains(line, "BODY[TEXT]") {
-			inHeaders = false
+		if strings.Contains(line, "BODY[HEADER]") {
+			seenBodyMarker = true
+			inBody = false
+			continue
+		}
+		if strings.Contains(line, "BODY[TEXT]") {
+			seenBodyMarker = true
+			inBody = true
 			continue
 		}
 
-		if inHeaders {
-			if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
-				currentHeader += " " + strings.TrimSpace(line)
-			} else {
-				if currentHeader != "" {
-					s.parseHeaderLine(currentHeader, email)
-				}
-				currentHeader = line
-			}
-		} else {
-			if !strings.HasPrefix(line, ")") && !strings.HasPrefix(line, "* ") && !strings.HasPrefix(line, "A") {
+		if !inBody && !seenBodyMarker {
+			headerLines = append(headerLines, line)
+		} else if inBody {
+			if !strings.HasPrefix(line, ")") && !strings.HasPrefix(line, "* ") && 
+			   !strings.HasPrefix(line, "A000") && !strings.HasPrefix(line, "OK ") {
 				bodyLines = append(bodyLines, line)
 			}
 		}
 	}
 
-	if currentHeader != "" {
-		s.parseHeaderLine(currentHeader, email)
+	for _, header := range headerLines {
+		if strings.HasPrefix(header, " ") || strings.HasPrefix(header, "\t") {
+			continue
+		}
+		s.parseHeaderLine(header, email)
 	}
 
 	if len(bodyLines) > 0 {
-		email.Body = strings.Join(bodyLines, "\n")
+		email.Body, email.BodyHTML = s.parseMimeBody(strings.Join(bodyLines, "\n"))
 		email.Body = strings.TrimSpace(email.Body)
 		if len(email.Body) > 200 {
 			email.Preview = email.Body[:200] + "..."
@@ -1135,31 +1167,59 @@ func (s *IMAPService) splitEnvelopeParts(str string) []string {
 
 func (s *IMAPService) parseEnvelopeAddress(addrStr string) *models.EmailAddress {
 	addrStr = strings.TrimSpace(addrStr)
-	if addrStr == "" || addrStr == "NIL" {
+	if addrStr == "" || addrStr == "NIL" || addrStr == "NIL NIL" {
 		return nil
 	}
 
 	addr := &models.EmailAddress{}
 
-	parts := s.splitEnvelopeParts(addrStr)
-	if len(parts) >= 3 {
-		name := strings.Trim(parts[0], "\" ")
-		mailbox := strings.Trim(parts[2], "\" ")
+	if strings.HasPrefix(addrStr, "(") && strings.HasSuffix(addrStr, ")") {
+		inner := strings.Trim(addrStr, "()")
+		parts := s.splitEnvelopeParts(inner)
+		
+		name := ""
+		mailbox := ""
 		host := ""
-		if len(parts) > 3 {
-			host = strings.Trim(parts[3], "\" ")
+		
+		for i, part := range parts {
+			part = strings.TrimSpace(part)
+			if part == "NIL" {
+				continue
+			}
+			part = strings.Trim(part, "\"")
+			
+			switch i {
+			case 0:
+				name = part
+			case 1:
+				if part != "" && part != "NIL" {
+					name = part
+				}
+			case 2:
+				mailbox = part
+			case 3:
+				host = part
+			}
 		}
-
-		if name != "NIL" && name != "" {
+		
+		if name != "" {
 			addr.Name = name
 		}
-		if mailbox != "NIL" && host != "NIL" {
+		if mailbox != "" && host != "" {
 			addr.Email = mailbox + "@" + host
 			addr.Mailbox = mailbox
 			addr.Host = host
+		} else if mailbox != "" {
+			addr.Email = mailbox
+			addr.Mailbox = mailbox
 		}
 	} else if strings.Contains(addrStr, "@") {
-		addr.Email = addrStr
+		addr.Email = strings.Trim(addrStr, "\" ")
+		parts := strings.Split(addr.Email, "@")
+		if len(parts) >= 2 {
+			addr.Mailbox = parts[0]
+			addr.Host = strings.Join(parts[1:], "@")
+		}
 	}
 
 	return addr
@@ -1262,4 +1322,311 @@ type QuotaInfo struct {
 type ACLEvent struct {
 	Identifier string
 	Rights     string
+}
+
+func (s *IMAPService) parseMimeBody(body string) (string, string) {
+	lines := strings.Split(body, "\n")
+	
+	var headers strings.Builder
+	var contentLines []string
+	inHeaders := true
+	foundBlankLine := false
+	transferEncoding := ""
+	charset := ""
+	
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		
+		if inHeaders {
+			if trimmed == "" {
+				if headers.Len() > 0 {
+					inHeaders = false
+					foundBlankLine = true
+				}
+				continue
+			}
+			headers.WriteString(line + "\n")
+			continue
+		}
+		
+		if foundBlankLine && !inHeaders {
+			contentLines = append(contentLines, strings.Join(lines[i:], "\n"))
+			break
+		}
+	}
+	
+	headerStr := headers.String()
+	lowerHeaders := strings.ToLower(headerStr)
+	
+	if strings.Contains(lowerHeaders, "quoted-printable") {
+		transferEncoding = "quoted-printable"
+	} else if strings.Contains(lowerHeaders, "base64") {
+		transferEncoding = "base64"
+	}
+	
+	if strings.Contains(lowerHeaders, "charset=") {
+		re := regexp.MustCompile(`charset="?([^";\s]+)"?`)
+		matches := re.FindStringSubmatch(lowerHeaders)
+		if len(matches) > 1 {
+			charset = matches[1]
+		}
+	}
+	
+	content := strings.Join(contentLines, "\n")
+	
+	if transferEncoding == "quoted-printable" {
+		content = s.decodeQuotedPrintable(content)
+	} else if transferEncoding == "base64" {
+		decoded, err := base64.StdEncoding.DecodeString(strings.ReplaceAll(content, "\n", ""))
+		if err == nil {
+			content = string(decoded)
+		}
+	}
+	
+	var bodyText, bodyHTML string
+	
+	if strings.Contains(lowerHeaders, "multipart") {
+		bodyText, bodyHTML = s.extractMultipartText(content)
+	} else if strings.Contains(lowerHeaders, "text/html") {
+		bodyHTML = content
+		if charset != "" && strings.ToLower(charset) != "utf-8" {
+			bodyHTML = utils.ToUTF8(bodyHTML, charset)
+		}
+	} else {
+		bodyText = content
+		if charset != "" && strings.ToLower(charset) != "utf-8" {
+			bodyText = utils.ToUTF8(bodyText, charset)
+		}
+	}
+	
+	if bodyText != "" {
+		bodyText = s.stripHtmlTags(bodyText)
+		bodyText = cleanEmailBody(bodyText)
+	}
+	
+	if bodyHTML != "" {
+		bodyHTML = cleanEmailBody(bodyHTML)
+	}
+	
+	return bodyText, bodyHTML
+}
+
+func (s *IMAPService) extractMultipartText(body string) (string, string) {
+	lines := strings.Split(body, "\n")
+	
+	var boundaries []string
+	re := regexp.MustCompile(`boundary="([^"]+)"`)
+	for _, line := range lines {
+		matches := re.FindStringSubmatch(line)
+		if len(matches) > 1 {
+			boundaries = append(boundaries, matches[1])
+		}
+	}
+	
+	if len(boundaries) == 0 {
+		boundaryRe := regexp.MustCompile(`--([A-Za-z0-9_=-]+)`)
+		for _, line := range lines {
+			matches := boundaryRe.FindStringSubmatch(line)
+			if len(matches) > 1 && len(matches[1]) > 10 {
+				boundaries = append(boundaries, matches[1])
+			}
+		}
+	}
+	
+	var plainText, htmlText string
+	
+	for _, boundary := range boundaries {
+		parts := strings.Split(body, "--"+boundary)
+		for _, part := range parts {
+			if strings.Contains(part, "text/plain") && !strings.Contains(part, "Content-ID:") {
+				text := s.extractTextFromMimePart(part)
+				plainText = cleanEmailBody(text)
+			}
+			if strings.Contains(part, "text/html") && !strings.Contains(part, "Content-ID:") {
+				text := s.extractTextFromMimePart(part)
+				htmlText = cleanEmailBody(text)
+			}
+		}
+	}
+	
+	if plainText == "" {
+		for _, boundary := range boundaries {
+			parts := strings.Split(body, "--"+boundary)
+			for _, part := range parts {
+				partLines := strings.Split(part, "\n")
+				var contentLines []string
+				inBody := false
+				for _, line := range partLines {
+					if strings.TrimSpace(line) == "" {
+						inBody = true
+						continue
+					}
+					if inBody {
+						contentLines = append(contentLines, line)
+					}
+				}
+				if len(contentLines) > 0 {
+					text := strings.Join(contentLines, "\n")
+					text = s.decodeQuotedPrintable(text)
+					plainText = cleanEmailBody(text)
+					break
+				}
+			}
+			if plainText != "" {
+				break
+			}
+		}
+	}
+	
+	if plainText == "" {
+		plainText = s.decodeQuotedPrintable(body)
+	}
+	
+	return plainText, htmlText
+}
+
+func (s *IMAPService) extractTextFromMimePart(part string) string {
+	lines := strings.Split(part, "\n")
+	inContent := false
+	var contentLines []string
+	partEncoding := ""
+	
+	for _, line := range lines {
+		lower := strings.ToLower(strings.TrimSpace(line))
+		if strings.HasPrefix(lower, "content-transfer-encoding:") {
+			partEncoding = strings.TrimSpace(strings.SplitN(line, ":", 2)[1])
+			continue
+		}
+		
+		if strings.TrimSpace(line) == "" && !inContent {
+			inContent = true
+			continue
+		}
+		if inContent {
+			contentLines = append(contentLines, line)
+		}
+	}
+	
+	text := strings.Join(contentLines, "\n")
+	if partEncoding == "quoted-printable" {
+		text = s.decodeQuotedPrintable(text)
+	}
+	
+	return text
+}
+
+func (s *IMAPService) decodeQuotedPrintable(body string) string {
+	var result strings.Builder
+	i := 0
+	
+	for i < len(body) {
+		if i+1 < len(body) && body[i] == '=' && (body[i+1] == '\r' || body[i+1] == '\n') {
+			if i+2 < len(body) && body[i+2] == '\n' {
+				i += 3
+			} else if i+1 < len(body) {
+				i += 2
+			} else {
+				i++
+			}
+			continue
+		}
+		
+		if i+2 < len(body) && body[i] == '=' {
+			hex := body[i+1 : i+3]
+			if matched, _ := regexp.MatchString("^[0-9A-Fa-f]{2}$", hex); matched {
+				if val, err := strconv.ParseInt(hex, 16, 32); err == nil {
+					result.WriteRune(rune(val))
+					i += 3
+					continue
+				}
+			}
+		}
+		
+		result.WriteByte(body[i])
+		i++
+	}
+	
+	return result.String()
+}
+
+func (s *IMAPService) decodeQuotedPrintableLine(line string) string {
+	result := strings.Builder{}
+	i := 0
+
+	for i < len(line) {
+		if i+2 < len(line) && line[i] == '=' {
+			hex := line[i+1 : i+3]
+			if matched, _ := regexp.MatchString("^[0-9A-Fa-f]{2}$", hex); matched {
+				if val, err := strconv.ParseInt(hex, 16, 32); err == nil {
+					result.WriteRune(rune(val))
+					i += 3
+				} else {
+					result.WriteByte(line[i])
+					i++
+				}
+			} else {
+				result.WriteByte(line[i])
+				i++
+			}
+		} else {
+			result.WriteByte(line[i])
+			i++
+		}
+	}
+
+	return result.String()
+}
+
+func (s *IMAPService) stripHtmlTags(body string) string {
+	if strings.Contains(body, "<html") || strings.Contains(body, "<!DOCTYPE") {
+		re := regexp.MustCompile(`<[^>]+>`)
+		body = re.ReplaceAllString(body, " ")
+		body = strings.ReplaceAll(body, "&nbsp;", " ")
+		body = strings.ReplaceAll(body, "&amp;", "&")
+		body = strings.ReplaceAll(body, "&lt;", "<")
+		body = strings.ReplaceAll(body, "&gt;", ">")
+		body = strings.ReplaceAll(body, "&quot;", "\"")
+		body = regexp.MustCompile(`\s+`).ReplaceAllString(body, " ")
+	}
+
+	return body
+}
+
+func cleanEmailBody(body string) string {
+	lines := strings.Split(body, "\n")
+	var cleaned []string
+	emptyCount := 0
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "" {
+			emptyCount++
+			if emptyCount <= 2 {
+				cleaned = append(cleaned, trimmed)
+			}
+			continue
+		}
+
+		emptyCount = 0
+
+		if strings.HasPrefix(trimmed, "--") && len(trimmed) <= 80 {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "=_") {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "----==_") {
+			continue
+		}
+		if regexp.MustCompile(`^[A-Za-z0-9+/]+={0,2}$`).MatchString(trimmed) && len(trimmed) > 40 {
+			continue
+		}
+
+		cleaned = append(cleaned, line)
+	}
+
+	result := strings.TrimSpace(strings.Join(cleaned, "\n"))
+
+	return result
 }
