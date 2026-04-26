@@ -208,6 +208,8 @@ class AuthApiService {
 
   getStoredUser(): TokenResponse["user"] | null {
     if (typeof window === "undefined") return null;
+    const token = localStorage.getItem("accessToken");
+    if (!token || token === "undefined" || token === "null") return null;
     const userStr = localStorage.getItem("user");
     if (!userStr) return null;
     try {

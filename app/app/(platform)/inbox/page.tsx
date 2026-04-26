@@ -34,7 +34,7 @@ export default function InboxPage() {
         email: user.email,
         icon: null,
       }]);
-      loadEmails(user.id || user.email);
+      loadEmails(user.email);
     } else {
       setIsLoading(false);
     }
@@ -75,7 +75,7 @@ export default function InboxPage() {
             email: fromEmail,
             subject: email.subject || "(No subject)",
             text: cleanedText,
-            html: (email as any).body_html || undefined,
+            html: email.body_html,
             date: email.date || new Date().toISOString(),
             read: email.isRead ?? false,
             starred: email.isFlagged ?? false,
@@ -87,6 +87,12 @@ export default function InboxPage() {
       }
     } catch (emailError) {
       console.error("Failed to load emails:", emailError);
+      if (emailError instanceof Error && emailError.message.includes("Session not found")) {
+        authApi.clearTokens();
+        authApi.clearUser();
+        window.location.href = "/login";
+        return;
+      }
     } finally {
       setIsLoading(false);
     }

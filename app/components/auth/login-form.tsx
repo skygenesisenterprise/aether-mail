@@ -45,6 +45,9 @@ export function LoginForm() {
       if (response.data) {
         authApi.storeTokens(response.data.accessToken, response.data.refreshToken);
         authApi.storeUser(response.data.user);
+        
+        window.location.href = "/inbox";
+        return;
       }
 
       router.push("/inbox");

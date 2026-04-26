@@ -48,11 +48,24 @@ func main() {
 	fmt.Printf("\033[1;34m[info] Initializing Aether Mail server...\033[0m\n")
 	time.Sleep(300 * time.Millisecond)
 
-	fmt.Printf("\033[1;34m[info] Loading .env file...\033[0m\n")
-	if err := godotenv.Load(); err != nil {
+possiblePaths := []string{
+		"./server/.env",
+		"../server/.env",
+		"/app/server/.env",
+		"/app/.env",
+	}
+
+	var loaded bool
+	for _, p := range possiblePaths {
+		if err := godotenv.Load(p); err == nil {
+			fmt.Printf("\033[1;32m[success] .env file loaded from: %s\033[0m\n", p)
+			loaded = true
+			break
+		}
+	}
+
+	if !loaded {
 		fmt.Printf("\033[1;33m[warn] No .env file found, using environment variables\033[0m\n")
-	} else {
-		fmt.Printf("\033[1;32m[success] .env file loaded successfully\033[0m\n")
 	}
 	time.Sleep(200 * time.Millisecond)
 

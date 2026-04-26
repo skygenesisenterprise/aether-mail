@@ -602,6 +602,46 @@ func (s *StalwartService) GetEmails(query *models.EmailQuery) (*models.EmailList
 	return emailList, nil
 }
 
+func containsMimeBoundary(content string) bool {
+	if content == "" {
+		return false
+	}
+	lower := strings.ToLower(content)
+	if strings.Contains(lower, "----_nmp") || strings.Contains(lower, "--==_") {
+		return true
+	}
+	if strings.Contains(lower, "boundary=") && strings.Contains(lower, "multipart") {
+		return true
+	}
+	if isTrulyCorruptedMime(content) {
+		return true
+	}
+	return false
+}
+
+func isTrulyCorruptedMime(content string) bool {
+	lines := strings.Split(content, "\n")
+	mimeHeaderCount := 0
+	htmlTagCount := 0
+
+	for i, line := range lines {
+		lower := strings.ToLower(strings.TrimSpace(line))
+		if strings.HasPrefix(lower, "content-type:") ||
+			strings.HasPrefix(lower, "content-transfer-encoding:") ||
+			strings.HasPrefix(lower, "content-disposition:") ||
+			strings.HasPrefix(lower, "mime-version:") {
+			mimeHeaderCount++
+		}
+		if strings.HasPrefix(lower, "<html") || strings.HasPrefix(lower, "</html>") {
+			htmlTagCount++
+		}
+		if i > 10 && mimeHeaderCount > 2 && htmlTagCount == 0 {
+			return true
+		}
+	}
+	return mimeHeaderCount > 4
+}
+
 func (s *StalwartService) parseJMAPEmail(data map[string]interface{}) *models.Email {
 	email := &models.Email{
 		ID: getString(data["id"]),
@@ -685,18 +725,24 @@ func (s *StalwartService) parseJMAPEmail(data map[string]interface{}) *models.Em
 		}
 	}
 
-	if textBody, ok := data["textBody"].([]interface{}); ok && len(textBody) > 0 {
-		if tb, ok := textBody[0].(map[string]interface{}); ok {
-			if content, ok := tb["content"].(string); ok {
-				email.Body = s.decodeTextContent(content, tb)
-			}
-		}
-	}
-
 	if htmlBody, ok := data["htmlBody"].([]interface{}); ok && len(htmlBody) > 0 {
 		if hb, ok := htmlBody[0].(map[string]interface{}); ok {
 			if content, ok := hb["content"].(string); ok {
-				email.BodyHTML = s.decodeTextContent(content, hb)
+				if containsMimeBoundary(content) {
+					email.BodyHTML = ""
+				} else {
+					email.BodyHTML = utils.DetectAndFixUTF8(s.decodeTextContent(content, hb))
+				}
+			}
+		}
+	} else if textBody, ok := data["textBody"].([]interface{}); ok && len(textBody) > 0 {
+		if tb, ok := textBody[0].(map[string]interface{}); ok {
+			if content, ok := tb["content"].(string); ok {
+				if containsMimeBoundary(content) {
+					email.Body = ""
+				} else {
+					email.Body = utils.DetectAndFixUTF8(s.decodeTextContent(content, tb))
+				}
 			}
 		}
 	}
@@ -706,10 +752,10 @@ func (s *StalwartService) parseJMAPEmail(data map[string]interface{}) *models.Em
 			parsedEmail, err := utils.ParseEmail(rawContent)
 			if err == nil && parsedEmail != nil {
 				if parsedEmail.Body != "" {
-					email.Body = parsedEmail.Body
+					email.Body = utils.DetectAndFixUTF8(cleanEmailBody(parsedEmail.Body))
 				}
 				if parsedEmail.BodyHTML != "" {
-					email.BodyHTML = parsedEmail.BodyHTML
+					email.BodyHTML = utils.DetectAndFixUTF8(cleanEmailBody(parsedEmail.BodyHTML))
 				}
 				if email.Preview == "" && parsedEmail.Preview != "" {
 					email.Preview = parsedEmail.Preview

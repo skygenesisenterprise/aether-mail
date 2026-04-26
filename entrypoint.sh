@@ -305,11 +305,13 @@ start_frontend() {
 
     cd /app/app
     
+    rm -rf .next/cache 2>/dev/null || true
+    
     PNPM_PATH="/root/.local/share/corepack/pnpm"
     if [ -f "$PNPM_PATH" ]; then
-        "$PNPM_PATH" next dev -p "$FRONTEND_PORT" -H 0.0.0.0 &
+        "$PNPM_PATH" next dev -p "$FRONTEND_PORT" -H 0.0.0.0 --turbopack &
     elif command -v npx >/dev/null 2>&1; then
-        npx next dev -p "$FRONTEND_PORT" -H 0.0.0.0 &
+        npx next dev -p "$FRONTEND_PORT" -H 0.0.0.0 --turbopack &
     else
         log_error "Neither pnpm nor npx available"
         return 1
@@ -318,38 +320,49 @@ start_frontend() {
     NEXT_PID=$!
     echo "$NEXT_PID" > /tmp/next.pid
 
-    log_info "Next.js started (PID: $NEXT_PID)"
-
-    # Wait for Next.js to be ready
+    log_info "Next.js started with Turbopack (PID: $NEXT_PID)"
+    
     log_info "Waiting for Next.js to be ready..."
-    sleep 10
+    sleep 8
 
-    # Verify it's running
-    if kill -0 "$NEXT_PID" 2>/dev/null; then
-        log_success "Next.js is ready"
-    else
-        log_error "Next.js failed to start"
-        return 1
-    fi
+    for i in 1 2 3 4 5; do
+        if wget -qO- "http://localhost:${FRONTEND_PORT}" >/dev/null 2>&1; then
+            break
+        fi
+        log_info "Waiting... ($i)"
+        sleep 2
+    done
+
+    log_success "Next.js is ready on http://localhost:${FRONTEND_PORT} with hot reload"
 }
 
 start_api() {
     log_info "Starting Go API server on port ${API_PORT}..."
-
-    cd /app
-    air -c /app/.air.toml &
-
-    API_PID=$!
-    echo "$API_PID" > /tmp/api.pid
+    
+    if [ -f /app/tmp/aether-server ]; then
+        log_info "Using pre-built API server"
+        /app/tmp/aether-server &
+        API_PID=$!
+        echo "$API_PID" > /tmp/api.pid
+    else
+        log_info "Building Go API server..."
+        cd /app/server
+        go build -o /tmp/aether-server ./
+        if [ ! -f /tmp/aether-server ]; then
+            log_error "Build failed"
+            return 1
+        fi
+        /tmp/aether-server &
+        API_PID=$!
+        echo "$API_PID" > /tmp/api.pid
+    fi
 
     log_info "Go API server started (PID: $API_PID)"
 
-    # Wait a moment for the API to initialize
     sleep 3
 
-    # Verify it's running
     if kill -0 "$API_PID" 2>/dev/null; then
-        log_success "Go API server is ready"
+        log_success "Go API server is ready on http://localhost:${API_PORT}"
     else
         log_error "Go API server failed to start"
         return 1

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { addDays } from "date-fns";
 import { addHours } from "date-fns";
 import { format } from "date-fns";
@@ -27,54 +27,6 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
-function cleanEmailHtml(html: string): string {
-  if (!html) return "";
-  
-  let cleaned = html;
-
-  const hasQuotedPrintable = /Content-Transfer-Encoding:\s*quoted-printable/i.test(cleaned);
-  const hasBase64 = /Content-Transfer-Encoding:\s*base64/i.test(cleaned);
-
-  if (hasQuotedPrintable) {
-    cleaned = cleaned
-      .replace(/=[\r\n]+/g, "")
-      .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-  }
-
-  cleaned = cleaned
-    .replace(/^.*Content-Type:[^\n]*/gm, "")
-    .replace(/^.*Content-Transfer-Encoding:[^\n]*/gm, "")
-    .replace(/^----_NmP-[^\n]*/gm, "")
-    .replace(/^--d8b9e1f[^\n]*/gm, "")
-    .replace(/^#__bodyTable__[^\n]*/gm, "")
-    .replace(/<html[^>]*>/gi, "<html>")
-    .replace(/<\/html>.*$/gi, "</html>");
-
-  if (hasBase64) {
-    try {
-      const base64Content = cleaned.replace(/[^A-Za-z0-9+/=]/g, "");
-      const decoded = atob(base64Content);
-      cleaned = decoded;
-    } catch {}
-  }
-
-  return cleaned;
-}
-
-function decodeQuotedPrintable(str: string): string {
-  if (!str) return "";
-  return str
-    .replace(/=[\r\n]+/g, "")
-    .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-    .replace(/=\?([^?]+)\?([BQ])\?([^?]*)\?=/gi, (_, charset, encoding, text) => {
-      if (encoding.toUpperCase() === 'B') {
-        try {
-          return decodeURIComponent(escape(atob(text)));
-        } catch { return text; }
-      }
-      return text;
-    });
-}
 interface MailItem {
   id: string;
   name: string;
@@ -93,8 +45,55 @@ interface MailDisplayProps {
   onClose?: () => void;
 }
 
-export function MailDisplay({ mail, onClose }: MailDisplayProps) {
+function sanitizeHtml(html: string): string {
+  if (!html) return "";
+
+  let cleaned = html;
+
+  cleaned = cleaned
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, "")
+    .replace(/on\w+="[^"]*"/gi, "")
+    .replace(/on\w+='[^']*'/gi, "")
+    .replace(/javascript:/gi, "")
+    .replace(/data:/gi, "");
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(cleaned, "text/html");
+
+    const scripts = doc.querySelectorAll("script");
+    scripts.forEach(s => s.remove());
+
+    const iframes = doc.querySelectorAll("iframe");
+    iframes.forEach(i => i.remove());
+
+    const elements = doc.querySelectorAll("*");
+    for (const el of elements) {
+      const htmlEl = el as HTMLElement;
+      const onClick = htmlEl.getAttribute("onclick");
+      const onLoad = htmlEl.getAttribute("onload");
+      if (onClick || onLoad) {
+        htmlEl.removeAttribute("onclick");
+        htmlEl.removeAttribute("onload");
+      }
+    }
+
+    cleaned = doc.body.innerHTML;
+  } catch {
+    return cleaned;
+  }
+
+  return cleaned;
+}
+
+function MailDisplayContent({ mail, onClose }: MailDisplayProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  const sanitizedHtml = useMemo(() => {
+    if (!mail?.html) return null;
+    return sanitizeHtml(mail.html);
+  }, [mail?.html]);
 
   return (
     <div className="flex h-full flex-col">
@@ -233,10 +232,11 @@ export function MailDisplay({ mail, onClose }: MailDisplayProps) {
             )}
           </div>
           <Separator />
-          {mail.html ? (
+          {sanitizedHtml ? (
             <div 
-              className="flex-1 p-4 text-sm overflow-auto email-content" 
-              dangerouslySetInnerHTML={{ __html: cleanEmailHtml(mail.html) }} 
+              className="flex-1 p-4 text-sm overflow-auto email-content"
+              style={{ maxWidth: '100%', overflowX: 'hidden' }}
+              dangerouslySetInnerHTML={{ __html: sanitizedHtml }} 
             />
           ) : (
             <div className="flex-1 p-4 text-sm whitespace-pre-wrap">{mail.text}</div>
@@ -264,3 +264,5 @@ export function MailDisplay({ mail, onClose }: MailDisplayProps) {
     </div>
   );
 }
+
+export const MailDisplay = React.memo(MailDisplayContent);

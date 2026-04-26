@@ -81,6 +81,9 @@ dev-rebuild:
 	docker build --no-cache -f Dockerfile.dev -t $(APP_NAME):latest .
 	docker compose -f docker-compose.dev.yml up -d
 
+dev-restart:
+	docker compose -f docker-compose.dev.yml restart
+
 cloud-up:
 	docker compose -f docker-compose.cloud.yml up -d
 

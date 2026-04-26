@@ -28,6 +28,13 @@ services:
       GIN_MODE: debug
       USE_EMBEDDED_DB: "true"
     volumes:
+      - ./server:/app/server
+      - ./.air.toml:/app/.air.toml
+      - ./app:/app/app:Delegated
+      - ./scripts:/app/scripts
+      - /app/app/node_modules
+      - ./logs:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health 2>/dev/null || exit 1"]
