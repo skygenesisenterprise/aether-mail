@@ -100,7 +100,7 @@
     "autoprefixer": "^10.5.0",
     "eslint": "^10",
     "eslint-config-next": "16.2.2",
-    "postcss": "^8.5.10",
+    "postcss": "^8.5.12",
     "prisma": "7.6.0",
     "tailwindcss": "^4.2.2",
     "typescript": "6.0.3"
