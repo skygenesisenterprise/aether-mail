@@ -35,10 +35,10 @@ importers:
     devDependencies:
       '@changesets/cli':
         specifier: ^2.30.0
-        version: 2.30.0(@types/node@25.5.0)
+        version: 2.30.0(@types/node@25.6.0)
       '@types/node':
-        specifier: ^25.5.0
-        version: 25.5.0
+        specifier: ^25.6.0
+        version: 25.6.0
       concurrently:
         specifier: ^9.2.1
         version: 9.2.1
@@ -270,7 +270,7 @@ importers:
         version: 4.2.4
       '@types/node':
         specifier: ^25
-        version: 25.5.0
+        version: 25.6.0
       '@types/react':
         specifier: ^19
         version: 19.2.14
@@ -573,7 +573,7 @@ packages:
       '@changesets/types': 6.1.0
     dev: true
 
-  /@changesets/cli@2.30.0(@types/node@25.5.0):
+  /@changesets/cli@2.30.0(@types/node@25.6.0):
     resolution: {integrity: sha512-5D3Nk2JPqMI1wK25pEymeWRSlSMdo5QOGlyfrKg0AOufrUcjEE3RQgaCpHoBiM31CSNrtSgdJ0U6zL1rLDDfBA==}
     hasBin: true
     dependencies:
@@ -591,7 +591,7 @@ packages:
       '@changesets/should-skip-package': 0.1.2
       '@changesets/types': 6.1.0
       '@changesets/write': 0.4.0
-      '@inquirer/external-editor': 1.0.3(@types/node@25.5.0)
+      '@inquirer/external-editor': 1.0.3(@types/node@25.6.0)
       '@manypkg/get-packages': 1.1.3
       ansi-colors: 4.1.3
       enquirer: 2.4.1
@@ -1542,7 +1542,7 @@ packages:
     dev: false
     optional: true
 
-  /@inquirer/external-editor@1.0.3(@types/node@25.5.0):
+  /@inquirer/external-editor@1.0.3(@types/node@25.6.0):
     resolution: {integrity: sha512-RWbSrDiYmO4LbejWY7ttpxczuwQyZLBUyygsA9Nsv95hpzUWwnNTVQmAq3xuh7vNwCp07UTmE5i11XAEExx4RA==}
     engines: {node: '>=18'}
     peerDependencies:
@@ -1551,7 +1551,7 @@ packages:
       '@types/node':
         optional: true
     dependencies:
-      '@types/node': 25.5.0
+      '@types/node': 25.6.0
       chardet: 2.1.1
       iconv-lite: 0.7.2
     dev: true
@@ -3942,7 +3942,7 @@ packages:
     dependencies:
       '@types/http-cache-semantics': 4.2.0
       '@types/keyv': 3.1.4
-      '@types/node': 24.12.2
+      '@types/node': 25.6.0
       '@types/responselike': 1.0.3
     dev: true
 
@@ -4039,7 +4039,7 @@ packages:
   /@types/keyv@3.1.4:
     resolution: {integrity: sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg==}
     dependencies:
-      '@types/node': 24.12.2
+      '@types/node': 25.6.0
     dev: true
 
   /@types/mdast@4.0.4:
@@ -4059,12 +4059,6 @@ packages:
     resolution: {integrity: sha512-A1sre26ke7HDIuY/M23nd9gfB+nrmhtYyMINbjI1zHJxYteKR6qSMX56FsmjMcDb3SMcjJg5BiRRgOCC/yBD0g==}
     dependencies:
       undici-types: 7.16.0
-    dev: true
-
-  /@types/node@25.5.0:
-    resolution: {integrity: sha512-jp2P3tQMSxWugkCUKLRPVUpGaL5MVFwF8RDuSRztfwgN1wmqJeMSbKlnEtQqU8UrhTmzEmZdu2I6v2dpp7XIxw==}
-    dependencies:
-      undici-types: 7.18.2
     dev: true
 
   /@types/node@25.6.0:
@@ -4097,7 +4091,7 @@ packages:
   /@types/responselike@1.0.3:
     resolution: {integrity: sha512-H/+L+UkTV33uf49PH5pCAUBVPNj2nDBXTN+qS1dOwyyg24l3CcicicCA7ca+HMvJBZcFgl5r8e+RR6elsb4Lyw==}
     dependencies:
-      '@types/node': 24.12.2
+      '@types/node': 25.6.0
     dev: true
 
   /@types/slice-ansi@4.0.0:
@@ -4126,7 +4120,7 @@ packages:
     resolution: {integrity: sha512-oJoftv0LSuaDZE3Le4DbKX+KS9G36NzOeSap90UIK0yMA/NhKJhqlSGtNDORNRaIbQfzjXDrQa0ytJ6mNRGz/Q==}
     requiresBuild: true
     dependencies:
-      '@types/node': 25.5.0
+      '@types/node': 25.6.0
     dev: true
     optional: true
 
@@ -4465,6 +4459,13 @@ packages:
     resolution: {integrity: sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw==}
     engines: {node: '>=10.0.0'}
     dev: true
+
+  /@xmldom/xmldom@0.9.10:
+    resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
+    engines: {node: '>=14.6'}
+    requiresBuild: true
+    dev: true
+    optional: true
 
   /abbrev@4.0.0:
     resolution: {integrity: sha512-a1wflyaL0tHtJSmLSOVybYhy22vRih4eduhhrkcjgrWGnRfrZtovJ2FRjxuTtkkj47O/baf0R86QU5OuYpz8fA==}
@@ -5614,7 +5615,7 @@ packages:
       ajv: 6.15.0
       crc: 3.8.0
       iconv-corefoundation: 1.1.7
-      plist: 3.1.0
+      plist: 3.1.1
       smart-buffer: 4.2.0
       verror: 1.10.1
     dev: true
@@ -8995,6 +8996,17 @@ packages:
       xmlbuilder: 15.1.1
     dev: true
 
+  /plist@3.1.1:
+    resolution: {integrity: sha512-ZIfcLJC+7E7FBFnDxm9MPmt7D+DidyQ26lewieO75AdhA2ayMtsJSES0iWzqJQbcVRSrTufQoy0DR94xHue0oA==}
+    engines: {node: '>=10.4.0'}
+    requiresBuild: true
+    dependencies:
+      '@xmldom/xmldom': 0.9.10
+      base64-js: 1.5.1
+      xmlbuilder: 15.1.1
+    dev: true
+    optional: true
+
   /po-parser@2.1.1:
     resolution: {integrity: sha512-ECF4zHLbUItpUgE3OTtLKlPjeBN+fKEczj2zYjDfCGOzicNs0GK3Vg2IoAYwx7LH/XYw43fZQP6xnZ4TkNxSLQ==}
     dev: false
@@ -10472,10 +10484,6 @@ packages:
 
   /undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
-    dev: true
-
-  /undici-types@7.18.2:
-    resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
     dev: true
 
   /undici-types@7.19.2:
