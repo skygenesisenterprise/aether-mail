@@ -775,7 +775,11 @@ func (s *StalwartService) decodeTextContent(content string, part map[string]inte
 				return decoded
 			}
 		} else if strings.ToLower(encoding) == "base64" {
-			decoded, err := base64.StdEncoding.DecodeString(content)
+			// Strip newlines before decoding – base64 in emails is often line-wrapped.
+			clean := strings.ReplaceAll(content, "\r\n", "")
+			clean = strings.ReplaceAll(clean, "\n", "")
+			clean = strings.ReplaceAll(clean, "\r", "")
+			decoded, err := base64.StdEncoding.DecodeString(clean)
 			if err == nil {
 				return string(decoded)
 			}

@@ -992,7 +992,18 @@ func (s *IMAPService) parseEmailResponse(resp string) *models.Email {
 	}
 
 	if len(bodyLines) > 0 {
-		email.Body, email.BodyHTML = s.parseMimeBody(strings.Join(bodyLines, "\n"))
+		var mimeHeaders []string
+		for _, header := range headerLines {
+			lower := strings.ToLower(header)
+			if strings.HasPrefix(lower, "content-type:") || strings.HasPrefix(lower, "content-transfer-encoding:") {
+				mimeHeaders = append(mimeHeaders, header)
+			}
+		}
+		bodyStr := strings.Join(bodyLines, "\n")
+		if len(mimeHeaders) > 0 {
+			bodyStr = strings.Join(mimeHeaders, "\n") + "\n\n" + bodyStr
+		}
+		email.Body, email.BodyHTML = s.parseMimeBody(bodyStr)
 		email.Body = strings.TrimSpace(email.Body)
 		if len(email.Body) > 200 {
 			email.Preview = email.Body[:200] + "..."
@@ -1413,6 +1424,7 @@ func (s *IMAPService) parseMimeBody(body string) (string, string) {
 	}
 
 	if htmlPart != "" {
+		htmlPart = utils.CleanMimeContent(htmlPart)
 		htmlPart = cleanEmailBody(htmlPart)
 		if htmlPart != "" {
 			return "", htmlPart
@@ -1501,11 +1513,13 @@ func (s *IMAPService) extractSinglePartWithHeaders(body string) (string, string)
 
 	if strings.Contains(contentType, "text/html") {
 		if content != "" {
+			content = utils.CleanMimeContent(content)
 			return "", content
 		}
 	}
 
 	if isHtmlContent(content) {
+		content = utils.CleanMimeContent(content)
 		return "", content
 	}
 
@@ -1557,9 +1571,16 @@ func (s *IMAPService) findMimeBoundary(body string) string {
 		return matches[1]
 	}
 
-	re = regexp.MustCompile(`----[A-Za-z0-9_-]+`)
+	re = regexp.MustCompile(`----[A-Za-z0-9_=-?]+`)
 	matches = re.FindStringSubmatch(body)
 	if len(matches) > 1 && len(matches[1]) > 10 {
+		return matches[1]
+	}
+
+	// Generic: any line that looks like a MIME boundary
+	re = regexp.MustCompile(`(?m)^--([A-Za-z0-9_=-?]{10,})`)
+	matches = re.FindStringSubmatch(body)
+	if len(matches) > 1 {
 		return matches[1]
 	}
 
@@ -1620,7 +1641,7 @@ func (s *IMAPService) decodeQuotedPrintable(body string) string {
 			hex := body[i+1 : i+3]
 			if matched, _ := regexp.MatchString("^[0-9A-Fa-f]{2}$", hex); matched {
 				if val, err := strconv.ParseInt(hex, 16, 32); err == nil {
-					result.WriteRune(rune(val))
+					result.WriteByte(byte(val))
 					i += 3
 					continue
 				}
@@ -1643,7 +1664,7 @@ func (s *IMAPService) decodeQuotedPrintableLine(line string) string {
 			hex := line[i+1 : i+3]
 			if matched, _ := regexp.MatchString("^[0-9A-Fa-f]{2}$", hex); matched {
 				if val, err := strconv.ParseInt(hex, 16, 32); err == nil {
-					result.WriteRune(rune(val))
+					result.WriteByte(byte(val))
 					i += 3
 				} else {
 					result.WriteByte(line[i])
@@ -1663,24 +1684,68 @@ func (s *IMAPService) decodeQuotedPrintableLine(line string) string {
 }
 
 func (s *IMAPService) stripHtmlTags(body string) string {
-	if strings.Contains(body, "<html") || strings.Contains(body, "<!DOCTYPE") {
-		re := regexp.MustCompile(`<[^>]+>`)
-		body = re.ReplaceAllString(body, " ")
-		body = strings.ReplaceAll(body, "&nbsp;", " ")
-		body = strings.ReplaceAll(body, "&amp;", "&")
-		body = strings.ReplaceAll(body, "&lt;", "<")
-		body = strings.ReplaceAll(body, "&gt;", ">")
-		body = strings.ReplaceAll(body, "&quot;", "\"")
-		body = regexp.MustCompile(`\s+`).ReplaceAllString(body, " ")
+	if body == "" {
+		return ""
 	}
 
-	return body
+	// Remove <style>, <script>, etc. and their content first
+	body = utils.RemoveInvisibleBlocks(body)
+	body = utils.RemoveInvisibleChars(body)
+
+	// Replace block-level and line-break tags with newlines before stripping other tags
+	replacements := map[string]string{
+		"<br>": "\n", "<br/>": "\n", "<br />": "\n",
+		"</p>": "\n", "</div>": "\n", "</h1>": "\n", "</h2>": "\n",
+		"</h3>": "\n", "</h4>": "\n", "</h5>": "\n", "</h6>": "\n",
+		"</li>": "\n", "</tr>": "\n", "</td>": " ", "<td>": " ",
+		"<hr>": "\n---\n", "<hr/>": "\n---\n", "<hr />": "\n---\n",
+	}
+
+	for tag, replacement := range replacements {
+		body = strings.ReplaceAll(body, tag, replacement)
+		body = strings.ReplaceAll(body, strings.ToUpper(tag), replacement)
+	}
+
+	// Strip all remaining HTML tags
+	re := regexp.MustCompile(`<[^>]+>`)
+	body = re.ReplaceAllString(body, "")
+
+	// Decode common HTML entities
+	entities := map[string]string{
+		"&nbsp;": " ", "&amp;": "&", "&lt;": "<", "&gt;": ">",
+		"&quot;": "\"", "&#39;": "'", "&apos;": "'", "&ndash;": "–",
+		"&mdash;": "—", "&hellip;": "…", "&laquo;": "«", "&raquo;": "»",
+		"&#8217;": "'", "&#8220;": "\"", "&#8221;": "\"", "&#8230;": "…",
+	}
+	for enc, dec := range entities {
+		body = strings.ReplaceAll(body, enc, dec)
+	}
+
+	// Normalize whitespace: collapse multiple spaces, but preserve line breaks
+	lines := strings.Split(body, "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(line, " "))
+	}
+	body = strings.Join(lines, "\n")
+
+	// Collapse more than 2 consecutive blank lines
+	body = regexp.MustCompile(`\n{3,}`).ReplaceAllString(body, "\n\n")
+
+	return strings.TrimSpace(body)
 }
 
 func cleanEmailBody(body string) string {
+	// Remove invisible blocks and invisible chars before line-by-line cleaning
+	body = utils.RemoveInvisibleBlocks(body)
+	body = utils.RemoveInvisibleChars(body)
+
 	lines := strings.Split(body, "\n")
 	var cleaned []string
 	emptyCount := 0
+
+	cssLineRe := regexp.MustCompile(`^[\w\s,\.\-:#\[\]\(\)"'=]+\{$`)
+	cssPropRe := regexp.MustCompile(`^\s*[\w\-]+\s*:\s*[^;]+;?\s*$`)
+	cssClosingRe := regexp.MustCompile(`^\s*\}\s*$`)
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
@@ -1695,7 +1760,8 @@ func cleanEmailBody(body string) string {
 
 		emptyCount = 0
 
-		if strings.HasPrefix(trimmed, "--") && len(trimmed) <= 80 {
+		// MIME boundaries (any line starting with -- is a boundary or separator)
+		if strings.HasPrefix(trimmed, "--") {
 			continue
 		}
 		if strings.HasPrefix(trimmed, "=_") {
@@ -1705,6 +1771,35 @@ func cleanEmailBody(body string) string {
 			continue
 		}
 		if regexp.MustCompile(`^[A-Za-z0-9+/]+={0,2}$`).MatchString(trimmed) && len(trimmed) > 40 {
+			continue
+		}
+		// Stray MIME headers embedded in content
+		lower := strings.ToLower(trimmed)
+		if strings.HasPrefix(lower, "content-") {
+			continue
+		}
+		if strings.HasPrefix(lower, "mime-version:") {
+			continue
+		}
+		if strings.HasPrefix(lower, "charset=") || strings.Contains(lower, "; charset=") {
+			// Only skip if it looks like a header remnant, not normal text
+			if strings.Contains(lower, "text/") || strings.Contains(lower, "html") || strings.Contains(lower, "plain") || strings.Contains(lower, "multipart") {
+				continue
+			}
+		}
+
+		// CSS residual lines
+		lower = strings.ToLower(trimmed)
+		if cssLineRe.MatchString(trimmed) || cssClosingRe.MatchString(trimmed) {
+			continue
+		}
+		if cssPropRe.MatchString(trimmed) {
+			continue
+		}
+		if strings.HasPrefix(lower, "@media") || strings.HasPrefix(lower, "@import") || strings.HasPrefix(lower, "@font-face") {
+			continue
+		}
+		if trimmed == "{" || trimmed == "}" {
 			continue
 		}
 

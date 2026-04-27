@@ -6,6 +6,7 @@ import { Mail as MailComponent } from "@/components/email/mail";
 import { emailApi } from "@/lib/api/email";
 import { authApi } from "@/lib/api/auth";
 import type { Email } from "@/lib/api/email-types";
+import { cleanEmailText } from "@/lib/email-text-cleaner";
 
 interface MailItem {
   id: string;
@@ -54,20 +55,7 @@ export default function InboxPage() {
           }
           
           const textContent = email.body || email.preview || '';
-          const cleanedText = textContent
-            .replace(/^From:.*$/gm, '')
-            .replace(/^To:.*$/gm, '')
-            .replace(/^Subject:.*$/gm, '')
-            .replace(/^Date:.*$/gm, '')
-            .replace(/^Delivered-To:.*$/gm, '')
-            .replace(/^X-.*$/gm, '')
-            .replace(/^Received:.*$/gm, '')
-            .replace(/^DKIM-.*$/gm, '')
-            .replace(/^Reply-To:.*$/gm, '')
-            .replace(/^MIME-Version:.*$/gm, '')
-            .replace(/^Content-.*$/gm, '')
-            .replace(/^\s*$/g, '')
-            .trim();
+          const cleanedText = cleanEmailText(textContent);
           
           return {
             id: email.id,

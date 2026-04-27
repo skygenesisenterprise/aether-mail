@@ -4,6 +4,8 @@ import { addDays } from "date-fns";
 import { addHours } from "date-fns";
 import { format } from "date-fns";
 import { nextSaturday } from "date-fns";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Archive,
   ArchiveX,
@@ -26,6 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { cleanEmailText, linkifyText, looksLikeMarkdown } from "@/lib/email-text-cleaner";
 
 interface MailItem {
   id: string;
@@ -52,11 +55,19 @@ function sanitizeHtml(html: string): string {
 
   cleaned = cleaned
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, "")
     .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, "")
+    .replace(/<object[^>]*>[\s\S]*?<\/object>/gi, "")
+    .replace(/<embed[^>]*>[\s\S]*?<\/embed>/gi, "")
     .replace(/on\w+="[^"]*"/gi, "")
     .replace(/on\w+='[^']*'/gi, "")
+    .replace(/on\w+=([^\s>]+)/gi, "")
     .replace(/javascript:/gi, "")
-    .replace(/data:/gi, "");
+    .replace(/data:text\/html/gi, "")
+    .replace(/data:image\/svg[^;]*;base64/gi, "")
+    .replace(/<meta[^>]*http-equiv=["']?refresh["']?[^>]*>/gi, "")
+    .replace(/<link[^>]*>/gi, "");
 
   try {
     const parser = new DOMParser();
@@ -65,19 +76,44 @@ function sanitizeHtml(html: string): string {
     const scripts = doc.querySelectorAll("script");
     scripts.forEach(s => s.remove());
 
+    const styles = doc.querySelectorAll("style");
+    styles.forEach(s => s.remove());
+
+    const noscripts = doc.querySelectorAll("noscript");
+    noscripts.forEach(ns => ns.remove());
+
     const iframes = doc.querySelectorAll("iframe");
     iframes.forEach(i => i.remove());
+
+    const objects = doc.querySelectorAll("object, embed");
+    objects.forEach(o => o.remove());
 
     const elements = doc.querySelectorAll("*");
     for (const el of elements) {
       const htmlEl = el as HTMLElement;
-      const onClick = htmlEl.getAttribute("onclick");
-      const onLoad = htmlEl.getAttribute("onload");
-      if (onClick || onLoad) {
-        htmlEl.removeAttribute("onclick");
-        htmlEl.removeAttribute("onload");
+      const eventAttrs = ["onclick", "onload", "onerror", "onmouseover", "onmouseout", "onsubmit", "onchange", "onfocus", "onblur", "onkeydown", "onkeyup", "onkeypress"];
+      for (const attr of eventAttrs) {
+        if (htmlEl.hasAttribute(attr)) {
+          htmlEl.removeAttribute(attr);
+        }
+      }
+      const href = htmlEl.getAttribute("href");
+      if (href && href.toLowerCase().startsWith("javascript:")) {
+        htmlEl.removeAttribute("href");
       }
     }
+
+    const images = doc.querySelectorAll("img");
+    images.forEach((img) => {
+      const src = img.getAttribute("src");
+      if (src && src.toLowerCase().startsWith("cid:")) {
+        const alt = img.getAttribute("alt") || "Embedded image";
+        const placeholder = doc.createElement("span");
+        placeholder.textContent = `[${alt}]`;
+        placeholder.setAttribute("class", "cid-image-placeholder");
+        img.replaceWith(placeholder);
+      }
+    });
 
     cleaned = doc.body.innerHTML;
   } catch {
@@ -87,13 +123,60 @@ function sanitizeHtml(html: string): string {
   return cleaned;
 }
 
+const markdownComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = {
+  a: ({ node, ...props }) => (
+    <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all" />
+  ),
+  code: ({ node, ...props }) => (
+    <code {...props} className="bg-muted rounded px-1 py-0.5 text-xs font-mono" />
+  ),
+  pre: ({ node, ...props }) => (
+    <pre {...props} className="bg-muted rounded p-3 overflow-auto text-xs my-2" />
+  ),
+  blockquote: ({ node, ...props }) => (
+    <blockquote {...props} className="border-l-2 border-border pl-3 italic text-muted-foreground my-2" />
+  ),
+  ul: ({ node, ...props }) => <ul {...props} className="list-disc pl-5 my-2" />,
+  ol: ({ node, ...props }) => <ol {...props} className="list-decimal pl-5 my-2" />,
+  h1: ({ node, ...props }) => <h1 {...props} className="text-xl font-bold my-3" />,
+  h2: ({ node, ...props }) => <h2 {...props} className="text-lg font-bold my-2" />,
+  h3: ({ node, ...props }) => <h3 {...props} className="text-base font-bold my-2" />,
+  h4: ({ node, ...props }) => <h4 {...props} className="text-sm font-bold my-1" />,
+  h5: ({ node, ...props }) => <h5 {...props} className="text-sm font-semibold my-1" />,
+  h6: ({ node, ...props }) => <h6 {...props} className="text-xs font-semibold my-1" />,
+  p: ({ node, ...props }) => <p {...props} className="my-1.5" />,
+  table: ({ node, ...props }) => (
+    <table {...props} className="w-full border-collapse my-2 text-xs" />
+  ),
+  th: ({ node, ...props }) => (
+    <th {...props} className="border border-border px-2 py-1 font-semibold bg-muted text-left" />
+  ),
+  td: ({ node, ...props }) => (
+    <td {...props} className="border border-border px-2 py-1" />
+  ),
+  hr: ({ node, ...props }) => <hr {...props} className="border-border my-3" />,
+};
+
 function MailDisplayContent({ mail, onClose }: MailDisplayProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const sanitizedHtml = useMemo(() => {
     if (!mail?.html) return null;
-    return sanitizeHtml(mail.html);
+    const cleaned = sanitizeHtml(mail.html);
+    const textContent = cleaned.replace(/<[^>]+>/g, "").replace(/\s/g, "");
+    if (!textContent) return null;
+    return cleaned;
   }, [mail?.html]);
+
+  const cleanedText = useMemo(() => {
+    if (!mail?.text) return "";
+    return cleanEmailText(mail.text);
+  }, [mail?.text]);
+
+  const linkedText = useMemo(() => {
+    if (!cleanedText) return "";
+    return linkifyText(cleanedText);
+  }, [cleanedText]);
 
   return (
     <div className="flex h-full flex-col">
@@ -239,7 +322,15 @@ function MailDisplayContent({ mail, onClose }: MailDisplayProps) {
               dangerouslySetInnerHTML={{ __html: sanitizedHtml }} 
             />
           ) : (
-            <div className="flex-1 p-4 text-sm whitespace-pre-wrap">{mail.text}</div>
+            <div className="flex-1 p-4 text-sm overflow-auto email-content">
+              {looksLikeMarkdown(cleanedText) ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                  {cleanedText}
+                </ReactMarkdown>
+              ) : (
+                <div className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: linkedText }} />
+              )}
+            </div>
           )}
           <Separator className="mt-auto" />
           <div className="p-4">

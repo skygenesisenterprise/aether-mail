@@ -89,15 +89,25 @@ func ParseEmail(rawEmail string) (*models.Email, error) {
 			bodyStr = ToUTF8(bodyStr, charset)
 		}
 		if mediaType == "text/html" {
-			email.BodyHTML = cleanMimeContent(bodyStr)
+			email.BodyHTML = CleanMimeContent(bodyStr)
 		} else {
 			email.Body = bodyStr
 		}
 	} else if strings.HasPrefix(mediaType, "multipart/") {
 		boundary := boundaryParams["boundary"]
 		if boundary != "" {
-			mr := multipart.NewReader(msg.Body, boundary)
-			email.Body, email.BodyHTML, email.Attachments = parseMultipart(mr)
+			// Decode Content-Transfer-Encoding before parsing multipart
+			// because boundaries must be in raw form for multipart.NewReader
+			encoding := strings.ToLower(headers.Get("Content-Transfer-Encoding"))
+			if encoding == "quoted-printable" || encoding == "base64" {
+				rawBody, _ := io.ReadAll(msg.Body)
+				decodedBody := decodeContent(string(rawBody), encoding)
+				mr := multipart.NewReader(strings.NewReader(decodedBody), boundary)
+				email.Body, email.BodyHTML, email.Attachments = parseMultipart(mr)
+			} else {
+				mr := multipart.NewReader(msg.Body, boundary)
+				email.Body, email.BodyHTML, email.Attachments = parseMultipart(mr)
+			}
 		} else {
 			body, _ := io.ReadAll(msg.Body)
 			email.Body = string(body)
@@ -184,7 +194,12 @@ func decodeContent(content, encoding string) string {
 		}
 		return string(result)
 	case "base64":
-		reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(content))
+		// Base64-encoded email parts are often wrapped at 76 chars with newlines.
+		// The standard decoder is strict about newlines, so strip them first.
+		cleanContent := strings.ReplaceAll(content, "\r\n", "")
+		cleanContent = strings.ReplaceAll(cleanContent, "\n", "")
+		cleanContent = strings.ReplaceAll(cleanContent, "\r", "")
+		reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(cleanContent))
 		result, err := io.ReadAll(reader)
 		if err != nil {
 			return content
@@ -244,7 +259,7 @@ func parseMultipart(mr *multipart.Reader) (string, string, []*models.Attachment)
 		} else if strings.HasPrefix(mediaType, "text/") {
 			content := decodePartContent(part)
 			if mediaType == "text/html" && bodyHTML == "" {
-				bodyHTML = cleanMimeContent(content)
+				bodyHTML = CleanMimeContent(content)
 			} else if mediaType == "text/plain" && body == "" {
 				body = content
 			}
@@ -484,35 +499,12 @@ func QuotedPrintableEncode(s string) string {
 }
 
 func QuotedPrintableDecode(s string) (string, error) {
-	var buf strings.Builder
-	r := strings.NewReader(s)
-	for {
-		c, size, err := r.ReadRune()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return "", err
-		}
-
-		if c == '=' && size == 1 {
-			var hex [2]byte
-			n, _ := r.Read(hex[:2])
-			if n != 2 {
-				buf.WriteRune(c)
-				continue
-			}
-			b, err := strconv.ParseInt(string(hex[:2]), 16, 64)
-			if err != nil {
-				buf.WriteRune(c)
-				continue
-			}
-			buf.WriteByte(byte(b))
-		} else {
-			buf.WriteRune(c)
-		}
+	reader := quotedprintable.NewReader(strings.NewReader(s))
+	result, err := io.ReadAll(reader)
+	if err != nil {
+		return "", err
 	}
-	return buf.String(), nil
+	return string(result), nil
 }
 
 func IsUTF8(s string) bool {
@@ -523,26 +515,59 @@ func DetectAndFixUTF8(s string) string {
 	if s == "" {
 		return s
 	}
-	
+
+	// If the string is not valid UTF-8, try to decode from common charsets
 	if !utf8.ValidString(s) {
 		return ToUTF8(s, "windows-1252")
 	}
-	
-	replacements := [][]string{
-		{"Ã©", "e"}, {"Ã¨", "e"}, {"Ã ", "a"}, {"Ã¢", "a"},
-		{"Ã®", "i"}, {"Ã´", "o"}, {"Ã§", "c"}, {"Ã«", "e"},
-		{"Ã‰", "E"}, {"Ãˆ", "E"}, {"Ã ", "A"}, {"Ã¢", "A"},
-		{"â€", ""}, {"Â©", "(c)"},
-	}
-	
-	result := s
-	for _, p := range replacements {
-		if len(p) == 2 && strings.Contains(result, p[0]) {
-			result = strings.ReplaceAll(result, p[0], p[1])
+
+	// Check for double-encoded UTF-8:
+	// UTF-8 bytes were interpreted as ISO-8859-1 runes and re-encoded as UTF-8.
+	// To reverse: take each rune's low 8 bits as raw bytes, then check if they form valid UTF-8.
+	var rawBytes []byte
+	hasHighControl := false
+	for _, r := range s {
+		if r > 0xFF {
+			// A rune > 0xFF cannot be a single ISO-8859-1 byte, so not uniformly double-encoded
+			return s
+		}
+		rawBytes = append(rawBytes, byte(r))
+		if r >= 0x80 && r <= 0x9F {
+			hasHighControl = true
 		}
 	}
-	
-	return result
+
+	// Only attempt fix if there are suspicious control-range characters
+	// or well-known double-encoding indicators
+	if !hasHighControl && !strings.Contains(s, "â") && !strings.Contains(s, "Ã") && !strings.Contains(s, "ï¿½") {
+		return s
+	}
+
+	if utf8.Valid(rawBytes) {
+		decoded := string(rawBytes)
+		if decoded != s {
+			// Validate: decoded should have fewer control chars in the 0x80-0x9F range
+			if countControlChars(decoded) < countControlChars(s) {
+				return decoded
+			}
+			// Also accept if decoded has no replacement chars while original might
+			if strings.Contains(s, "ï¿½") && !strings.Contains(decoded, "ï¿½") {
+				return decoded
+			}
+		}
+	}
+
+	return s
+}
+
+func countControlChars(s string) int {
+	count := 0
+	for _, r := range s {
+		if r >= 0x80 && r <= 0x9F {
+			count++
+		}
+	}
+	return count
 }
 
 func ToUTF8(s, charset string) string {
@@ -844,7 +869,7 @@ func containsStr(slice []string, item string) bool {
 	return false
 }
 
-func cleanMimeContent(content string) string {
+func CleanMimeContent(content string) string {
 	if content == "" {
 		return content
 	}
@@ -861,9 +886,12 @@ func cleanMimeContent(content string) string {
 
 	cleaned = removeHtmlComments(cleaned)
 
-	cleaned = removeInlineStyles(cleaned)
+	// NOTE: We intentionally keep inline styles (style="...") because HTML
+	// emails rely on them for layout. They are safe from an XSS perspective
+	// and essential for correct rendering across email clients.
 
-	cleaned = removeEmptyTags(cleaned)
+	// NOTE: We intentionally keep empty tags (<div></div>, <span></span>, etc.)
+	// because they are commonly used for spacing and structural layout in emails.
 
 	cleaned = strings.TrimSpace(cleaned)
 
@@ -908,38 +936,41 @@ func removeMimeHeaders(content string) string {
 func removeCssBlocks(content string) string {
 	result := content
 
-	result = regexp.MustCompile(`<style[^>]*>[\s\S]*?</style>`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`<style[^>]*>`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`</style>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<style[^>]*>[\s\S]*?</style>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<style[^>]*>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)</style>`).ReplaceAllString(result, "")
 
-	result = regexp.MustCompile(`\.mcn[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.mce[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.body[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.ExternalClass[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.ReadMsgBody[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.ProseMirror[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.mcnTextContent[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.section[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.footer[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.header[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.mceSpacing-\d+[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.mcnPreviewText[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\.mcnImageBorder[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.mcn[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.mce[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.body[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.ExternalClass[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.ReadMsgBody[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.ProseMirror[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.mcnTextContent[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.section[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.footer[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.header[a-zA-Z0-9_\-]*[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.mceSpacing-\d+[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.mcnPreviewText[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\.mcnImageBorder[,>]?[^{]*\{[^}]*\}`).ReplaceAllString(result, "")
 
-	result = regexp.MustCompile(`body\s*,?\s*#?body[a-zA-Z0-9_\-]*\s*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`p\s*,?\s*a\s*,?\s*li\s*,?\s*td\s*,?\s*blockquote\s*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`table\s*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`td\s*,?\s*p\s*,?\s*a\s*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`img\s*,?\s*a\s*img\s*\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`h[1-6]\s*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)body\s*,?\s*#?body[a-zA-Z0-9_\-]*\s*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)p\s*,?\s*a\s*,?\s*li\s*,?\s*td\s*,?\s*blockquote\s*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)table\s*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)td\s*,?\s*p\s*,?\s*a\s*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)img\s*,?\s*a\s*img\s*\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)h[1-6]\s*\{[^}]*\}`).ReplaceAllString(result, "")
 
-	result = regexp.MustCompile(`@media[^{]*\{[\s\S]*?\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)@media[^{]*\{[\s\S]*?\}`).ReplaceAllString(result, "")
 
-	result = regexp.MustCompile(`a\[href\^="tel"\][\s\S]*?\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`a\[href\^="sms"\][\s\S]*?\{[^}]*\}`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`a\[href\^="mailto:"\][\s\S]*?\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)a\[href\^="tel"\][\s\S]*?\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)a\[href\^="sms"\][\s\S]*?\{[^}]*\}`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)a\[href\^="mailto:"\][\s\S]*?\{[^}]*\}`).ReplaceAllString(result, "")
 
-	result = regexp.MustCompile(`\{\s*[\w\-]+:\s*[^;]+;?\s*\}`).ReplaceAllString(result, "")
+	// NOTE: Removed overly broad regex `\{\s*[\w\-]+:\s*[^;]+;?\s*\}`
+	// which could accidentally match content inside <pre>, <code>, or JSON-LD
+	// blocks outside of <style> tags. CSS inside <style> is already handled
+	// by removeStyleTags().
 
 	result = regexp.MustCompile(`^[\s]*--[A-Za-z0-9_-]+[\s]*$`).ReplaceAllString(result, "")
 	result = regexp.MustCompile(`^[\s]*----[\s]*$`).ReplaceAllString(result, "")
@@ -954,31 +985,32 @@ func removeCssBlocks(content string) string {
 		if trimmed == "" {
 			continue
 		}
+		lowerTrimmed := strings.ToLower(trimmed)
 		if regexp.MustCompile(`^[\w\s,]+\{$`).MatchString(trimmed) {
 			continue
 		}
 		if regexp.MustCompile(`^[\.>#][\w\s,\[\]\-:]+{$`).MatchString(trimmed) {
 			continue
 		}
-		if strings.HasPrefix(trimmed, "@media") {
+		if strings.HasPrefix(lowerTrimmed, "@media") {
 			continue
 		}
-		if strings.HasPrefix(trimmed, "body,") || strings.HasPrefix(trimmed, "body{") {
+		if strings.HasPrefix(lowerTrimmed, "body,") || strings.HasPrefix(lowerTrimmed, "body{") {
 			continue
 		}
-		if strings.HasPrefix(trimmed, ".mce") || strings.HasPrefix(trimmed, ".mce{") {
+		if strings.HasPrefix(lowerTrimmed, ".mce") || strings.HasPrefix(lowerTrimmed, ".mce{") {
 			continue
 		}
-		if strings.HasPrefix(trimmed, ".mcn") || strings.HasPrefix(trimmed, ".mcn{") {
+		if strings.HasPrefix(lowerTrimmed, ".mcn") || strings.HasPrefix(lowerTrimmed, ".mcn{") {
 			continue
 		}
-		if strings.HasPrefix(trimmed, ".ProseMirror") || strings.HasPrefix(trimmed, ".ProseMirror{") {
+		if strings.HasPrefix(lowerTrimmed, ".prosemirror") || strings.HasPrefix(lowerTrimmed, ".prosemirror{") {
 			continue
 		}
-		if strings.HasPrefix(trimmed, ".section") || strings.HasPrefix(trimmed, ".section{") {
+		if strings.HasPrefix(lowerTrimmed, ".section") || strings.HasPrefix(lowerTrimmed, ".section{") {
 			continue
 		}
-		if strings.HasPrefix(trimmed, "#body") || strings.HasPrefix(trimmed, "#body{") {
+		if strings.HasPrefix(lowerTrimmed, "#body") || strings.HasPrefix(lowerTrimmed, "#body{") {
 			continue
 		}
 		if trimmed == "}" || trimmed == "{" {
@@ -993,12 +1025,13 @@ func removeCssBlocks(content string) string {
 func removeStyleTags(content string) string {
 	result := content
 
-	result = regexp.MustCompile(`<style[^>]*>[\s\S]*?</style>`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`<style[^>]*>`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`</style>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<style[^>]*>[\s\S]*?</style>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<style[^>]*>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)</style>`).ReplaceAllString(result, "")
 
-	result = regexp.MustCompile(`<link[^>]*rel=["']?stylesheet["']?[^>]*>`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`<link[^>]*>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<link[^>]*rel=["']?stylesheet["']?[^>]*>`).ReplaceAllString(result, "")
+	// NOTE: We only remove stylesheet links, not all <link> tags, to avoid
+	// accidentally removing useful resources like preconnect hints or icons.
 
 	return result
 }
@@ -1006,35 +1039,35 @@ func removeStyleTags(content string) string {
 func removeOutlookTags(content string) string {
 	result := content
 
-	result = regexp.MustCompile(`<o:p[^>]*>[\s\S]*?</o:p>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<o:p[^>]*>[\s\S]*?</o:p>`).ReplaceAllString(result, "")
 
-	result = regexp.MustCompile(`<!--\s*if\s+(mso|gte|lt)[^>]*>[\s\S]*?<!--\s*endif\s*-->`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`<!--\[if\s+!?mso[\s\S]*?<!\[endif\]-->`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<!--\s*if\s+(mso|gte|lt)[^>]*>[\s\S]*?<!--\s*endif\s*-->`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<!--\[if\s+!?mso[\s\S]*?<!\[endif\]-->`).ReplaceAllString(result, "")
 
-	result = regexp.MustCompile(`\bmso-[^:;]+:[^;]+;?`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\btab-interval:[^;]+;?`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\bmso-table-lspace:[^;]+;?`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\bmso-table-rspace:[^;]+;?`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\bmso-[^:;]+:[^;]+;?`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\btab-interval:[^;]+;?`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\bmso-table-lspace:[^;]+;?`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\bmso-table-rspace:[^;]+;?`).ReplaceAllString(result, "")
 
-	result = regexp.MustCompile(`class="[^"]*mcn[^\s]*[^"]*"`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`class="[^"]*Mso[^\s]*[^"]*"`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)class="[^"]*mcn[^\s]*[^"]*"`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)class="[^"]*Mso[^\s]*[^"]*"`).ReplaceAllString(result, "")
 
-	result = regexp.MustCompile(`data-[a-z-]+="[^"]*"`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)data-[a-z-]+="[^"]*"`).ReplaceAllString(result, "")
 
 	return result
 }
 
 func removeHtmlComments(content string) string {
 	result := content
-	result = regexp.MustCompile(`<!--[\s\S]*?-->`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<!--[\s\S]*?-->`).ReplaceAllString(result, "")
 	return result
 }
 
 func removeInlineStyles(content string) string {
 	result := content
 
-	result = regexp.MustCompile(`\s*style="[^"]*"`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`\s*style='[^']*'`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\s*style="[^"]*"`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)\s*style='[^']*'`).ReplaceAllString(result, "")
 
 	return result
 }
@@ -1042,17 +1075,17 @@ func removeInlineStyles(content string) string {
 func removeEmptyTags(content string) string {
 	result := content
 
-	result = regexp.MustCompile(`<html[^>]*>`).ReplaceAllString(result, "<html>")
-	result = regexp.MustCompile(`</html>.*`).ReplaceAllString(result, "</html>")
+	result = regexp.MustCompile(`(?i)<html[^>]*>`).ReplaceAllString(result, "<html>")
+	result = regexp.MustCompile(`(?i)</html>.*`).ReplaceAllString(result, "</html>")
 
-	result = regexp.MustCompile(`<head>[\s\S]*?</head>`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`<body[^>]*>`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`</body>.*`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<head>[\s\S]*?</head>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<body[^>]*>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)</body>.*`).ReplaceAllString(result, "")
 
-	result = regexp.MustCompile(`<div>\s*</div>`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`<span>\s*</span>`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`<p>\s*</p>`).ReplaceAllString(result, "")
-	result = regexp.MustCompile(`<p>\s*<br\s*/>\s*</p>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<div>\s*</div>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<span>\s*</span>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<p>\s*</p>`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`(?i)<p>\s*<br\s*/>\s*</p>`).ReplaceAllString(result, "")
 
 	result = regexp.MustCompile(`^\s*$`).ReplaceAllString(result, "")
 
@@ -1394,7 +1427,7 @@ func IsAutoResponse(headers map[string]string) bool {
 		}
 	}
 
-	if xAutoResponse, ok := lowerHeaders["x-auto-response-suppress"]; ok {
+	if _, ok := lowerHeaders["x-auto-response-suppress"]; ok {
 		return true
 	}
 
@@ -1498,4 +1531,35 @@ func NormalizeEmailAddress(email string) string {
 	}
 
 	return email
+}
+
+// RemoveInvisibleBlocks strips <style>, <script>, <noscript>, and <template>
+// blocks (and their content) from HTML/text content before further processing.
+func RemoveInvisibleBlocks(content string) string {
+	if content == "" {
+		return ""
+	}
+	// Case-insensitive, multiline, non-greedy matching for block tags and their content
+	re := regexp.MustCompile(`(?is)<style\b[^>]*>[\s\S]*?</style>`)
+	content = re.ReplaceAllString(content, "")
+	re = regexp.MustCompile(`(?is)<script\b[^>]*>[\s\S]*?</script>`)
+	content = re.ReplaceAllString(content, "")
+	re = regexp.MustCompile(`(?is)<noscript\b[^>]*>[\s\S]*?</noscript>`)
+	content = re.ReplaceAllString(content, "")
+	re = regexp.MustCompile(`(?is)<template\b[^>]*>[\s\S]*?</template>`)
+	content = re.ReplaceAllString(content, "")
+	return content
+}
+
+// RemoveInvisibleChars strips zero-width and other invisible Unicode characters
+// that can create visual gaps or artifacts in email text.
+func RemoveInvisibleChars(s string) string {
+	if s == "" {
+		return ""
+	}
+	// U+00AD soft hyphen, U+034F combining grapheme joiner,
+	// U+200B-U+200F zero-width spaces/joiners/directional marks,
+	// U+2060 word joiner, U+FE0F variation selector-16, U+FEFF BOM
+	re := regexp.MustCompile(`[\x{00AD}\x{034F}\x{200B}-\x{200F}\x{2060}\x{FE0F}\x{FEFF}]`)
+	return re.ReplaceAllString(s, "")
 }

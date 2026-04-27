@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/skygenesisenterprise/aether-mail/server/src/models"
+	"github.com/skygenesisenterprise/aether-mail/server/src/utils"
 )
 
 type POP3Service struct {
@@ -319,7 +320,23 @@ func (s *POP3Service) Retr(messageNum int) (*models.Email, error) {
 		body.WriteString("\r\n")
 	}
 
-	email.Body = body.String()
+	rawBody := body.String()
+	parsedEmail, err := utils.ParseEmail(rawBody)
+	if err == nil {
+		email.Body = parsedEmail.Body
+		email.BodyHTML = parsedEmail.BodyHTML
+		email.Subject = parsedEmail.Subject
+		email.From = parsedEmail.From
+		if !parsedEmail.Date.IsZero() {
+			email.Date = parsedEmail.Date
+		}
+		if len(parsedEmail.To) > 0 {
+			email.To = parsedEmail.To
+		}
+		email.Preview = parsedEmail.Preview
+	} else {
+		email.Body = rawBody
+	}
 	s.messages[messageNum].Downloaded = true
 
 	return email, nil
