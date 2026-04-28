@@ -101,7 +101,7 @@ COPY scripts/                 ./app/scripts/
 
 # ── Config dev ────────────────────────────────────────────────────────────────
 COPY .air.toml   ./
-COPY server/.env ./.env
+COPY .env.example ./.env
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

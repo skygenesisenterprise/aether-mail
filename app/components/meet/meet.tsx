@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,12 +7,21 @@ import { MeetNav } from "./meet-nav";
 import { ChatDisplay } from "./chat-display";
 import type { Conversation, Message, MeetUser } from "@/lib/api/meet-types";
 
+interface ContactItem {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}
+
 interface MeetProps extends React.HTMLAttributes<HTMLDivElement> {
   currentUser: MeetUser;
   conversations: Conversation[];
   messages: Record<string, Message[]>;
+  contacts?: ContactItem[];
   defaultLayout?: number[];
   navCollapsedSize?: number;
+  onSelectConversation?: (conversationId: string) => void;
   onStartCall?: (conversationId: string, callType: "audio" | "video") => void;
   onAcceptCall?: (conversationId: string) => void;
   onDeclineCall?: (conversationId: string) => void;
@@ -22,9 +33,11 @@ export function Meet({
   currentUser,
   conversations,
   messages,
+  contacts = [],
   defaultLayout = [30, 70],
   navCollapsedSize = 4,
   className,
+  onSelectConversation,
   onStartCall,
   onAcceptCall,
   onDeclineCall,
@@ -32,18 +45,52 @@ export function Meet({
   onNewConversation,
   ...props
 }: MeetProps) {
-  const [activeConversationId, setActiveConversationId] = React.useState<string | null>(
-    conversations[0]?.id || null
-  );
+  const [activeConversationId, setActiveConversationId] = React.useState<string | null>(null);
   const [localMessages, setLocalMessages] = React.useState<Record<string, Message[]>>(messages);
+  const prevConversationsLength = React.useRef(0);
+  const hasInitialized = React.useRef(false);
 
-  const activeConversation = conversations.find(c => c.id === activeConversationId);
+  React.useEffect(() => {
+    setLocalMessages(messages);
+  }, [messages]);
+
+  React.useEffect(() => {
+    if (conversations.length === 0) {
+      prevConversationsLength.current = 0;
+      return;
+    }
+
+    if (!hasInitialized.current) {
+      // Premier chargement : sélectionner la première conversation si aucune n'est active
+      if (!activeConversationId) {
+        setActiveConversationId(conversations[0].id);
+      }
+      hasInitialized.current = true;
+      prevConversationsLength.current = conversations.length;
+      return;
+    }
+
+    // Si une nouvelle conversation a été ajoutée, la sélectionner automatiquement
+    if (conversations.length > prevConversationsLength.current) {
+      const newConversation = conversations[conversations.length - 1];
+      setActiveConversationId(newConversation.id);
+    }
+
+    prevConversationsLength.current = conversations.length;
+  }, [conversations, activeConversationId]);
+
+  const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const activeMessages = activeConversationId ? (localMessages[activeConversationId] || []) : [];
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
+  const handleSelectConversation = (id: string) => {
+    setActiveConversationId(id);
+    onSelectConversation?.(id);
+  };
+
   const handleSendMessage = (content: string, attachments?: any[]) => {
     if (!activeConversationId) return;
-    
+
     if (onSendMessage) {
       onSendMessage(activeConversationId, content);
     } else {
@@ -55,8 +102,8 @@ export function Meet({
         content,
         timestamp: new Date().toISOString(),
       };
-      
-      setLocalMessages(prev => ({
+
+      setLocalMessages((prev) => ({
         ...prev,
         [activeConversationId]: [...(prev[activeConversationId] || []), newMessage],
       }));
@@ -87,9 +134,10 @@ export function Meet({
           <MeetNav
             conversations={conversations}
             activeConversationId={activeConversationId}
-            onSelectConversation={setActiveConversationId}
+            onSelectConversation={handleSelectConversation}
             totalUnread={totalUnread}
             onNewConversation={onNewConversation}
+            contacts={contacts}
           />
         </ResizablePanel>
 

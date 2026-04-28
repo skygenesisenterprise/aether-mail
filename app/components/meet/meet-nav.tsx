@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,9 +16,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Hash, Plus, Search, MessageSquare, User, Users } from "lucide-react";
+import { Hash, Plus, Search, MessageSquare, User, Users, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/lib/api/meet-types";
+
+interface ContactItem {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}
 
 const statusColors: Record<string, string> = {
   online: "bg-green-500",
@@ -29,17 +38,17 @@ function formatMessageTime(timestamp: string): string {
   const date = new Date(timestamp);
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
-  
+
   if (isToday) {
     return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
   }
-  
+
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   if (date.toDateString() === yesterday.toDateString()) {
     return "Yesterday";
   }
-  
+
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
@@ -49,6 +58,7 @@ interface MeetNavProps {
   onSelectConversation: (id: string) => void;
   totalUnread: number;
   onNewConversation?: (type: "direct" | "group" | "channel", name: string, participantIds?: string[]) => void;
+  contacts?: ContactItem[];
 }
 
 export function MeetNav({
@@ -57,6 +67,7 @@ export function MeetNav({
   onSelectConversation,
   totalUnread,
   onNewConversation,
+  contacts = [],
 }: MeetNavProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("chats");
@@ -64,26 +75,44 @@ export function MeetNav({
   const [newConvType, setNewConvType] = React.useState<"direct" | "group" | "channel">("direct");
   const [newConvName, setNewConvName] = React.useState("");
   const [selectedParticipants, setSelectedParticipants] = React.useState<string[]>([]);
+  const [contactSearch, setContactSearch] = React.useState("");
 
   const filteredConversations = React.useMemo(() => {
     let filtered = conversations;
-    
+
     if (activeTab === "chats") {
-      filtered = filtered.filter(c => c.type === "direct" || c.type === "group");
+      filtered = filtered.filter((c) => c.type === "direct" || c.type === "group");
     } else if (activeTab === "channels") {
-      filtered = filtered.filter(c => c.type === "channel");
+      filtered = filtered.filter((c) => c.type === "channel");
     }
-    
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(c => 
-        c.name.toLowerCase().includes(query) ||
-        c.description?.toLowerCase().includes(query)
+      filtered = filtered.filter(
+        (c) =>
+          c.name.toLowerCase().includes(query) ||
+          c.description?.toLowerCase().includes(query)
       );
     }
-    
+
     return filtered;
   }, [conversations, activeTab, searchQuery]);
+
+  const filteredContacts = React.useMemo(() => {
+    if (!contactSearch) return contacts;
+    const query = contactSearch.toLowerCase();
+    return contacts.filter(
+      (c) =>
+        c.name.toLowerCase().includes(query) ||
+        c.email.toLowerCase().includes(query)
+    );
+  }, [contacts, contactSearch]);
+
+  const toggleParticipant = (id: string) => {
+    setSelectedParticipants((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
+  };
 
   const handleNewConversation = () => {
     if (newConvType === "direct" || newConvType === "group") {
@@ -99,6 +128,7 @@ export function MeetNav({
     setNewConvName("");
     setSelectedParticipants([]);
     setNewConvType("direct");
+    setContactSearch("");
   };
 
   return (
@@ -114,7 +144,7 @@ export function MeetNav({
           />
         </div>
       </div>
-      
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <div className="px-3 pt-3">
           <TabsList className="w-full">
@@ -133,7 +163,7 @@ export function MeetNav({
             </TabsTrigger>
           </TabsList>
         </div>
-        
+
         <ScrollArea className="flex-1 px-2">
           <TabsContent value="chats" className="m-0 mt-2">
             <div className="space-y-1">
@@ -147,7 +177,7 @@ export function MeetNav({
               ))}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="channels" className="m-0 mt-2">
             <div className="space-y-1">
               {filteredConversations.map((conversation) => (
@@ -162,9 +192,9 @@ export function MeetNav({
           </TabsContent>
         </ScrollArea>
       </Tabs>
-      
+
       <Separator />
-      
+
       <div className="p-3 border-t">
         <Button variant="outline" className="w-full justify-start" onClick={() => setShowNewConvDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -173,14 +203,14 @@ export function MeetNav({
       </div>
 
       <Dialog open={showNewConvDialog} onOpenChange={setShowNewConvDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>New Conversation</DialogTitle>
             <DialogDescription>
               Create a new direct message, group, or channel
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="flex gap-2">
               <Button
@@ -219,24 +249,64 @@ export function MeetNav({
               </div>
             )}
 
-            <div className="space-y-2">
-              <Input
-                placeholder="Search contacts..."
-                className="mb-2"
-              />
-              <div className="max-h-48 overflow-y-auto space-y-1 border rounded-md p-2">
-                <p className="text-sm text-muted-foreground text-center py-2">
-                  Select contacts to add (demo)
-                </p>
+            {(newConvType === "direct" || newConvType === "group") && (
+              <div className="space-y-2">
+                <Input
+                  placeholder="Search contacts..."
+                  value={contactSearch}
+                  onChange={(e) => setContactSearch(e.target.value)}
+                  className="mb-2"
+                />
+                <div className="max-h-48 overflow-y-auto space-y-1 border rounded-md p-2">
+                  {filteredContacts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                      {contacts.length === 0 ? "No contacts available" : "No contacts found"}
+                    </p>
+                  ) : (
+                    filteredContacts.map((contact) => (
+                      <button
+                        key={contact.id}
+                        onClick={() => toggleParticipant(contact.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 p-2 rounded-lg transition-colors text-left",
+                          selectedParticipants.includes(contact.id)
+                            ? "bg-accent"
+                            : "hover:bg-muted/50"
+                        )}
+                      >
+                        <Avatar className="h-8 w-8 shrink-0">
+                          <AvatarFallback className="text-xs">
+                            {contact.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{contact.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{contact.email}</p>
+                        </div>
+                        {selectedParticipants.includes(contact.id) && (
+                          <Check className="h-4 w-4 text-primary shrink-0" />
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewConvDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleNewConversation}>
+            <Button
+              onClick={handleNewConversation}
+              disabled={
+                newConvType === "channel"
+                  ? !newConvName.trim()
+                  : selectedParticipants.length === 0 ||
+                    (newConvType === "group" && !newConvName.trim())
+              }
+            >
               Create
             </Button>
           </DialogFooter>
@@ -272,7 +342,7 @@ function ConversationItem({ conversation, isActive, onClick }: ConversationItemP
           </AvatarFallback>
         </Avatar>
         {conversation.type === "direct" && conversation.participants[0]?.status && (
-          <span 
+          <span
             className={cn(
               "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
               statusColors[conversation.participants[0].status]
@@ -280,14 +350,17 @@ function ConversationItem({ conversation, isActive, onClick }: ConversationItemP
           />
         )}
       </div>
-      
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
-          <span className={cn(
-            "font-medium truncate",
-            conversation.unreadCount > 0 && "font-semibold"
-          )}>
-            {conversation.type === "channel" ? "# " : ""}{conversation.name}
+          <span
+            className={cn(
+              "font-medium truncate",
+              conversation.unreadCount > 0 && "font-semibold"
+            )}
+          >
+            {conversation.type === "channel" ? "# " : ""}
+            {conversation.name}
           </span>
           {conversation.lastMessage && (
             <span className="text-xs text-muted-foreground">
@@ -295,16 +368,20 @@ function ConversationItem({ conversation, isActive, onClick }: ConversationItemP
             </span>
           )}
         </div>
-        
+
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground truncate">
             {conversation.lastMessage ? (
-              `${conversation.lastMessage.senderName === "You" ? "You" : conversation.lastMessage.senderName}: ${conversation.lastMessage.content}`
+              `${
+                conversation.lastMessage.senderName === "You"
+                  ? "You"
+                  : conversation.lastMessage.senderName
+              }: ${conversation.lastMessage.content}`
             ) : (
               conversation.description || "No messages yet"
             )}
           </p>
-          
+
           {conversation.unreadCount > 0 && (
             <Badge variant="default" className="ml-2 h-5 min-w-5 justify-center">
               {conversation.unreadCount}

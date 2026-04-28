@@ -171,7 +171,7 @@ export function Header({ className, ...props }: HeaderProps) {
             <Avatar className="h-8 w-8">
               <AvatarImage src={user?.avatarUrl} alt={user?.name} />
               <AvatarFallback>
-                {user?.name ? getUserInitials(user.name) : 'U'}
+                {mounted && user?.name ? getUserInitials(user.name) : 'U'}
               </AvatarFallback>
             </Avatar>
           </Button>

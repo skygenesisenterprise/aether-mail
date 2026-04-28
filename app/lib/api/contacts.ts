@@ -44,11 +44,11 @@ class ContactsApiService {
   }
 
   async getContacts(accountId: string, limit: number = 50, offset: number = 0): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/contacts?limit=${limit}&offset=${offset}`);
+    return this.request(`/api/v1/contacts/${accountId}?limit=${limit}&offset=${offset}`);
   }
 
   async getContact(accountId: string, contactId: string): Promise<{ success: boolean; data?: any; error?: string }> {
-    return this.request(`/api/v1/accounts/${accountId}/contacts/${contactId}`);
+    return this.request(`/api/v1/contacts/${accountId}/${contactId}`);
   }
 
   async createContact(data: {

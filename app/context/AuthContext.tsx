@@ -17,9 +17,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function getStoredAuthUser(): User | null {
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem("accessToken");
+  if (!token || token === "undefined" || token === "null" || token.length === 0) {
+    return null;
+  }
+  const storedUser = authApi.getStoredUser();
+  return storedUser;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(getStoredAuthUser);
+  const [isLoading, setIsLoading] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
@@ -29,6 +39,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     hasCheckedAuth.current = true;
+
+    const cachedUser = getStoredAuthUser();
+    if (!cachedUser) {
+      setUser(null);
+      setIsAuthChecked(true);
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -42,35 +59,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token ? `exists (${token?.length})` : "null"
       );
 
-      if (token && token.length > 0 && token !== "undefined" && token !== "null") {
-        if (storedUser) {
-          console.log("[AuthContext] Setting user from stored data");
-          setUser(storedUser);
-        } else {
-          console.log("[AuthContext] Token exists but no stored user, fetching account");
-          try {
-            const accountResponse = await authApi.getUserInfo();
-            if (accountResponse.success && accountResponse.data) {
-              authApi.storeUser(accountResponse.data);
-              setUser(accountResponse.data);
-            } else {
-              console.log("[AuthContext] Could not fetch account, clearing invalid session");
-              authApi.clearTokens();
-              authApi.clearUser();
-              setUser(null);
-            }
-          } catch (e) {
-            console.error("[AuthContext] Error fetching account:", e);
+      if (storedUser) {
+        console.log("[AuthContext] Setting user from stored data");
+        setUser(storedUser);
+      } else {
+        console.log("[AuthContext] Token exists but no stored user, fetching account");
+        try {
+          const accountResponse = await authApi.getUserInfo();
+          if (accountResponse.success && accountResponse.data) {
+            authApi.storeUser(accountResponse.data);
+            setUser(accountResponse.data);
+          } else {
+            console.log("[AuthContext] Could not fetch account, clearing invalid session");
             authApi.clearTokens();
             authApi.clearUser();
             setUser(null);
           }
+        } catch (e) {
+          console.error("[AuthContext] Error fetching account:", e);
+          authApi.clearTokens();
+          authApi.clearUser();
+          setUser(null);
         }
-      } else {
-        console.log("[AuthContext] No valid token found");
-        authApi.clearTokens();
-        authApi.clearUser();
-        setUser(null);
       }
     } catch (e) {
       console.error("[AuthContext] checkAuth error:", e);
