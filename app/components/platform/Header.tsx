@@ -21,7 +21,6 @@ import {
   Rss,
   FolderTree,
   LogOut,
-  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -159,6 +158,12 @@ export function Header({ className, ...props }: HeaderProps) {
 
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
+        </Button>
+
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/settings">
+            <Settings className="h-5 w-5" />
+          </Link>
         </Button>
 
         <div className="relative">

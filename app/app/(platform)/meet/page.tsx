@@ -5,9 +5,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { AuthGuard } from "@/components/AuthGuard";
 import { meetApi } from "@/lib/api/meet";
+import { useAuth } from "@/context/AuthContext";
 import { authApi } from "@/lib/api/auth";
 import { contactsApi } from "@/lib/api/contacts";
 import type { Conversation, Message, MeetUser, ConversationType } from "@/lib/api/meet-types";
+import { toast } from "sonner";
+import { MessageSquare } from "lucide-react";
 
 const Meet = dynamic(() => import("@/components/meet/meet").then((mod) => mod.Meet), {
   ssr: false,
@@ -75,6 +78,14 @@ async function fetchConversations(): Promise<ExtendedConversation[]> {
   return [];
 }
 
+async function fetchMessages(conversationId: string): Promise<Message[]> {
+  const response = await meetApi.getConversationMessages(conversationId);
+  if (response.success && response.data) {
+    return response.data as Message[];
+  }
+  return [];
+}
+
 function buildContactConversations(
   user: CurrentUser,
   contactList: ContactItem[]
@@ -102,33 +113,35 @@ function buildContactConversations(
 
 export default function MeetPage() {
   const queryClient = useQueryClient();
-  const [currentUser, setCurrentUser] = React.useState<CurrentUser | null>(null);
+  const { user: authUser } = useAuth();
   const [messages, setMessages] = React.useState<Record<string, Message[]>>({});
+  const [activeConversationId, setActiveConversationId] = React.useState<string | null>(null);
+  const previousMessageIdsRef = React.useRef<Record<string, Set<string>>>({});
+  const initializedConversationsRef = React.useRef<Set<string>>(new Set());
 
-  React.useEffect(() => {
-    const user = authApi.getStoredUser();
-    if (user) {
-      setCurrentUser({
-        id: user.id || user.email,
-        name: user.name || user.email.split("@")[0],
-        email: user.email,
-        avatarUrl: user.avatarUrl,
-      });
-    }
-  }, []);
+  const currentUser = React.useMemo<CurrentUser | null>(() => {
+    if (!authUser) return null;
+    return {
+      id: authUser.id || authUser.email,
+      name: authUser.name || authUser.email.split("@")[0],
+      email: authUser.email,
+      avatarUrl: authUser.avatarUrl,
+    };
+  }, [authUser]);
 
-  const accountEmail = currentUser?.email;
+  const accountEmail = currentUser?.email || "";
 
   const {
     data: contacts = [],
     isLoading: contactsLoading,
   } = useQuery({
     queryKey: ["contacts", accountEmail],
-    queryFn: () => fetchContacts(accountEmail!),
+    queryFn: () => fetchContacts(accountEmail),
     enabled: !!accountEmail,
     staleTime: 5 * 60 * 1000,
   });
 
+  // Conversations with real-time polling
   const {
     data: serverConversations = [],
     isLoading: conversationsLoading,
@@ -136,7 +149,10 @@ export default function MeetPage() {
     queryKey: ["conversations"],
     queryFn: fetchConversations,
     enabled: !!accountEmail,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 0,
+    refetchInterval: 10 * 1000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
 
   const conversations = React.useMemo<ExtendedConversation[]>(() => {
@@ -148,6 +164,64 @@ export default function MeetPage() {
     }
     return [];
   }, [serverConversations, currentUser, contacts]);
+
+  // Real-time message polling for active conversation
+  const { data: polledMessages } = useQuery({
+    queryKey: ["messages", activeConversationId],
+    queryFn: () => fetchMessages(activeConversationId!),
+    enabled: !!activeConversationId,
+    staleTime: 0,
+    refetchInterval: 3 * 1000, // Poll every 3 seconds for real-time feel
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+  });
+
+  // Detect new messages and update state
+  React.useEffect(() => {
+    if (!polledMessages || !activeConversationId) return;
+
+    const previousIds = previousMessageIdsRef.current[activeConversationId] || new Set();
+    const currentIds = new Set(polledMessages.map((m) => m.id));
+
+    if (!initializedConversationsRef.current.has(activeConversationId)) {
+      initializedConversationsRef.current.add(activeConversationId);
+      setMessages((prev) => ({
+        ...prev,
+        [activeConversationId]: polledMessages,
+      }));
+      previousMessageIdsRef.current[activeConversationId] = currentIds;
+      return;
+    }
+
+    const newMessages = polledMessages.filter((m) => !previousIds.has(m.id));
+
+    if (newMessages.length > 0) {
+      setMessages((prev) => ({
+        ...prev,
+        [activeConversationId]: polledMessages,
+      }));
+
+      // Show toast for messages from others
+      const othersMessages = newMessages.filter((m) => m.senderId !== currentUser?.id);
+      if (othersMessages.length > 0) {
+        const latest = othersMessages[othersMessages.length - 1];
+        toast.info(
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold text-sm">{latest.senderName}</span>
+            <span className="text-xs text-muted-foreground truncate max-w-50">
+              {latest.content}
+            </span>
+          </div>,
+          {
+            icon: <MessageSquare className="h-4 w-4" />,
+            duration: 4000,
+          }
+        );
+      }
+    }
+
+    previousMessageIdsRef.current[activeConversationId] = currentIds;
+  }, [polledMessages, activeConversationId, currentUser?.id]);
 
   const handleAuthError = (error: unknown) => {
     if (isSessionError(error)) {
@@ -246,14 +320,18 @@ export default function MeetPage() {
   });
 
   const handleSelectConversation = async (conversationId: string) => {
+    setActiveConversationId(conversationId);
     if (messages[conversationId]) return;
     try {
       const response = await meetApi.getConversationMessages(conversationId);
       if (response.success && response.data) {
+        const msgs = response.data as Message[];
         setMessages((prev) => ({
           ...prev,
-          [conversationId]: response.data as Message[],
+          [conversationId]: msgs,
         }));
+        previousMessageIdsRef.current[conversationId] = new Set(msgs.map((m) => m.id));
+        initializedConversationsRef.current.add(conversationId);
       }
     } catch (error) {
       if (handleAuthError(error)) return;
@@ -262,6 +340,32 @@ export default function MeetPage() {
       }
     }
   };
+
+  // Refresh on tab focus
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        if (activeConversationId) {
+          queryClient.invalidateQueries({ queryKey: ["messages", activeConversationId] });
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [queryClient, activeConversationId]);
+
+  // Refresh on reconnect
+  React.useEffect(() => {
+    const handleOnline = () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      if (activeConversationId) {
+        queryClient.invalidateQueries({ queryKey: ["messages", activeConversationId] });
+      }
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [queryClient, activeConversationId]);
 
   const handleStartCall = async (conversationId: string, callType: "audio" | "video") => {
     try {
@@ -332,6 +436,11 @@ export default function MeetPage() {
           m.id === optimisticId ? data : m
         ),
       }));
+      // Track the real message ID to avoid duplicate detection
+      const ids = previousMessageIdsRef.current[conversationId] || new Set();
+      ids.delete(optimisticId);
+      ids.add(data.id);
+      previousMessageIdsRef.current[conversationId] = ids;
     } catch {
       setMessages((prev) => ({
         ...prev,

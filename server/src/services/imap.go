@@ -234,18 +234,30 @@ func (s *IMAPService) ListMessagesByUID(limit, offset int) ([]*models.Email, err
 		return nil, fmt.Errorf("no mailbox selected")
 	}
 
-	if limit == 0 {
-		total, _ := s.GetMessageCount()
-		limit = total
-		if limit == 0 {
-			limit = 1
-		}
+	total, _ := s.GetMessageCount()
+	if total == 0 {
+		return []*models.Email{}, nil
 	}
 
+	if limit == 0 {
+		limit = total
+	}
+
+	// Use sequence numbers (always contiguous 1..N) instead of UID ranges.
+	// UIDs are not sequential (gaps exist after deletions), so UID FETCH 1:1000
+	// misses messages with UID > 1000. FETCH by sequence ensures we get the
+	// latest messages reliably.
 	tag := s.nextTag()
-	start := offset + 1
-	end := offset + limit
-	cmd := fmt.Sprintf("%s UID FETCH %d:%d (UID FLAGS ENVELOPE BODY.PEEK[HEADER] BODY.PEEK[TEXT])", tag, start, end)
+	endSeq := total - offset
+	if endSeq < 1 {
+		return []*models.Email{}, nil
+	}
+	startSeq := endSeq - limit + 1
+	if startSeq < 1 {
+		startSeq = 1
+	}
+
+	cmd := fmt.Sprintf("%s FETCH %d:%d (FLAGS ENVELOPE BODY.PEEK[HEADER] BODY.PEEK[TEXT])", tag, startSeq, endSeq)
 
 	if err := s.sendCommand(cmd); err != nil {
 		return nil, err
@@ -267,7 +279,7 @@ func (s *IMAPService) ListMessagesByUID(limit, offset int) ([]*models.Email, err
 				email := s.parseEmailResponse(currentEmailResp.String())
 				if email != nil {
 					if email.ID == "" {
-						email.ID = fmt.Sprintf("%d-%d", start, len(emails)+1)
+						email.ID = fmt.Sprintf("%d-%d", startSeq, len(emails)+1)
 					}
 					emails = append(emails, email)
 				}
@@ -280,7 +292,7 @@ func (s *IMAPService) ListMessagesByUID(limit, offset int) ([]*models.Email, err
 				email := s.parseEmailResponse(currentEmailResp.String())
 				if email != nil {
 					if email.ID == "" {
-						email.ID = fmt.Sprintf("%d-%d", start, len(emails)+1)
+						email.ID = fmt.Sprintf("%d-%d", startSeq, len(emails)+1)
 					}
 					emails = append(emails, email)
 				}
@@ -292,7 +304,7 @@ func (s *IMAPService) ListMessagesByUID(limit, offset int) ([]*models.Email, err
 				email := s.parseEmailResponse(currentEmailResp.String())
 				if email != nil {
 					if email.ID == "" {
-						email.ID = fmt.Sprintf("%d-%d", start, len(emails)+1)
+						email.ID = fmt.Sprintf("%d-%d", startSeq, len(emails)+1)
 					}
 					emails = append(emails, email)
 				}
@@ -301,7 +313,7 @@ func (s *IMAPService) ListMessagesByUID(limit, offset int) ([]*models.Email, err
 				email := s.parseEmailResponse(currentEmailResp.String())
 				if email != nil {
 					if email.ID == "" {
-						email.ID = fmt.Sprintf("%d-%d", start, len(emails)+1)
+						email.ID = fmt.Sprintf("%d-%d", startSeq, len(emails)+1)
 					}
 					emails = append(emails, email)
 				}

@@ -5,13 +5,17 @@ import (
 )
 
 type Session struct {
-	UserID   string
-	Email    string
-	Password string
-	IMAPHost string
-	IMAPPort int
-	SMTPHost string
-	SMTPPort int
+	UserID           string
+	Email            string
+	Password         string
+	IMAPHost         string
+	IMAPPort         int
+	SMTPHost         string
+	SMTPPort         int
+	Provider         string
+	OAuthAccessToken string
+	OAuthRefreshToken string
+	OAuthExpiry      int64
 }
 
 type SessionManager struct {

@@ -10,25 +10,27 @@ import (
 )
 
 type Router struct {
-	engine              *gin.Engine
-	authController     *controllers.AuthController
-	emailController    *controllers.EmailController
-	folderController   *controllers.FolderController
-	contactController   *controllers.ContactController
-	imapController     *controllers.IMAPController
-	smtpController      *controllers.SMTPController
-	pop3Controller      *controllers.POP3Controller
-	meetingController   *controllers.MeetingController
+	engine                 *gin.Engine
+	authController         *controllers.AuthController
+	oauthController        *controllers.OAuthController
+	emailController        *controllers.EmailController
+	folderController       *controllers.FolderController
+	contactController      *controllers.ContactController
+	imapController         *controllers.IMAPController
+	smtpController         *controllers.SMTPController
+	pop3Controller         *controllers.POP3Controller
+	meetingController      *controllers.MeetingController
 	organizationController *controllers.OrganizationController
-	todoController      *controllers.TodoController
-	settingsController *controllers.SettingsController
+	todoController         *controllers.TodoController
+	settingsController     *controllers.SettingsController
 	notificationController *controllers.NotificationController
-	authMiddleware      *middleware.AuthMiddleware
+	authMiddleware         *middleware.AuthMiddleware
 }
 
 func NewRouter(
 	stalwartService *services.StalwartService,
 	jwtService *services.JWTService,
+	oauthService *services.OAuthService,
 	mailConfig *config.MailConfig,
 ) *Router {
 	meetingService := services.NewMeetingService(stalwartService)
@@ -38,19 +40,20 @@ func NewRouter(
 	notificationService := services.NewNotificationService(stalwartService)
 
 	return &Router{
-		authController:      controllers.NewAuthController(stalwartService, jwtService, mailConfig),
-		emailController:     controllers.NewEmailController(stalwartService, mailConfig),
-		folderController:    controllers.NewFolderController(stalwartService, mailConfig),
-		contactController:  controllers.NewContactController(stalwartService),
-		imapController:     controllers.NewIMAPController(stalwartService),
-		smtpController:     controllers.NewSMTPController(),
-		pop3Controller:    controllers.NewPOP3Controller(),
-		meetingController:  controllers.NewMeetingController(meetingService),
+		authController:         controllers.NewAuthController(stalwartService, jwtService, oauthService, mailConfig),
+		oauthController:        controllers.NewOAuthController(oauthService, jwtService, mailConfig),
+		emailController:        controllers.NewEmailController(stalwartService, mailConfig),
+		folderController:       controllers.NewFolderController(stalwartService, mailConfig),
+		contactController:      controllers.NewContactController(stalwartService),
+		imapController:         controllers.NewIMAPController(stalwartService),
+		smtpController:         controllers.NewSMTPController(),
+		pop3Controller:         controllers.NewPOP3Controller(),
+		meetingController:      controllers.NewMeetingController(meetingService),
 		organizationController: controllers.NewOrganizationController(organizationService),
-		todoController:    controllers.NewTodoController(todoService),
-		settingsController: controllers.NewSettingsController(settingsService),
+		todoController:         controllers.NewTodoController(todoService),
+		settingsController:     controllers.NewSettingsController(settingsService),
 		notificationController: controllers.NewNotificationController(notificationService),
-		authMiddleware:     middleware.NewAuthMiddleware(jwtService),
+		authMiddleware:         middleware.NewAuthMiddleware(jwtService),
 	}
 }
 
@@ -58,9 +61,10 @@ func SetupRoutes(
 	engine *gin.Engine,
 	stalwartService *services.StalwartService,
 	jwtService *services.JWTService,
+	oauthService *services.OAuthService,
 	mailConfig *config.MailConfig,
 ) {
-	router := NewRouter(stalwartService, jwtService, mailConfig)
+	router := NewRouter(stalwartService, jwtService, oauthService, mailConfig)
 
 	api := engine.Group("/api/v1")
 	{
@@ -72,6 +76,12 @@ func SetupRoutes(
 			auth.POST("/change-password", router.authMiddleware.RequireAuth(), router.authController.ChangePassword)
 			auth.POST("/reset-password", router.authController.ResetPassword)
 			auth.POST("/set-password", router.authController.SetPassword)
+
+			// OAuth endpoints
+			auth.GET("/oauth/:provider", router.oauthController.InitiateOAuth)
+			auth.GET("/oauth/:provider/url", router.oauthController.GetAuthURL)
+			auth.GET("/oauth/:provider/callback", router.oauthController.HandleCallback)
+			auth.POST("/oauth/login", router.oauthController.OAuthLogin)
 		}
 
 		account := api.Group("/account")

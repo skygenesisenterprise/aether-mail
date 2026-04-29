@@ -7,6 +7,28 @@ import (
 	"time"
 )
 
+// Default mail server hosts embedded in the engine.
+// The application does not rely solely on environment variables.
+const (
+	DefaultMailHostPrimary   = "mail.skygenesisenterprise.net"
+	DefaultMailHostSecondary = "mail.skygenesisenterprise.com"
+)
+
+// ResolveMailHost returns the appropriate mail server host based on the email domain.
+func ResolveMailHost(email string) string {
+	parts := strings.Split(email, "@")
+	if len(parts) < 2 {
+		return DefaultMailHostPrimary
+	}
+	domain := strings.ToLower(parts[1])
+	switch domain {
+	case "skygenesisenterprise.com":
+		return DefaultMailHostSecondary
+	default:
+		return DefaultMailHostPrimary
+	}
+}
+
 type Config struct {
 	Stalwart StalwartConfig
 	JWT      JWTConfig
@@ -53,6 +75,21 @@ type MailConfig struct {
 	IMAP            IMAPConfig
 	SMTP            SMTPConfig
 	POP3            POP3Config
+	OAuth           OAuthConfig
+}
+
+type OAuthConfig struct {
+	RedirectURL string
+	Google      OAuthProviderConfig
+	Microsoft   OAuthProviderConfig
+	Proton      OAuthProviderConfig
+}
+
+type OAuthProviderConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+	Tenant       string
 }
 
 type IMAPConfig struct {
@@ -79,7 +116,7 @@ type POP3Config struct {
 func Load() *Config {
 	return &Config{
 		Stalwart: StalwartConfig{
-			Host:       getEnv("STALWART_HOST", "mail.skygenesisenterprise.net"),
+			Host:       getEnv("STALWART_HOST", DefaultMailHostPrimary),
 			HTTPPort:   getEnvInt("STALWART_HTTP_PORT", 8080),
 			JMAPPort:   getEnvInt("STALWART_JMAP_PORT", 8081),
 			IMAPPort:   getEnvInt("STALWART_IMAP_PORT", 993),
@@ -108,22 +145,41 @@ func Load() *Config {
 		Mail: MailConfig{
 			DefaultProvider: getEnv("MAIL_PROVIDER", "stalwart"),
 			IMAP: IMAPConfig{
-				Host:       getEnv("IMAP_HOST", "mail.skygenesisenterprise.net"),
+				Host:       getEnv("IMAP_HOST", DefaultMailHostPrimary),
 				Port:       getEnvInt("IMAP_PORT", 993),
 				UseTLS:     getEnvBool("IMAP_USE_TLS", true),
 				SkipVerify: getEnvBool("IMAP_SKIP_VERIFY", false),
 			},
 			SMTP: SMTPConfig{
-				Host:       getEnv("SMTP_HOST", "mail.skygenesisenterprise.net"),
+				Host:       getEnv("SMTP_HOST", DefaultMailHostPrimary),
 				Port:       getEnvInt("SMTP_PORT", 587),
 				UseTLS:     getEnvBool("SMTP_USE_TLS", true),
 				SkipVerify: getEnvBool("SMTP_SKIP_VERIFY", false),
 			},
 			POP3: POP3Config{
-				Host:       getEnv("POP3_HOST", "mail.skygenesisenterprise.net"),
+				Host:       getEnv("POP3_HOST", DefaultMailHostPrimary),
 				Port:       getEnvInt("POP3_PORT", 995),
 				UseTLS:     getEnvBool("POP3_USE_TLS", true),
 				SkipVerify: getEnvBool("POP3_SKIP_VERIFY", false),
+			},
+			OAuth: OAuthConfig{
+				RedirectURL: getEnv("OAUTH_REDIRECT_URL", "http://localhost:8080/api/v1/auth/oauth/callback"),
+				Google: OAuthProviderConfig{
+					ClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+					ClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
+					RedirectURL:  getEnv("GOOGLE_REDIRECT_URL", "http://localhost:8080/api/v1/auth/oauth/google/callback"),
+				},
+				Microsoft: OAuthProviderConfig{
+					ClientID:     getEnv("MICROSOFT_CLIENT_ID", ""),
+					ClientSecret: getEnv("MICROSOFT_CLIENT_SECRET", ""),
+					RedirectURL:  getEnv("MICROSOFT_REDIRECT_URL", "http://localhost:8080/api/v1/auth/oauth/microsoft/callback"),
+					Tenant:       getEnv("MICROSOFT_TENANT", "common"),
+				},
+				Proton: OAuthProviderConfig{
+					ClientID:     getEnv("PROTON_CLIENT_ID", ""),
+					ClientSecret: getEnv("PROTON_CLIENT_SECRET", ""),
+					RedirectURL:  getEnv("PROTON_REDIRECT_URL", "http://localhost:8080/api/v1/auth/oauth/proton/callback"),
+				},
 			},
 		},
 	}

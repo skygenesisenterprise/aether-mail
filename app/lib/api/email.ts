@@ -53,7 +53,7 @@ class EmailApiService {
   }
 
   async getFolders(accountId: string): Promise<FolderListResponse> {
-    return this.request<FolderListResponse>(`/api/v1/accounts/${accountId}/mailboxes`);
+    return this.request<FolderListResponse>(`/api/v1/mailboxes/${accountId}`);
   }
 
   async getFolder(accountId: string, mailboxId: string): Promise<{ success: boolean; data?: Folder; error?: string }> {

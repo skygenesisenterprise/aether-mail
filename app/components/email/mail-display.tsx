@@ -328,7 +328,7 @@ function MailDisplayContent({ mail, onClose }: MailDisplayProps) {
                   {cleanedText}
                 </ReactMarkdown>
               ) : (
-                <div className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: linkedText }} />
+                <div className="whitespace-pre-wrap wrap-break-words" dangerouslySetInnerHTML={{ __html: linkedText }} />
               )}
             </div>
           )}

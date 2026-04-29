@@ -66,9 +66,12 @@ type AuthResponse struct {
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
-	Remember bool   `json:"remember"`
+	Email       string `json:"email" binding:"omitempty,email"`
+	Password    string `json:"password" binding:"omitempty"`
+	Provider    string `json:"provider,omitempty" binding:"omitempty,oneof=google microsoft proton"`
+	Code        string `json:"code,omitempty" binding:"omitempty"`
+	RedirectURI string `json:"redirect_uri,omitempty"`
+	Remember    bool   `json:"remember"`
 }
 
 type RegisterRequest struct {

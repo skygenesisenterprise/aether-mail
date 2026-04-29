@@ -15,14 +15,16 @@ type AuthController struct {
 	stalwartService *services.StalwartService
 	jwtService      *services.JWTService
 	imapService     *services.IMAPService
+	oauthService    *services.OAuthService
 	mailConfig      *config.MailConfig
 }
 
-func NewAuthController(stalwart *services.StalwartService, jwt *services.JWTService, mailConfig *config.MailConfig) *AuthController {
+func NewAuthController(stalwart *services.StalwartService, jwt *services.JWTService, oauth *services.OAuthService, mailConfig *config.MailConfig) *AuthController {
 	return &AuthController{
 		stalwartService: stalwart,
 		jwtService:      jwt,
 		imapService:     services.NewIMAPService(),
+		oauthService:    oauth,
 		mailConfig:      mailConfig,
 	}
 }
@@ -37,10 +39,24 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
+	// If a provider is explicitly set in the request, route to OAuth login
+	if req.Provider != "" {
+		c.handleOAuthLogin(ctx, req.Provider, req.Code, req.RedirectURI)
+		return
+	}
+
+	// If MAIL_PROVIDER is an OAuth provider, route accordingly
+	authMethod := c.mailConfig.DefaultProvider
+	if authMethod == "google" || authMethod == "microsoft" || authMethod == "proton" {
+		ctx.JSON(http.StatusBadRequest, models.AuthResponse{
+			Success: false,
+			Error:   "OAuth provider requires authorization code. Use /api/v1/auth/oauth/" + authMethod + " to initiate flow or provide 'provider' and 'code' in the request body",
+		})
+		return
+	}
+
 	var user *models.User
 	var accessToken string
-
-	authMethod := c.mailConfig.DefaultProvider
 
 	switch authMethod {
 	case "imap":
@@ -150,6 +166,107 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	} else {
 		fmt.Printf("[auth] Returning token: %s\n", customToken)
 	}
+}
+
+func (c *AuthController) handleOAuthLogin(ctx *gin.Context, providerName, code, redirectURI string) {
+	provider, ok := c.oauthService.GetProvider(providerName)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, models.AuthResponse{
+			Success: false,
+			Error:   "Unsupported OAuth provider: " + providerName,
+		})
+		return
+	}
+
+	if code == "" {
+		ctx.JSON(http.StatusBadRequest, models.AuthResponse{
+			Success: false,
+			Error:   "Authorization code is required for OAuth login",
+		})
+		return
+	}
+
+	token, err := provider.ExchangeCode(code, redirectURI)
+	if err != nil {
+		fmt.Printf("[auth] OAuth token exchange error for %s: %v\n", providerName, err)
+		ctx.JSON(http.StatusInternalServerError, models.AuthResponse{
+			Success: false,
+			Error:   "Failed to exchange authorization code",
+		})
+		return
+	}
+
+	userInfo, err := provider.GetUserInfo(token)
+	if err != nil {
+		fmt.Printf("[auth] OAuth userinfo error for %s: %v\n", providerName, err)
+		ctx.JSON(http.StatusInternalServerError, models.AuthResponse{
+			Success: false,
+			Error:   "Failed to retrieve user information",
+		})
+		return
+	}
+
+	user := &models.User{
+		ID:        userInfo.ID,
+		Email:     userInfo.Email,
+		Name:      userInfo.Name,
+		AvatarURL: userInfo.Picture,
+		Active:    true,
+	}
+
+	if user.ID == "" {
+		user.ID = userInfo.Email
+	}
+	if user.Name == "" {
+		user.Name = extractNameFromEmail(userInfo.Email)
+	}
+
+	customToken, err := c.jwtService.GenerateToken(
+		user.ID,
+		token.AccessToken,
+		user.Email,
+		user.Name,
+	)
+	if err != nil {
+		fmt.Printf("[auth] Token generation error: %v\n", err)
+		ctx.JSON(http.StatusInternalServerError, models.AuthResponse{
+			Success: false,
+			Error:   "Failed to generate token",
+		})
+		return
+	}
+
+	refreshToken, err := c.jwtService.GenerateRefreshToken(user.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, models.AuthResponse{
+			Success: false,
+			Error:   "Failed to generate refresh token",
+		})
+		return
+	}
+
+	sessionManager := services.GetSessionManager()
+	sessionManager.SetSession(user.ID, &services.Session{
+		UserID:            user.ID,
+		Email:             user.Email,
+		Provider:          providerName,
+		OAuthAccessToken:  token.AccessToken,
+		OAuthRefreshToken: token.RefreshToken,
+		OAuthExpiry:       token.ExpiresIn,
+	})
+
+	fmt.Printf("[auth] OAuth login successful for user: %s via %s\n", user.Email, providerName)
+
+	ctx.JSON(http.StatusOK, models.AuthResponse{
+		Success: true,
+		Data: &models.TokenResponse{
+			AccessToken:  customToken,
+			RefreshToken: refreshToken,
+			TokenType:    "Bearer",
+			ExpiresIn:    c.jwtService.GetExpirySeconds(),
+			User:         user,
+		},
+	})
 }
 
 func extractNameFromEmail(email string) string {

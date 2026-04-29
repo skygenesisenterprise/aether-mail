@@ -82,6 +82,10 @@ possiblePaths := []string{
 	jwtService := services.NewJWTService(cfg.JWT.Secret, cfg.JWT.Expiry, cfg.JWT.Issuer)
 	time.Sleep(100 * time.Millisecond)
 
+	fmt.Printf("\033[1;34m[info] Initializing OAuth service...\033[0m\n")
+	oauthService := services.NewOAuthService(cfg.Mail.OAuth)
+	time.Sleep(100 * time.Millisecond)
+
 	fmt.Printf("\033[1;34m[info] Setting up Gin router...\033[0m\n")
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
@@ -95,7 +99,7 @@ possiblePaths := []string{
 	time.Sleep(100 * time.Millisecond)
 
 	fmt.Printf("\033[1;34m[info] Setting up API routes...\033[0m\n")
-	routes.SetupRoutes(router, stalwartService, jwtService, &cfg.Mail)
+	routes.SetupRoutes(router, stalwartService, jwtService, oauthService, &cfg.Mail)
 	time.Sleep(200 * time.Millisecond)
 
 	router.GET("/health", func(c *gin.Context) {
