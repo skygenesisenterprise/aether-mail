@@ -55,6 +55,8 @@ func (c *EmailController) GetEmails(ctx *gin.Context) {
 			return
 		}
 
+		fmt.Printf("[email] GetEmails - session found for: %s, IMAP: %s:%d\n", accountID, session.IMAPHost, session.IMAPPort)
+
 		imapService := services.NewIMAPEmailService(
 			session.IMAPHost,
 			session.IMAPPort,

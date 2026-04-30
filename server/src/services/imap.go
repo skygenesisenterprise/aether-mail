@@ -171,23 +171,30 @@ func (s *IMAPService) GetMailboxStatus(mailbox string) (*models.Folder, error) {
 }
 
 func (s *IMAPService) SelectMailbox(mailbox string) error {
+	fmt.Printf("[IMAP] SelectMailbox: starting for %s\n", mailbox)
 	tag := s.nextTag()
 	cmd := fmt.Sprintf("%s SELECT %s", tag, s.escapeString(mailbox))
+	fmt.Printf("[IMAP] SelectMailbox: sending command: %s\n", cmd)
 
 	if err := s.sendCommand(cmd); err != nil {
+		fmt.Printf("[IMAP] SelectMailbox: sendCommand error: %v\n", err)
 		return err
 	}
 
 	for {
 		resp, err := s.readResponse()
 		if err != nil {
+			fmt.Printf("[IMAP] SelectMailbox: readResponse error: %v\n", err)
 			return err
 		}
+		
+		fmt.Printf("[IMAP] SelectMailbox: got response: %s\n", resp)
 
 		if strings.HasPrefix(resp, tag+" ") {
 			if strings.Contains(resp, "OK") {
 				s.isSelected = true
 				s.selectedMailbox = mailbox
+				fmt.Printf("[IMAP] SelectMailbox: SUCCESS, isSelected=%v\n", s.isSelected)
 				return nil
 			}
 			return fmt.Errorf("SELECT failed: %s", resp)
@@ -231,10 +238,13 @@ func (s *IMAPService) ListMessages(sequence string, items []string) ([]*models.E
 
 func (s *IMAPService) ListMessagesByUID(limit, offset int) ([]*models.Email, error) {
 	if !s.isSelected {
+		fmt.Printf("[IMAP] ListMessagesByUID: not selected, returning empty\n")
 		return nil, fmt.Errorf("no mailbox selected")
 	}
 
 	total, _ := s.GetMessageCount()
+	fmt.Printf("[IMAP] ListMessagesByUID: total=%d, limit=%d, offset=%d\n", total, limit, offset)
+	
 	if total == 0 {
 		return []*models.Email{}, nil
 	}
@@ -258,6 +268,7 @@ func (s *IMAPService) ListMessagesByUID(limit, offset int) ([]*models.Email, err
 	}
 
 	cmd := fmt.Sprintf("%s FETCH %d:%d (FLAGS ENVELOPE BODY.PEEK[HEADER] BODY.PEEK[TEXT])", tag, startSeq, endSeq)
+	fmt.Printf("[IMAP] ListMessagesByUID: sending: %s\n", cmd)
 
 	if err := s.sendCommand(cmd); err != nil {
 		return nil, err

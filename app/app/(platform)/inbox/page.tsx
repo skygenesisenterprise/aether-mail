@@ -15,6 +15,14 @@ const MailComponent = dynamic(
   () => import("@/components/email/mail").then((mod) => mod.Mail),
   {
     ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Loading emails...</p>
+        </div>
+      </div>
+    ),
   }
 );
 
@@ -79,11 +87,6 @@ export default function InboxPage() {
   const queryClient = useQueryClient();
   const previousTotalRef = React.useRef<number>(0);
   const [isSyncing, setIsSyncing] = React.useState(false);
-  const [isClient, setIsClient] = React.useState(false);
-
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const accounts = React.useMemo(() => {
     if (!user) return [];
@@ -208,7 +211,7 @@ export default function InboxPage() {
   return (
     <AuthGuard>
       <div className="h-full relative">
-        {isClient && (isFetching || isSyncing) && (
+        {(isLoading || isSyncing) && (
           <div className="absolute top-2 right-4 z-50 flex items-center gap-2 bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full border shadow-sm">
             <RefreshCw className="h-3 w-3 animate-spin text-blue-600" />
             <span className="text-xs font-medium text-muted-foreground">

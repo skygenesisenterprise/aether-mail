@@ -60,30 +60,44 @@ func (s *IMAPEmailService) GetFolders() ([]*models.Folder, error) {
 }
 
 func (s *IMAPEmailService) GetEmails(mailbox string, limit, offset int) (*models.EmailList, error) {
+	fmt.Printf("[IMAPEmailService] GetEmails - mailbox: %s, limit: %d, offset: %d\n", mailbox, limit, offset)
 	imap := &IMAPService{}
 	if err := imap.Connect(s.host, s.port, s.useTLS); err != nil {
+		fmt.Printf("[IMAPEmailService] Connect error: %v\n", err)
 		return nil, err
 	}
 	defer imap.Disconnect()
 
 	if err := imap.Authenticate(s.username, s.password); err != nil {
+		fmt.Printf("[IMAPEmailService] Authenticate error: %v\n", err)
 		return nil, err
 	}
+
+	fmt.Printf("[IMAPEmailService] Authenticated successfully\n")
 
 	if err := imap.SelectMailbox(mailbox); err != nil {
+		fmt.Printf("[IMAPEmailService] SelectMailbox error: %v\n", err)
 		return nil, err
 	}
 
+	fmt.Printf("[IMAPEmailService] Selected mailbox: %s, isSelected: %v\n", mailbox, imap.isSelected)
+
 	total, _ := imap.GetMessageCount()
+	fmt.Printf("[IMAPEmailService] Total messages in %s: %d\n", mailbox, total)
 	
 	if limit == 0 {
 		limit = total
 	}
 
+	fmt.Printf("[IMAPEmailService] Fetching %d emails starting from offset %d\n", limit, offset)
+	
 	emails, err := imap.ListMessagesByUID(limit, offset)
 	if err != nil {
+		fmt.Printf("[IMAPEmailService] ListMessagesByUID error: %v\n", err)
 		return nil, err
 	}
+	
+	fmt.Printf("[IMAPEmailService] Retrieved %d emails\n", len(emails))
 
 	return &models.EmailList{
 		AccountID:   s.username,
