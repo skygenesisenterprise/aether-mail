@@ -227,7 +227,7 @@ jobs:
           ls -la dist/*.tar.gz dist/*.zip 2>/dev/null || true
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: aether-identity-binaries
           path: |

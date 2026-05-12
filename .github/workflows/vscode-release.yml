@@ -39,7 +39,7 @@ jobs:
           vsce package --out aether-identity-vscode.vsix
 
       - name: Upload VSIX artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: vscode-extension
           path: package/vscode/aether-identity-vscode.vsix
