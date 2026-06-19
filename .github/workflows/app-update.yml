@@ -214,7 +214,7 @@ jobs:
 
     steps:
       - name: Create deployment success comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const version = '${{ needs.build-and-push.outputs.version }}';
@@ -245,7 +245,7 @@ jobs:
 
     steps:
       - name: Create deployment failure issue
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const version = '${{ needs.build-and-push.outputs.version }}';
