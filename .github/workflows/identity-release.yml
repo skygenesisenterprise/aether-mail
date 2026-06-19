@@ -331,7 +331,7 @@ jobs:
 
       # Build and push multi-arch OS image
       - name: Build and push OS image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile.identity-os
